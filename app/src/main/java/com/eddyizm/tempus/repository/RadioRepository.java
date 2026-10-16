@@ -68,7 +68,7 @@ public class RadioRepository {
 
     private void mergeWithLocal(MutableLiveData<List<InternetRadioStation>> liveData, List<InternetRadioStation> subsonicStations) {
         new Thread(() -> {
-            com.eddyizm.tempus.util.PiterfyRadioCatalog.seedIfNeeded(App.getInstance());
+            com.eddyizm.tempus.util.PiterfyRadioCatalog.seedIfNeeded(App.getContext());
             List<InternetRadioStationCache> localCaches = AppDatabase.getInstance().internetRadioStationDao().getLocal();
             List<InternetRadioStation> localStations = localCaches.stream()
                     .map(InternetRadioStationCache::toInternetRadioStation)
@@ -83,7 +83,7 @@ public class RadioRepository {
 
     private void fallbackToCache(MutableLiveData<List<InternetRadioStation>> liveData) {
         new Thread(() -> {
-            com.eddyizm.tempus.util.PiterfyRadioCatalog.seedIfNeeded(App.getInstance());
+            com.eddyizm.tempus.util.PiterfyRadioCatalog.seedIfNeeded(App.getContext());
             List<InternetRadioStation> cached = AppDatabase.getInstance().internetRadioStationDao().getAll().stream()
                     .map(InternetRadioStationCache::toInternetRadioStation)
                     .collect(Collectors.toList());

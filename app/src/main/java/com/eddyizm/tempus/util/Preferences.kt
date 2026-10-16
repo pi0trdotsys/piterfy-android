@@ -183,6 +183,9 @@ object Preferences {
             // locally-written resume point that is newer. Fresher server entries still win.
             if (existing == null || incoming.timestamp >= existing.timestamp) {
                 pts[id] = incoming
+            } else if (incoming.type == Constants.MEDIA_TYPE_PODCAST && existing.type != Constants.MEDIA_TYPE_PODCAST) {
+                // Piterfy: authoritative library genre fixes older bookmark types without losing a newer local position.
+                pts[id] = existing.copy(type = Constants.MEDIA_TYPE_PODCAST)
             }
         }
         writeResumePoints(pts)

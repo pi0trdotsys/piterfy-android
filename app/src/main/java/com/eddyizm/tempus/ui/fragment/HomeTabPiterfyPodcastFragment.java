@@ -77,6 +77,12 @@ public class HomeTabPiterfyPodcastFragment extends Fragment implements ClickCall
     public void onResume() {
         super.onResume();
         model.refresh(false);
+        refreshResumeCards();
+        if (!com.eddyizm.tempus.util.NetworkUtil.isOffline())
+            new com.eddyizm.tempus.repository.QueueRepository().syncBookmarksFromServer(() -> { if (bind != null) refreshResumeCards(); });
+    }
+
+    private void refreshResumeCards() {
         List<com.eddyizm.tempus.util.Preferences.ResumePoint> points = new ArrayList<>();
         for (var point : com.eddyizm.tempus.util.Preferences.getContinueListening())
             if (com.eddyizm.tempus.util.Constants.MEDIA_TYPE_PODCAST.equals(point.getType())) points.add(point);
