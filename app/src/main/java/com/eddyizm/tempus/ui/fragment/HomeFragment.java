@@ -88,8 +88,8 @@ public class HomeFragment extends Fragment {
 
         pager.addFragment(new HomeTabMusicFragment(), getString(R.string.home_section_music), R.drawable.ic_home);
 
-        if (Preferences.isPodcastSectionVisible())
-            pager.addFragment(new HomeTabPodcastFragment(), getString(R.string.home_section_podcast), R.drawable.ic_graphic_eq);
+        // Piterfy: podcasts are a first-class, always visible category.
+        pager.addFragment(new HomeTabPiterfyPodcastFragment(), getString(R.string.home_section_podcast)  /* Piterfy: audycje z biblioteki zamiast RSS z Tempus */, R.drawable.ic_graphic_eq);
 
         if (Preferences.isRadioSectionVisible())
             pager.addFragment(new HomeTabRadioFragment(), getString(R.string.home_section_radio), R.drawable.ic_play_for_work);
@@ -105,7 +105,9 @@ public class HomeFragment extends Fragment {
                 }
         ).attach();
 
-        tabLayout.setVisibility(Preferences.isPodcastSectionVisible() || Preferences.isRadioSectionVisible() ? View.VISIBLE : View.GONE);
+        tabLayout.setVisibility(View.VISIBLE);
+        tabLayout.setTabIndicatorFullWidth(false);
+        tabLayout.setSelectedTabIndicatorColor(0xff1db954);
 
         bind.homeViewPager.registerOnPageChangeCallback(new ViewPager2.OnPageChangeCallback() {
             @Override

@@ -24,8 +24,13 @@ public class ContinueListeningAdapter extends RecyclerView.Adapter<ContinueListe
     private ListenableFuture<MediaBrowser> mediaBrowserListenableFuture;
     private List<Preferences.ResumePoint> items = Collections.emptyList();
 
+    private final boolean compact;
     public ContinueListeningAdapter(ListenableFuture<MediaBrowser> mediaBrowserListenableFuture) {
-        this.mediaBrowserListenableFuture = mediaBrowserListenableFuture;
+        this(mediaBrowserListenableFuture, false);
+    }
+    public ContinueListeningAdapter(ListenableFuture<MediaBrowser> future, boolean compact) {
+        this.mediaBrowserListenableFuture = future;
+        this.compact = compact;
     }
 
     /** The MediaBrowser future may not exist yet at construction; refresh it once available. */
@@ -37,7 +42,13 @@ public class ContinueListeningAdapter extends RecyclerView.Adapter<ContinueListe
     @Override
     public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         ItemHomeContinueListeningBinding binding =
-                ItemHomeContinueListeningBinding.inflate(LayoutInflater.from(parent.getContext()), parent, false);
+                compact ? ItemHomeContinueListeningBinding.bind(LayoutInflater.from(parent.getContext()).inflate(R.layout.item_piterfy_continue, parent, false))
+                        : ItemHomeContinueListeningBinding.inflate(LayoutInflater.from(parent.getContext()), parent, false);
+        if (compact) {
+            var params = binding.getRoot().getLayoutParams();
+            params.width = Math.round(Math.min(320, parent.getResources().getConfiguration().screenWidthDp - 40) * parent.getResources().getDisplayMetrics().density);
+            binding.getRoot().setLayoutParams(params);
+        }
         return new ViewHolder(binding);
     }
 
@@ -92,7 +103,7 @@ public class ContinueListeningAdapter extends RecyclerView.Adapter<ContinueListe
         private void resume(Preferences.ResumePoint resumePoint) {
             if (mediaBrowserListenableFuture == null) return;
             String albumId = resumePoint.getAlbumId();
-            if (albumId == null) {
+            if (albumId == null || com.eddyizm.tempus.util.NetworkUtil.isOffline()) {
                 playSingle(resumePoint);
                 return;
             }

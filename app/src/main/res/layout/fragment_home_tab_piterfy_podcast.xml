@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto"
+ android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical">
+ <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/piterfy_podcast_heading"
+ android:textSize="28sp" android:fontFamily="@font/figtree" android:textStyle="bold" android:textColor="?attr/colorOnSurface" android:paddingStart="20dp" android:paddingEnd="20dp" android:paddingTop="20dp"/>
+ <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/piterfy_podcast_subtitle"
+ android:textSize="14sp" android:paddingHorizontal="20dp" android:paddingTop="8dp" android:paddingBottom="12dp"/>
+ <com.google.android.material.chip.Chip android:id="@+id/piterfy_podcast_filter"
+ android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="16dp"
+ android:text="@string/piterfy_downloaded" android:checkable="true" android:minHeight="48dp"/>
+ <LinearLayout android:id="@+id/piterfy_podcast_error" android:layout_width="match_parent" android:layout_height="wrap_content"
+ android:paddingHorizontal="20dp" android:orientation="vertical" android:visibility="gone">
+ <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/piterfy_network_error"/>
+ <com.google.android.material.button.MaterialButton android:id="@+id/piterfy_podcast_retry" style="@style/Widget.Material3.Button.TextButton"
+ android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/piterfy_retry"/>
+ </LinearLayout>
+ <TextView android:id="@+id/piterfy_podcast_continue_title" android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingHorizontal="20dp" android:text="@string/piterfy_continue_episode" android:textStyle="bold" android:textSize="18sp" android:visibility="gone"/>
+ <androidx.recyclerview.widget.RecyclerView android:id="@+id/piterfy_podcast_continue" android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingHorizontal="16dp" android:visibility="gone"/>
+ <androidx.swiperefreshlayout.widget.SwipeRefreshLayout android:id="@+id/piterfy_podcast_refresh" android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1">
+ <FrameLayout android:layout_width="match_parent" android:layout_height="match_parent">
+ <androidx.recyclerview.widget.RecyclerView android:id="@+id/piterfy_podcast_recycler_view" android:layout_width="match_parent" android:layout_height="match_parent" android:clipToPadding="false" android:padding="12dp"/>
+ <TextView android:id="@+id/piterfy_podcast_empty" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_gravity="center" android:padding="32dp" android:gravity="center" android:text="@string/piterfy_podcasts_empty" android:visibility="gone"/>
+ </FrameLayout></androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
+</LinearLayout>

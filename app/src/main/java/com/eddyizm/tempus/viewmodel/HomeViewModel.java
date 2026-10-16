@@ -126,7 +126,7 @@ public class HomeViewModel extends AndroidViewModel {
         cal.set(Calendar.WEEK_OF_YEAR, currentWeek - 1);
         long end = cal.getTimeInMillis();
 
-        chronologyRepository.getChronology(server, start, end).observe(owner, thisGridTopSong::postValue);
+        chronologyRepository.getChronology(server, start, end).observe(owner, setIfCurrentGeneration(thisGridTopSong));
         return thisGridTopSong;
     }
 
@@ -154,7 +154,7 @@ public class HomeViewModel extends AndroidViewModel {
 
     public LiveData<List<Child>> getStarredTracksSample(LifecycleOwner owner) {
         if (starredTracksSample.getValue() == null) {
-            songRepository.getStarredSongs(true, 10).observe(owner, starredTracksSample::postValue);
+            songRepository.getStarredSongs(true, 10).observe(owner, setIfCurrentGeneration(starredTracksSample));
         }
 
         return starredTracksSample;
@@ -162,7 +162,7 @@ public class HomeViewModel extends AndroidViewModel {
 
     public LiveData<List<ArtistID3>> getStarredArtistsSample(LifecycleOwner owner) {
         if (starredArtistsSample.getValue() == null) {
-            artistRepository.getStarredArtists(true, 10).observe(owner, starredArtistsSample::postValue);
+            artistRepository.getStarredArtists(true, 10).observe(owner, setIfCurrentGeneration(starredArtistsSample));
         }
 
         return starredArtistsSample;
@@ -170,7 +170,7 @@ public class HomeViewModel extends AndroidViewModel {
 
     public LiveData<List<ArtistID3>> getBestOfArtists(LifecycleOwner owner) {
         if (bestOfArtists.getValue() == null) {
-            artistRepository.getStarredArtists(true, 20).observe(owner, bestOfArtists::postValue);
+            artistRepository.getStarredArtists(true, 20).observe(owner, setIfCurrentGeneration(bestOfArtists));
         }
 
         return bestOfArtists;
@@ -178,7 +178,7 @@ public class HomeViewModel extends AndroidViewModel {
 
     public LiveData<List<Child>> getStarredTracks(LifecycleOwner owner) {
         if (starredTracks.getValue() == null) {
-            songRepository.getStarredSongs(true, 20).observe(owner, starredTracks::postValue);
+            songRepository.getStarredSongs(true, 20).observe(owner, setIfCurrentGeneration(starredTracks));
         }
 
         return starredTracks;
@@ -186,7 +186,7 @@ public class HomeViewModel extends AndroidViewModel {
 
     public LiveData<List<AlbumID3>> getStarredAlbums(LifecycleOwner owner) {
         if (starredAlbums.getValue() == null) {
-            albumRepository.getStarredAlbums(true, 20).observe(owner, starredAlbums::postValue);
+            albumRepository.getStarredAlbums(true, 20).observe(owner, setIfCurrentGeneration(starredAlbums));
         }
 
         return starredAlbums;
@@ -202,7 +202,7 @@ public class HomeViewModel extends AndroidViewModel {
 
     public LiveData<List<ArtistID3>> getStarredArtists(LifecycleOwner owner) {
         if (starredArtists.getValue() == null) {
-            artistRepository.getStarredArtists(true, 20).observe(owner, starredArtists::postValue);
+            artistRepository.getStarredArtists(true, 20).observe(owner, setIfCurrentGeneration(starredArtists));
         }
 
         return starredArtists;
@@ -243,7 +243,7 @@ public class HomeViewModel extends AndroidViewModel {
     public LiveData<List<Child>> getMediaInstantMix(LifecycleOwner owner, Child media) {
         mediaInstantMix.setValue(Collections.emptyList());
 
-        songRepository.getInstantMix(media.getId(), SeedType.TRACK, 20).observe(owner, mediaInstantMix::postValue);
+        songRepository.getInstantMix(media.getId(), SeedType.TRACK, 20).observe(owner, setIfCurrentGeneration(mediaInstantMix));
 
         return mediaInstantMix;
     }
@@ -251,7 +251,7 @@ public class HomeViewModel extends AndroidViewModel {
     public LiveData<List<Child>> getArtistInstantMix(LifecycleOwner owner, ArtistID3 artist) {
         artistInstantMix.setValue(Collections.emptyList());
 
-        artistRepository.getTopSongs(artist.getName(), 10).observe(owner, artistInstantMix::postValue);
+        artistRepository.getTopSongs(artist.getName(), 10).observe(owner, setIfCurrentGeneration(artistInstantMix));
 
         return artistInstantMix;
     }
@@ -263,16 +263,10 @@ public class HomeViewModel extends AndroidViewModel {
             return result;
         }
 
-        artistRepository.getTopSongs(artist.getName(), 10).observeForever(new Observer<List<Child>>() {
-            @Override
-            public void onChanged(List<Child> songs) {
-                List<Child> safeSongs = songs != null ? songs : new ArrayList<>();
-                result.setValue(safeSongs);
-                artistRepository.getTopSongs(artist.getName(), 10).removeObserver(this);
-            }
-        });
-
-        return result;
+        androidx.lifecycle.MediatorLiveData<List<Child>> bestOf = new androidx.lifecycle.MediatorLiveData<>();
+        LiveData<List<Child>> source = artistRepository.getTopSongs(artist.getName(), 10);
+        bestOf.addSource(source, songs -> bestOf.setValue(songs != null ? songs : new ArrayList<>()));
+        return bestOf;
     }
 
     public LiveData<List<Playlist>> getPinnedPlaylists(LifecycleOwner owner) {
@@ -285,7 +279,7 @@ public class HomeViewModel extends AndroidViewModel {
 
     public LiveData<List<Share>> getShares(LifecycleOwner owner) {
         if (shares.getValue() == null) {
-            sharingRepository.getShares().observe(owner, shares::postValue);
+            sharingRepository.getShares().observe(owner, setIfCurrentGeneration(shares));
         }
 
         return shares;
@@ -317,7 +311,7 @@ public class HomeViewModel extends AndroidViewModel {
             end = cal.getTimeInMillis();
         }
 
-        chronologyRepository.getChronology(server, start, end).observe(owner, thisGridTopSong::postValue);
+        chronologyRepository.getChronology(server, start, end).observe(owner, setIfCurrentGeneration(thisGridTopSong));
     }
 
     /**
@@ -383,7 +377,18 @@ public class HomeViewModel extends AndroidViewModel {
         int generation = musicFolderGeneration;
 
         return value -> {
-            if (generation == musicFolderGeneration) target.setValue(value);
+            if (generation == musicFolderGeneration) {
+                // Piterfy: spoken-word albums belong to Podcasts, not music discovery.
+                if (value instanceof List<?>) {
+                    List<Object> music = new ArrayList<>();
+                    for (Object item : (List<?>) value) {
+                        String genre = item instanceof Child ? ((Child)item).getGenre()
+                            : item instanceof AlbumID3 ? ((AlbumID3)item).getGenre() : null;
+                        if (!com.eddyizm.tempus.util.PiterfyMedia.isPodcast(genre)) music.add(item);
+                    }
+                    target.setValue((T) music);
+                } else target.setValue(value);
+            }
         };
     }
 
@@ -392,27 +397,27 @@ public class HomeViewModel extends AndroidViewModel {
     }
 
     public void refreshSimilarSongSample(LifecycleOwner owner) {
-        songRepository.getStarredSongs(true, 10).observe(owner, starredTracksSample::postValue);
+        songRepository.getStarredSongs(true, 10).observe(owner, setIfCurrentGeneration(starredTracksSample));
     }
 
     public void refreshRadioArtistSample(LifecycleOwner owner) {
-        artistRepository.getStarredArtists(true, 10).observe(owner, starredArtistsSample::postValue);
+        artistRepository.getStarredArtists(true, 10).observe(owner, setIfCurrentGeneration(starredArtistsSample));
     }
 
     public void refreshBestOfArtist(LifecycleOwner owner) {
-        artistRepository.getStarredArtists(true, 20).observe(owner, bestOfArtists::postValue);
+        artistRepository.getStarredArtists(true, 20).observe(owner, setIfCurrentGeneration(bestOfArtists));
     }
 
     public void refreshStarredTracks(LifecycleOwner owner) {
-        songRepository.getStarredSongs(true, 20).observe(owner, starredTracks::postValue);
+        songRepository.getStarredSongs(true, 20).observe(owner, setIfCurrentGeneration(starredTracks));
     }
 
     public void refreshStarredAlbums(LifecycleOwner owner) {
-        albumRepository.getStarredAlbums(true, 20).observe(owner, starredAlbums::postValue);
+        albumRepository.getStarredAlbums(true, 20).observe(owner, setIfCurrentGeneration(starredAlbums));
     }
 
     public void refreshStarredArtists(LifecycleOwner owner) {
-        artistRepository.getStarredArtists(true, 20).observe(owner, starredArtists::postValue);
+        artistRepository.getStarredArtists(true, 20).observe(owner, setIfCurrentGeneration(starredArtists));
     }
 
     public void refreshMostPlayedAlbums(LifecycleOwner owner) {

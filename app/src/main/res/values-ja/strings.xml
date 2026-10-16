@@ -53,7 +53,7 @@
     <string name="album_page_release_dates_label">%1$s にリリース（オリジナル: %2$s）</string>
     <string name="album_page_shuffle_button">シャッフル再生</string>
     <string name="album_page_tracks_count_and_duration">%1$d 曲 • %2$d 分</string>
-    <string name="app_name">Tempus</string>
+    <string name="app_name">Piterfy</string>
     <string name="artist_adapter_radio_station_starting">検索中…</string>
     <string name="artist_bottom_sheet_instant_mix">インスタントミックス</string>
     <string name="artist_bottom_sheet_shuffle">シャッフル</string>
@@ -432,7 +432,7 @@
     <string name="server_unreachable_dialog_positive_button">このまま続行</string>
     <string name="server_unreachable_dialog_summary">指定されたサーバーに接続できません。このまま続行すると、このダイアログは1時間表示されなくなります。</string>
     <string name="server_unreachable_dialog_title">サーバーに接続できません</string>
-    <string name="settings_about_summary">TempusはAndroid向けネイティブアプリとして開発されたオープンソースの軽量Subsonicクライアントです。</string>
+    <string name="settings_about_summary">PiterfyはAndroid向けネイティブアプリとして開発されたオープンソースの軽量Subsonicクライアントです。</string>
     <string name="settings_about_title">アプリについて</string>
     <string name="settings_always_on_display">常時表示</string>
     <string name="settings_allow_playlist_duplicates">プレイリストへの重複追加を許可</string>
@@ -614,7 +614,7 @@
     <string name="toolbar_navigation_drawer_open">ナビゲーションドロワーを開く</string>
     <string name="toolbar_navigation_drawer_closed">ナビゲーションドロワーを閉じる</string>
     <string name="favorite_icon_description">お気に入り</string>
-    <string name="asset_link_clipboard_label">Tempusアセットリンク</string>
+    <string name="asset_link_clipboard_label">Piterfyアセットリンク</string>
     <string name="asset_link_label_song">曲のUID</string>
     <string name="asset_link_label_album">アルバムのUID</string>
     <string name="asset_link_label_artist">アーティストのUID</string>
@@ -702,9 +702,9 @@
     <string name="undraw_page">unDraw</string>
     <string name="undraw_thanks">unDrawに特別な感謝を。そのイラストがなければアプリを美しくすることはできませんでした。</string>
     <string name="undraw_url" translatable="false">https://undraw.co/</string>
-    <string name="widget_label">Tempusウィジェット</string>
+    <string name="widget_label">Piterfyウィジェット</string>
     <string name="widget_not_playing">再生していません</string>
-    <string name="widget_placeholder_subtitle">Tempusを開く</string>
+    <string name="widget_placeholder_subtitle">Piterfyを開く</string>
     <string name="widget_time_elapsed_placeholder">0:00</string>
     <string name="widget_time_duration_placeholder">0:00</string>
     <string name="widget_content_desc_album_art">アルバムアートワーク</string>
@@ -763,9 +763,9 @@
         <item>@string/sleep_timer_end_of_track_label</item>
         <item>カスタム…</item>
     </string-array>
-    <string name="customactivityoncrash_error_activity_error_occurred_explanation">Tempusがクラッシュしました。</string>
+    <string name="customactivityoncrash_error_activity_error_occurred_explanation">Piterfyがクラッシュしました。</string>
     <string name="ca_info_label">情報</string>
-    <string name="ca_info_title">Tempusがクラッシュしました</string>
+    <string name="ca_info_title">Piterfyがクラッシュしました</string>
     <string name="ca_info_device_info" translatable="false">デバイス情報</string>
     <string name="ca_info_description">GitHubでIssueを作成し、クラッシュレポートのコピーを添えてご報告ください。</string>
     <string name="ca_info_button_close">アプリを終了</string>
@@ -791,7 +791,7 @@
     <string name="la_appbar_permission_title">権限の概要</string>
     <string name="la_appbar_themes_title">テーマエディター</string>
     <string name="la_appbar_server_title">サーバーエディター</string>
-    <string name="la_greeting_description">Tempusへようこそ。TempusはAndroid向けネイティブアプリとして開発されたオープンソースのSubsonicクライアントです。</string>
+    <string name="la_greeting_description">Piterfyへようこそ。PiterfyはAndroid向けネイティブアプリとして開発されたオープンソースのSubsonicクライアントです。</string>
     <string name="la_server_title">サーバー設定</string>
     <string name="la_server_field_server_empty_error">入力してください</string>
     <string name="la_server_field_server_url_error">有効なURLを入力してください</string>

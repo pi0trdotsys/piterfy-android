@@ -28,7 +28,7 @@
     <string name="album_page_release_dates_label">發行日期：%1$s（原版發行於 %2$s）</string>
     <string name="album_page_shuffle_button">隨機播放</string>
     <string name="album_page_tracks_count_and_duration">%1$d 首歌曲 • %2$d 分鐘</string>
-    <string name="app_name">Tempus</string>
+    <string name="app_name">Piterfy</string>
     <string name="artist_adapter_radio_station_starting">正在搜尋...</string>
     <string name="artist_bottom_sheet_instant_mix">即時混聽</string>
     <string name="artist_bottom_sheet_shuffle">隨機播放</string>
@@ -49,7 +49,7 @@
     <string name="artist_page_title_most_streamed_song_section">最常播放的歌曲</string>
     <string name="artist_page_title_most_streamed_song_see_all_button">查看全部</string>
     <string name="asset_link_chip_text">%1$s • %2$s</string>
-    <string name="asset_link_clipboard_label">Tempus 資源連結</string>
+    <string name="asset_link_clipboard_label">Piterfy 資源連結</string>
     <string name="asset_link_copied_toast">已將 %1$s 複製到剪貼簿</string>
     <string name="asset_link_debug_toast">資源連結：%1$s</string>
     <string name="asset_link_error_album">無法開啟該專輯</string>
@@ -337,7 +337,7 @@
     <string name="server_unreachable_dialog_positive_button">仍然繼續</string>
     <string name="server_unreachable_dialog_summary">請求的伺服器不可用。 如果您選擇繼續，此對話框在接下來的一個小時內將不會再次出現。</string>
     <string name="server_unreachable_dialog_title">伺服器無法存取</string>
-    <string name="settings_about_summary">Tempus 是 Subsonic 的開源輕量級音樂客戶端，專為 Android 設計和構建。</string>
+    <string name="settings_about_summary">Piterfy 是 Subsonic 的開源輕量級音樂客戶端，專為 Android 設計和構建。</string>
     <string name="settings_about_title">關於</string>
     <string name="settings_album_detail">顯示專輯詳情</string>
     <string name="settings_album_detail_summary">啟用後將在專輯頁顯示流派、歌曲數量等資訊</string>
@@ -351,14 +351,14 @@
     <string name="settings_audio_quality">顯示音訊品質</string>
     <string name="settings_audio_quality_summary">顯示歌曲的位元率和音訊格式。</string>
     <string name="settings_audio_transcode_download_format">轉碼格式</string>
-    <string name="settings_audio_transcode_download_priority_summary">啟用後 Tempus 將不會強制使用下面的轉碼設定下載歌曲。</string>
+    <string name="settings_audio_transcode_download_priority_summary">啟用後 Piterfy 將不會強制使用下面的轉碼設定下載歌曲。</string>
     <string name="settings_audio_transcode_download_priority_title">優先考慮伺服器上用於流式傳輸的設定</string>
-    <string name="settings_audio_transcode_download_summary">啟用後 Tempus 將下載轉碼後的歌曲。</string>
+    <string name="settings_audio_transcode_download_summary">啟用後 Piterfy 將下載轉碼後的歌曲。</string>
     <string name="settings_audio_transcode_download_title">下載轉碼後的歌曲</string>
     <string name="settings_audio_transcode_format_download">用於下載的轉碼格式</string>
     <string name="settings_audio_transcode_format_mobile">行動資料下的轉碼格式</string>
     <string name="settings_audio_transcode_format_wifi">Wi-Fi 下的轉碼格式</string>
-    <string name="settings_audio_transcode_priority_summary">啟用後 Tempus 將不會強制使用下面的轉碼設定流式傳輸歌曲。</string>
+    <string name="settings_audio_transcode_priority_summary">啟用後 Piterfy 將不會強制使用下面的轉碼設定流式傳輸歌曲。</string>
     <string name="settings_audio_transcode_priority_title">優先考慮伺服器轉碼設定</string>
     <string name="settings_audio_transcode_priority_toast">歌曲轉碼設定優先級設定為伺服器</string>
     <string name="settings_auto_download_lyrics">自動下載歌詞</string>
@@ -540,9 +540,9 @@
     <string name="widget_content_desc_prev">上一首</string>
     <string name="widget_content_desc_repeat">更改循環模式</string>
     <string name="widget_content_desc_shuffle">切換隨機播放</string>
-    <string name="widget_label">Tempus 小組件</string>
+    <string name="widget_label">Piterfy 小組件</string>
     <string name="widget_not_playing">未播放</string>
-    <string name="widget_placeholder_subtitle">開啟 Tempus</string>
+    <string name="widget_placeholder_subtitle">開啟 Piterfy</string>
     <string name="widget_time_duration_placeholder">0:00</string>
     <string name="widget_time_elapsed_placeholder">0:00</string>
     <string name="playlist_chooser_dialog_visibility_summary_v2">開啟此選項會將播放清單設為公開。保持原樣不會改變播放清單的可見性。</string>

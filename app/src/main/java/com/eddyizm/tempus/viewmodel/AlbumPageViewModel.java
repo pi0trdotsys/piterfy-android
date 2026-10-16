@@ -22,6 +22,7 @@ import com.eddyizm.tempus.util.FavoriteRegistry;
 import java.util.Date;
 import java.util.List;
 
+@androidx.annotation.OptIn(markerClass = androidx.media3.common.util.UnstableApi.class)
 public class AlbumPageViewModel extends AndroidViewModel {
     private final AlbumRepository albumRepository;
     private final ArtistRepository artistRepository;
@@ -47,10 +48,24 @@ public class AlbumPageViewModel extends AndroidViewModel {
         return album;
     }
 
-    public void setAlbum(LifecycleOwner owner, AlbumID3 album) {
+    public void setAlbum(LifecycleOwner owner, AlbumID3 album) { setAlbum(owner, album, false); }
+
+    public void setAlbum(LifecycleOwner owner, AlbumID3 album, boolean downloadedOnly) {
         this.albumId = album.getId();
         this.album.postValue(album);
         this.artistId = album.getArtistId();
+        if (downloadedOnly || NetworkUtil.isOffline()) {
+            MutableLiveData<List<Child>> local = new MutableLiveData<>();
+            this.albumSongLiveList = local;
+            final String id = albumId;
+            new Thread(() -> {
+                List<Child> songs = new java.util.ArrayList<>();
+                for (var download : com.eddyizm.tempus.database.AppDatabase.getInstance().downloadDao().getAllSync())
+                    if (id.equals(download.getAlbumId()) && com.eddyizm.tempus.util.DownloadUtil.getDownloadTracker(getApplication()).isDownloaded(download.getId())) songs.add(download);
+                local.postValue(songs);
+            }, "piterfy-offline-album").start();
+            return;
+        }
         this.albumSongLiveList = albumRepository.getAlbumTracks(albumId);
 
         albumRepository.getAlbum(album.getId()).observe(owner, albums -> {

@@ -230,7 +230,24 @@ object Preferences {
 
 	@JvmStatic
     fun getServer(): String? {
-        return App.getInstance().preferences.getString(SERVER, null)
+        return normalizeServerUrl(App.getInstance().preferences.getString(SERVER, null))
+    }
+
+    private val SERVER_URL = Regex("^([A-Za-z][A-Za-z0-9+.-]*)://([^/?#]*)(.*)$", RegexOption.DOT_MATCHES_ALL)
+
+    /**
+     * Piterfy: protokół i nazwa serwera małymi literami („HTTPS://Serwer.pl/x” → „https://serwer.pl/x”).
+     * Glide (okładki) rozpoznaje adresy tylko po „http://” / „https://” — przy wielkich literach nie ładował
+     * żadnej okładki, a przez to system nie dostawał jej do powiadomienia i ekranu blokady.
+     */
+    @JvmStatic
+    fun normalizeServerUrl(url: String?): String? {
+        val trimmed = url?.trim() ?: return null
+        val match = SERVER_URL.find(trimmed) ?: return trimmed
+        val (scheme, authority, rest) = match.destructured
+        val at = authority.lastIndexOf('@')  // ewentualne „login@” zostawiamy bez zmian
+        val host = authority.substring(0, at + 1) + authority.substring(at + 1).lowercase()
+        return scheme.lowercase() + "://" + host + rest
     }
 
     @JvmStatic
@@ -391,7 +408,7 @@ object Preferences {
 
     @JvmStatic
     fun getLocalAddress(): String? {
-        return App.getInstance().preferences.getString(LOCAL_ADDRESS, null)
+        return normalizeServerUrl(App.getInstance().preferences.getString(LOCAL_ADDRESS, null))  // Piterfy
     }
 
     @JvmStatic
@@ -401,8 +418,8 @@ object Preferences {
 
     @JvmStatic
     fun getInUseServerAddress(): String? {
-        return App.getInstance().preferences.getString(IN_USE_SERVER_ADDRESS, null)
-            ?.takeIf { it.isNotBlank() }
+        return normalizeServerUrl(App.getInstance().preferences.getString(IN_USE_SERVER_ADDRESS, null)  // Piterfy
+            ?.takeIf { it.isNotBlank() })
             ?: getServer()
     }
 
@@ -759,7 +776,7 @@ object Preferences {
 
     @JvmStatic
     fun isCornerRoundingEnabled(): Boolean {
-        return App.getInstance().preferences.getBoolean(ROUNDED_CORNER, false)
+        return App.getInstance().preferences.getBoolean(ROUNDED_CORNER, true)
     }
 
     @JvmStatic
@@ -956,6 +973,7 @@ object Preferences {
     
     @JvmStatic
     fun isGithubUpdateEnabled(): Boolean {
+        // Piterfy: official releases from pi0trdotsys/piterfy-android.
         return App.getInstance().preferences.getBoolean(GITHUB_UPDATE_CHECK, true)
     }
 
@@ -1210,7 +1228,8 @@ object Preferences {
 
     @JvmStatic
     fun getTheme(): String {
-        return App.getInstance().preferences.getString(THEME, "default") ?: "default"
+        // Piterfy: domyślnie ciemny motyw (Noir), jak Spotify
+        return App.getInstance().preferences.getString(THEME, "dark") ?: "dark"
     }
 
     @JvmStatic
@@ -1220,7 +1239,8 @@ object Preferences {
 
     @JvmStatic
     fun isDynamicColorAccent(): Boolean {
-        return App.getInstance().preferences.getBoolean(DYNAMIC_COLOR_ACCENT, true)
+        // Piterfy: zieleń Piterfy zamiast kolorów z tapety
+        return App.getInstance().preferences.getBoolean(DYNAMIC_COLOR_ACCENT, false)
     }
 
     @JvmStatic
@@ -1230,7 +1250,8 @@ object Preferences {
 
     @JvmStatic
     fun isDarkThemeBlack(): Boolean {
-        return App.getInstance().preferences.getBoolean(DARK_THEME_BLACK, false)
+        // Piterfy: czyste czarne tło
+        return App.getInstance().preferences.getBoolean(DARK_THEME_BLACK, true)
     }
 
     @JvmStatic
@@ -1240,8 +1261,11 @@ object Preferences {
 
     @JvmStatic
     fun getColorAccent(): String {
-        return App.getInstance().preferences.getString(COLOR_ACCENT, "DYNAMIC") ?: "DYNAMIC"
+        // Piterfy: zielony akcent Piterfy (#1DB954)
+        return App.getInstance().preferences.getString(COLOR_ACCENT, PITERFY_ACCENT) ?: PITERFY_ACCENT
     }
+
+    const val PITERFY_ACCENT = "HEX:#1DB954"
 
     @JvmStatic
     fun setColorAccent(colorAccent: String) {

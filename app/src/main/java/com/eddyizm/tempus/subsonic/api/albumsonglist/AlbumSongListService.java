@@ -13,6 +13,10 @@ public interface AlbumSongListService {
     @GET("getAlbumList")
     Call<ApiResponse> getAlbumList(@QueryMap Map<String, String> params, @Query("type") String type, @Query("size") int size, @Query("offset") int offset);
 
+    // Piterfy: albumy danego gatunku (getAlbumList2 type=byGenre) - tak Piterfy pokazuje audycje (gatunek "Podcast")
+    @GET("getAlbumList2")
+    Call<ApiResponse> getAlbumList2ByGenre(@QueryMap Map<String, String> params, @Query("type") String type, @Query("genre") String genre, @Query("size") int size, @Query("offset") int offset, @Query("musicFolderId") String musicFolderId);
+
     @GET("getAlbumList2")
     Call<ApiResponse> getAlbumList2(@QueryMap Map<String, String> params, @Query("type") String type, @Query("size") int size, @Query("offset") int offset, @Query("fromYear") Integer fromYear, @Query("toYear") Integer toYear, @Query("musicFolderId") String musicFolderId);
 

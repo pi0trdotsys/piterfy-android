@@ -6,8 +6,8 @@
     android:clipChildren="false"
     android:orientation="horizontal"
     android:paddingStart="16dp"
-    android:paddingTop="3dp"
-    android:paddingBottom="3dp">
+    android:paddingTop="9dp"
+    android:paddingBottom="9dp">
 
     <ImageView
         android:id="@+id/internet_radio_station_cover_image_view"
@@ -50,7 +50,7 @@
         style="@style/LabelMedium"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:ellipsize="marquee"
+        android:ellipsize="end"
         android:paddingEnd="12dp"
         android:singleLine="true"
         android:text="@string/label_placeholder"
@@ -65,7 +65,7 @@
         style="@style/LabelSmall"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:ellipsize="marquee"
+        android:ellipsize="end"
         android:paddingEnd="12dp"
         android:singleLine="true"
         android:text="@string/label_placeholder"

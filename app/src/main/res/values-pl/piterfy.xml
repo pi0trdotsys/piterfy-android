@@ -1,0 +1,30 @@
+<resources>
+ <string name="piterfy_network_error">Nie udało się odświeżyć. Zapisane materiały są nadal dostępne.</string>
+ <string name="piterfy_retry">Spróbuj ponownie</string>
+ <string name="piterfy_play_all_results">Odtwórz wszystkie wyniki</string>
+ <string name="piterfy_podcast_heading">Twoje podcasty</string>
+ <string name="piterfy_podcast_subtitle">Osobne miejsce na historie, rozmowy i nowe odcinki.</string>
+ <string name="piterfy_downloaded">Pobrane</string>
+ <string name="piterfy_no_downloaded_podcasts">Nie masz jeszcze pobranych odcinków. Pobierz odcinek, by słuchać bez internetu.</string>
+ <string name="piterfy_home_eyebrow">DLA CIEBIE</string>
+ <string name="piterfy_home_title">Twoja muzyka.\nTwój rytm.</string>
+ <string name="piterfy_home_subtitle">Świeże odkrycia z Twojej biblioteki Piterfy.</string>
+ <string name="piterfy_taste">Mój gust ↗</string>
+ <string name="piterfy_discover">Odkryte dla Ciebie</string>
+ <string name="piterfy_discover_empty">Playlisty z odkryciami pojawią się tutaj po kolejnym odświeżeniu na serwerze.</string>
+ <string name="piterfy_play">Odtwórz</string>
+ <string name="piterfy_download">Pobierz</string>
+ <string name="piterfy_queued">Dodano do pobierania: %1$d utworów</string>
+ <string name="piterfy_device">Ten telefon</string>
+ <string name="piterfy_output">Wyjście dźwięku · %1$s</string>
+ <string name="piterfy_headphones">Słuchawki</string>
+ <string name="piterfy_quality_unknown">Jakość źródła · brak analizy</string>
+ <string name="piterfy_quality_lossless">Źródło · potwierdzone bezstratne</string>
+ <string name="piterfy_quality_suspect">Źródło · prawdopodobnie stratne (%1$s kb/s)</string>
+ <string name="piterfy_quality_lossy">Źródło · stratne</string>
+ <string name="piterfy_quality_uncertain">Źródło · analiza niejednoznaczna</string>
+ <string name="piterfy_quality_podcast">Podcast</string>
+ <string name="piterfy_discover_count">%1$d utworów · dobrane dla Ciebie</string>
+<string name="piterfy_episode_progress">Kontynuuj od %1$s · %2$s</string><string name="piterfy_continue_episode">Dokończ odcinek</string>
+    <string name="piterfy_radio_live">Radio na żywo</string>
+</resources>

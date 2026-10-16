@@ -211,7 +211,7 @@ public class AlbumPageFragment extends Fragment implements ClickCallback {
     }
 
     private void init(View view, AlbumID3 albumArg) {
-        albumPageViewModel.setAlbum(getViewLifecycleOwner(), albumArg);
+        albumPageViewModel.setAlbum(getViewLifecycleOwner(), albumArg, getArguments() != null && getArguments().getBoolean("piterfy_downloaded_only"));
         ToggleButton favoriteToggle = view.findViewById(R.id.button_favorite);
         favoriteToggle.setChecked(FavoriteRegistry.resolve(FavoriteRegistry.Kind.ALBUM, albumArg.getId(), albumArg.getStarred() != null));
 
@@ -427,6 +427,11 @@ public class AlbumPageFragment extends Fragment implements ClickCallback {
                 reapplyPlayback();
 
                 albumPageViewModel.getAlbumSongLiveList().observe(getViewLifecycleOwner(), songs -> {
+                    // Piterfy: odcinki audycji od najnowszego (numer odcinka rośnie z datą, album sortuje rosnąco)
+                    if (songs != null && !songs.isEmpty() && com.eddyizm.tempus.util.PiterfyMedia.isPodcast(songs.get(0).getGenre())) {
+                        songs = new ArrayList<>(songs);
+                        songs.sort(java.util.Comparator.comparing((com.eddyizm.tempus.subsonic.models.Child c) -> c.getTrack() == null ? 0 : c.getTrack()).reversed());
+                    }
                     songHorizontalAdapter.setItems(songs);
                     reapplyPlayback();
                 });

@@ -265,7 +265,15 @@ public class MediaManager {
 
     @OptIn(markerClass = UnstableApi.class)
     public static void startQueue(ListenableFuture<MediaBrowser> mediaBrowserListenableFuture, List<Child> media, int startIndex) {
-        startQueue(mediaBrowserListenableFuture, media, startIndex, 0L);
+        long position = 0L;
+        if (media != null && startIndex >= 0 && startIndex < media.size()) {
+            Child selected = media.get(startIndex);
+            if (com.eddyizm.tempus.util.PiterfyMedia.isPodcast(selected.getGenre()) || Constants.MEDIA_TYPE_PODCAST.equals(selected.getType())) {
+                position = Preferences.getResumePoint(selected.getId());
+                if (position == 0 && selected.getBookmarkPosition() != null) position = selected.getBookmarkPosition();
+            }
+        }
+        startQueue(mediaBrowserListenableFuture, media, startIndex, position);
     }
 
     @OptIn(markerClass = UnstableApi.class)

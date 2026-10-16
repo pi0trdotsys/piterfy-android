@@ -1,3 +1,17 @@
+# Piterfy for Android
+
+Native Android client for Piterfy / Navidrome, based on [Tempus](https://github.com/eddyizm/tempus).
+
+[Download Piterfy](https://github.com/pi0trdotsys/piterfy-android/releases/latest) · [Polish guide](PITERFY.md) · [Usage](USAGE.md)
+
+Piterfy adds a Noir interface with Figtree typography, daily discovery playlists, a mobile **Mój gust** dashboard link, a separate podcast catalogue with resume and downloaded episodes, the current audio output name, and optional server source-quality analysis. Search cancels stale requests and loads a complete play queue only on demand.
+
+Choose **app-tempus-release.apk** for Android Auto and Chromecast, or **app-degoogled-release.apk** for the variant without Google services. Both are signed with the Piterfy release key. Updates are checked against this public repository. Android asks for installation permission when opening a downloaded APK. Debug builds have a separate application ID and are for testing.
+
+Piterfy changes remain GPL-3.0. Original Tempus credits and documentation follow. Figtree is distributed under the SIL Open Font License in `third-party/Figtree-OFL.txt`.
+
+---
+
 <p align="center">
   <img alt="Tempus" title="Tempus" src="mockup/svg/tempus-horizontal-banner.png" width="250">
 </p>

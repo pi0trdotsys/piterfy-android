@@ -46,9 +46,11 @@ public class InternetRadioStationAdapter extends RecyclerView.Adapter<InternetRa
         InternetRadioStation internetRadioStation = internetRadioStations.get(position);
 
         holder.item.internetRadioStationTitleTextView.setText(internetRadioStation.getName());
-        holder.item.internetRadioStationSubtitleTextView.setText(internetRadioStation.getStreamUrl());
+        String home = internetRadioStation.getHomePageUrl();
+        String host = home == null ? null : android.net.Uri.parse(home).getHost();
+        holder.item.internetRadioStationSubtitleTextView.setText(host == null ? holder.itemView.getContext().getString(R.string.piterfy_radio_live) : host.replaceFirst("^www\\.", ""));
 
-        if (internetRadioStation.getId() != null && internetRadioStation.getId().startsWith("local_")) {
+        if (internetRadioStation.getId() != null && internetRadioStation.getId().startsWith("local_") && !com.eddyizm.tempus.util.PiterfyRadioCatalog.isStarter(internetRadioStation.getId())) {
             holder.item.internetRadioStationLocalBadge.setVisibility(android.view.View.VISIBLE);
         } else {
             holder.item.internetRadioStationLocalBadge.setVisibility(android.view.View.GONE);

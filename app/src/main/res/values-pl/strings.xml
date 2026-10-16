@@ -53,7 +53,7 @@
     <string name="album_page_release_dates_label">Wydane %1$s, oryginalnie %2$s</string>
     <string name="album_page_shuffle_button">Odtwarzaj losowo</string>
     <string name="album_page_tracks_count_and_duration">%1$d utworów  •  %2$d minut</string>
-    <string name="app_name">Tempus</string>
+    <string name="app_name">Piterfy</string>
     <string name="artist_adapter_radio_station_starting">Szukanie…</string>
     <string name="artist_bottom_sheet_instant_mix">Natychmiastowy mix mix</string>
     <string name="artist_bottom_sheet_shuffle">Odtwórz losowo</string>
@@ -445,20 +445,20 @@
     <string name="server_unreachable_dialog_positive_button">Kontynuuj mimo wszystko</string>
     <string name="server_unreachable_dialog_summary">Wybrany serwer jest niedostępny. Jeżeli wybierzesz żeby kontynuować ta informacja nie będzie się wyświetlać przez następną godzinę.</string>
     <string name="server_unreachable_dialog_title">Serwer jest niedostępny</string>
-    <string name="settings_about_summary">Tempus jest otwarto-źródłowym i lekkim klientem muzycznym dla Subsonic, stworzonym i zbudowanym natywnie dla Androida.</string>
+    <string name="settings_about_summary">Piterfy jest otwarto-źródłowym i lekkim klientem muzycznym dla Subsonic, stworzonym i zbudowanym natywnie dla Androida. Na bazie Tempus (eddyizm).</string>
     <string name="settings_about_title">O aplikacji</string>
     <string name="settings_always_on_display">Always on display</string>
     <string name="settings_allow_playlist_duplicates">Zezwalaj na dodawania duplikatów do playlist</string>
     <string name="settings_allow_playlist_duplicates_summary">Jeżeli włączone, duplikaty nie będą sprawdzane podczas dodawania do playlisty.</string>
     <string name="settings_audio_transcode_download_format">Format transkodowania</string>
-    <string name="settings_audio_transcode_download_priority_summary">Jeżeli włączone, Tempus nie będzię wymuszał pobierania utworu z ustawieniami transkodowania wybranymi poniżej.</string>
+    <string name="settings_audio_transcode_download_priority_summary">Jeżeli włączone, Piterfy nie będzię wymuszał pobierania utworu z ustawieniami transkodowania wybranymi poniżej.</string>
     <string name="settings_audio_transcode_download_priority_title">Priorytetyzuj ustawienia serwera używanego do strumieniowania w pobieraniach</string>
-    <string name="settings_audio_transcode_download_summary">Jeżeli włączone, Tempus będzie pobierał transkodowane utwory.</string>
+    <string name="settings_audio_transcode_download_summary">Jeżeli włączone, Piterfy będzie pobierał transkodowane utwory.</string>
     <string name="settings_audio_transcode_download_title">Pobieraj transkodowane utwory</string>
     <string name="settings_audio_transcode_format_download">Format transkodowania dla pobierania</string>
     <string name="settings_audio_transcode_format_mobile">Format transkodowania w sieci komórkowej</string>
     <string name="settings_audio_transcode_format_wifi">Format transkodowania w sieci Wi-Fi</string>
-    <string name="settings_audio_transcode_priority_summary">Jeżeli włączone, Tempus nie będzie wymuszał strumieniowania utworu z ustawieniami transkodowania wybranymi poniżej.</string>
+    <string name="settings_audio_transcode_priority_summary">Jeżeli włączone, Piterfy nie będzie wymuszał strumieniowania utworu z ustawieniami transkodowania wybranymi poniżej.</string>
     <string name="settings_audio_transcode_priority_title">Priorytetyzuj ustawienia transkodowania serwera</string>
     <string name="settings_audio_transcode_priority_toast">Priorytet przy transkodowaniu utworu danego serwerowi</string>
     <string name="settings_choose_download_folder">Wybierz folder dla pobranych plików muzycznych</string>
@@ -627,7 +627,7 @@
 	<string name="toolbar_navigation_drawer_open">Szuflada nawigacji otwarta</string>
     <string name="toolbar_navigation_drawer_closed">Szuflada nawigacji zamknięta</string>
     <string name="favorite_icon_description">Polub</string>
-    <string name="asset_link_clipboard_label">Link zasobu Tempus</string>
+    <string name="asset_link_clipboard_label">Link zasobu Piterfy</string>
     <string name="asset_link_label_song">UID piosenki</string>
     <string name="asset_link_label_album">UID albumu</string>
     <string name="asset_link_label_artist">UID wykonmawcy</string>
@@ -715,9 +715,9 @@
     <string name="undraw_page">unDraw</string>
     <string name="undraw_thanks">Specjalne podziękowania dla unDraw bez którego ilustracji nie mogliśmy uczynić tej aplikacji jeszcze piękniejszą.</string>
     <string name="undraw_url">https://undraw.co/</string>
-    <string name="widget_label">Widget Tempus</string>
+    <string name="widget_label">Widget Piterfy</string>
     <string name="widget_not_playing">Nie odtwarza</string>
-    <string name="widget_placeholder_subtitle">Otwórz Tempus</string>
+    <string name="widget_placeholder_subtitle">Otwórz Piterfy</string>
     <string name="widget_time_elapsed_placeholder">0:00</string>
     <string name="widget_time_duration_placeholder">0:00</string>
     <string name="widget_content_desc_album_art">Okładka albumu</string>
@@ -786,12 +786,12 @@
         <item>Niestandardowwy\u2026</item>
     </string-array>
 	
-    <string name="customactivityoncrash_error_activity_error_occurred_explanation">Tempus przestał działać.</string>
+    <string name="customactivityoncrash_error_activity_error_occurred_explanation">Piterfy przestał działać.</string>
 
     <!-- Crash Activity -->
 
     <string name="ca_info_label">Informacja</string>
-    <string name="ca_info_title">Tempus przestał działać</string>
+    <string name="ca_info_title">Piterfy przestał działać</string>
 	
     <string name="ca_info_description">
         Otwórz problem na GitHubie i załącz kopię raportu, aby pomóć rozwiązać ten problem.
@@ -830,7 +830,7 @@
     <string name="la_appbar_themes_title">Edytor motywów</string>
     <string name="la_appbar_server_title">Edytor serwerów</string>
 
-    <string name="la_greeting_description">Witaj w Tempus, otwarto-źródłowym kliencie muzycznym dla Subsonic, stworzonym i zbudowanym natywnie dla Androida.</string>
+    <string name="la_greeting_description">Witaj w Piterfy, otwarto-źródłowym kliencie muzycznym dla Subsonic, stworzonym i zbudowanym natywnie dla Androida.</string>
 
     <string name="la_server_title">Konfiguracja serwera</string>
 
@@ -897,4 +897,5 @@
     <string name="la_button_advanced_editor">Zaawansowany edytor (beta)</string>
 	
     <string name="hello_blank_fragment">Witaj pusty fragmencie</string>
+    <string name="piterfy_podcasts_empty">Brak audycji. Dopisz je w pliku podcasts.txt na serwerze Piterfy.</string>
 </resources>

@@ -53,7 +53,7 @@
     <string name="album_page_release_dates_label">Релиз: %1$s (ориг. %2$s)</string>
     <string name="album_page_shuffle_button">Перемешать</string>
     <string name="album_page_tracks_count_and_duration">%1$d треков • %2$d мин</string>
-    <string name="app_name">Tempus</string>
+    <string name="app_name">Piterfy</string>
     <string name="artist_adapter_radio_station_starting">Поиск…</string>
     <string name="artist_bottom_sheet_instant_mix">Мгновенный микс</string>
     <string name="artist_bottom_sheet_shuffle">Перемешать</string>
@@ -450,7 +450,7 @@
     <string name="server_unreachable_dialog_positive_button">Всё равно продолжить</string>
     <string name="server_unreachable_dialog_summary">Сервер недоступен. Если продолжить, это окно не будет появляться час.</string>
     <string name="server_unreachable_dialog_title">Сервер недоступен</string>
-    <string name="settings_about_summary">Tempus - лёгкий open-source клиент Subsonic для Android.</string>
+    <string name="settings_about_summary">Piterfy - лёгкий open-source клиент Subsonic для Android.</string>
     <string name="settings_about_title">О приложении</string>
     <string name="settings_always_on_display">Always On Display</string>
     <string name="settings_allow_playlist_duplicates">Разрешить дубликаты в плейлистах</string>
@@ -632,7 +632,7 @@
     <string name="toolbar_navigation_drawer_open">Меню открыто</string>
     <string name="toolbar_navigation_drawer_closed">Меню закрыто</string>
     <string name="favorite_icon_description">Избранное</string>
-    <string name="asset_link_clipboard_label">Ссылка Tempus</string>
+    <string name="asset_link_clipboard_label">Ссылка Piterfy</string>
     <string name="asset_link_label_song">UID трека</string>
     <string name="asset_link_label_album">UID альбома</string>
     <string name="asset_link_label_artist">UID исполнителя</string>
@@ -720,9 +720,9 @@
     <string name="undraw_page">unDraw</string>
     <string name="undraw_thanks">Спасибо unDraw за отличные иллюстрации!</string>
     <string name="undraw_url" translatable="false">https://undraw.co/</string>
-    <string name="widget_label">Виджет Tempus</string>
+    <string name="widget_label">Виджет Piterfy</string>
     <string name="widget_not_playing">Не играет</string>
-    <string name="widget_placeholder_subtitle">Открыть Tempus</string>
+    <string name="widget_placeholder_subtitle">Открыть Piterfy</string>
     <string name="widget_time_elapsed_placeholder">0:00</string>
     <string name="widget_time_duration_placeholder">0:00</string>
     <string name="widget_content_desc_album_art">Обложка</string>
@@ -795,7 +795,7 @@
         <item>@string/sleep_timer_end_of_track_label</item>
         <item>Задать время\u2026</item>
     </string-array>
-    <string name="customactivityoncrash_error_activity_error_occurred_explanation">В Tempus произошёл сбой.</string>
+    <string name="customactivityoncrash_error_activity_error_occurred_explanation">В Piterfy произошёл сбой.</string>
     <string name="playlist_error_not_found_title">Плейлист не найден</string>
     <string name="playlist_error_not_found_message">Плейлист отсутствует на сервере. Он будет удалён из локального кэша.</string>
     <string name="playlist_error_not_found_toast">Плейлист удалён из кэша</string>
@@ -804,7 +804,7 @@
     <!-- Crash Activity -->
 
     <string name="ca_info_label">Инфо</string>
-    <string name="ca_info_title">Сбой Tempus</string>
+    <string name="ca_info_title">Сбой Piterfy</string>
     <string name="ca_info_device_info" translatable="false">Device Information</string>
     <string name="ca_info_description">Пожалуйста, создайте issue на GitHub и приложите отчёт о сбое.</string>
     <string name="ca_info_button_close">Закрыть приложение</string>
@@ -829,7 +829,7 @@
     <string name="la_appbar_permission_title">Обзор разрешений</string>
     <string name="la_appbar_themes_title">Редактор тем</string>
     <string name="la_appbar_server_title">Редактор серверов</string>
-    <string name="la_greeting_description">Добро пожаловать в Tempus - open-source клиент Subsonic для Android.</string>
+    <string name="la_greeting_description">Добро пожаловать в Piterfy - open-source клиент Subsonic для Android.</string>
     <string name="la_server_title">Настройка сервера</string>
     <string name="la_server_field_server_empty_error">Обязательное поле</string>
     <string name="la_server_field_server_url_error">Некорректный URL</string>

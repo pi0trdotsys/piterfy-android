@@ -32,7 +32,9 @@ public class IPv6StringLoader implements ModelLoader<String, InputStream> {
 
     @Override
     public boolean handles(@NonNull String model) {
-        return model.startsWith("http://") || model.startsWith("https://");
+        // Piterfy: też „HTTPS://…” — inaczej żadna okładka się nie ładowała
+        String scheme = model.length() >= 8 ? model.substring(0, 8).toLowerCase(java.util.Locale.ROOT) : model.toLowerCase(java.util.Locale.ROOT);
+        return scheme.startsWith("http://") || scheme.startsWith("https://");
     }
 
     @Override

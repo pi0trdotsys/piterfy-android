@@ -54,7 +54,7 @@
     <string name="album_page_release_dates_label">Utgivet %1$s, ursprungligen %2$s</string>
     <string name="album_page_shuffle_button">Blanda</string>
     <string name="album_page_tracks_count_and_duration">%1$d låtar  •  %2$d minuter</string>
-    <string name="app_name">Tempus</string>
+    <string name="app_name">Piterfy</string>
     <string name="artist_adapter_radio_station_starting">Söker…</string>
     <string name="artist_bottom_sheet_instant_mix">Direktmix</string>
     <string name="artist_bottom_sheet_shuffle">Blanda</string>
@@ -437,20 +437,20 @@
     <string name="server_unreachable_dialog_positive_button">Fortsätt ändå</string>
     <string name="server_unreachable_dialog_summary">Servern är inte tillgänglig. Om du fortsätter visas inte den här dialogrutan igen under den närmaste timmen.</string>
     <string name="server_unreachable_dialog_title">Servern kan inte nås</string>
-    <string name="settings_about_summary">Tempus är en lättviktig musikklient med öppen källkod för Subsonic, utformad och byggd särskilt för Android.</string>
+    <string name="settings_about_summary">Piterfy är en lättviktig musikklient med öppen källkod för Subsonic, utformad och byggd särskilt för Android.</string>
     <string name="settings_about_title">Om</string>
     <string name="settings_always_on_display">Håll skärmen tänd</string>
     <string name="settings_allow_playlist_duplicates">Tillåt dubbletter i spellistor</string>
     <string name="settings_allow_playlist_duplicates_summary">När detta är aktiverat kontrolleras inte dubbletter när låtar läggs till i en spellista.</string>
     <string name="settings_audio_transcode_download_format">Omkodningsformat</string>
-    <string name="settings_audio_transcode_download_priority_summary">När detta är aktiverat tvingar Tempus inte servern att använda omkodningsinställningarna nedan vid hämtning.</string>
+    <string name="settings_audio_transcode_download_priority_summary">När detta är aktiverat tvingar Piterfy inte servern att använda omkodningsinställningarna nedan vid hämtning.</string>
     <string name="settings_audio_transcode_download_priority_title">Använd serverns strömningsinställningar vid hämtning</string>
-    <string name="settings_audio_transcode_download_summary">När detta är aktiverat hämtar Tempus omkodade låtar.</string>
+    <string name="settings_audio_transcode_download_summary">När detta är aktiverat hämtar Piterfy omkodade låtar.</string>
     <string name="settings_audio_transcode_download_title">Hämta omkodade låtar</string>
     <string name="settings_audio_transcode_format_download">Omkodningsformat vid hämtning</string>
     <string name="settings_audio_transcode_format_mobile">Omkodningsformat för mobildata</string>
     <string name="settings_audio_transcode_format_wifi">Omkodningsformat för wifi</string>
-    <string name="settings_audio_transcode_priority_summary">När detta är aktiverat tvingar Tempus inte servern att använda omkodningsinställningarna nedan vid strömning.</string>
+    <string name="settings_audio_transcode_priority_summary">När detta är aktiverat tvingar Piterfy inte servern att använda omkodningsinställningarna nedan vid strömning.</string>
     <string name="settings_audio_transcode_priority_title">Prioritera serverns omkodningsinställningar</string>
     <string name="settings_audio_transcode_priority_toast">Serverns inställningar prioriteras vid omkodning av låten</string>
     <string name="settings_choose_download_folder">Välj en mapp för hämtade musikfiler</string>
@@ -617,7 +617,7 @@
     <string name="toolbar_navigation_drawer_open">Navigeringsmenyn är öppen</string>
     <string name="toolbar_navigation_drawer_closed">Navigeringsmenyn är stängd</string>
     <string name="favorite_icon_description">Favorit</string>
-    <string name="asset_link_clipboard_label">Tempus-objektlänk</string>
+    <string name="asset_link_clipboard_label">Piterfy-objektlänk</string>
     <string name="asset_link_label_song">Låtens UID</string>
     <string name="asset_link_label_album">Albumets UID</string>
     <string name="asset_link_label_artist">Artistens UID</string>
@@ -703,9 +703,9 @@
     <string name="track_info_year">År</string>
     <string name="undraw_page">unDraw</string>
     <string name="undraw_thanks">Ett särskilt tack till unDraw, vars illustrationer har gjort appen vackrare.</string>
-    <string name="widget_label">Tempus-widget</string>
+    <string name="widget_label">Piterfy-widget</string>
     <string name="widget_not_playing">Spelar inte</string>
-    <string name="widget_placeholder_subtitle">Öppna Tempus</string>
+    <string name="widget_placeholder_subtitle">Öppna Piterfy</string>
     <string name="widget_time_elapsed_placeholder">0:00</string>
     <string name="widget_time_duration_placeholder">0:00</string>
     <string name="widget_content_desc_album_art">Albumomslag</string>
@@ -767,13 +767,13 @@
         <item>@string/sleep_timer_end_of_track_label</item>
         <item>Anpassad\u2026</item>
     </string-array>
-    <string name="customactivityoncrash_error_activity_error_occurred_explanation">Tempus kraschade.</string>
+    <string name="customactivityoncrash_error_activity_error_occurred_explanation">Piterfy kraschade.</string>
     <string name="playlist_error_not_found_title">Spellistan hittades inte</string>
     <string name="playlist_error_not_found_message">Den här spellistan hittades inte på servern. Den tas bort från din lokala cache.</string>
     <string name="playlist_error_not_found_toast">Spellistan har tagits bort från cachen</string>
     <string name="player_overflow_menu_add_to_playlist">Lägg till i spellista</string>
     <string name="ca_info_label">Info</string>
-    <string name="ca_info_title">Tempus kraschade</string>
+    <string name="ca_info_title">Piterfy kraschade</string>
     <string name="ca_info_description">Öppna ett ärende på GitHub och bifoga en kopia av kraschrapporten så att felet kan åtgärdas.</string>
     <string name="ca_info_button_close">Stäng appen</string>
     <string name="ca_info_button_restart">Starta om appen</string>
@@ -794,7 +794,7 @@
     <string name="la_appbar_permission_title">Behörighetsöversikt</string>
     <string name="la_appbar_themes_title">Temaredigerare</string>
     <string name="la_appbar_server_title">Serverredigerare</string>
-    <string name="la_greeting_description">Välkommen till Tempus, en musikklient med öppen källkod för Subsonic, utformad och byggd särskilt för Android.</string>
+    <string name="la_greeting_description">Välkommen till Piterfy, en musikklient med öppen källkod för Subsonic, utformad och byggd särskilt för Android.</string>
     <string name="la_server_title">Serverinställningar</string>
     <string name="la_server_field_server_empty_error">Obligatoriskt fält</string>
     <string name="la_server_field_server_url_error">Ogiltig adress</string>

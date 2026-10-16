@@ -45,6 +45,8 @@ import java.util.List;
 public class SearchFragment extends Fragment implements ClickCallback {
     private static final String TAG = "SearchFragment";
 
+    private final android.os.Handler suggestionHandler = new android.os.Handler(android.os.Looper.getMainLooper());
+    private Runnable pendingSuggestion;
     private FragmentSearchBinding bind;
     private MainActivity activity;
     private SearchViewModel searchViewModel;
@@ -67,11 +69,35 @@ public class SearchFragment extends Fragment implements ClickCallback {
         searchViewModel = new ViewModelProvider(requireActivity()).get(SearchViewModel.class);
         playbackViewModel = new ViewModelProvider(requireActivity()).get(PlaybackViewModel.class);
 
-        initSearchResultView();
-        initSearchView();
         inputFocus();
 
         return view;
+    }
+
+    @Override
+    public void onViewCreated(@NonNull View view, @Nullable Bundle state) {
+        super.onViewCreated(view, state);
+        initSearchResultView();
+        initSearchView();
+        searchViewModel.getRecentSearchSuggestion().observe(getViewLifecycleOwner(), recent -> {
+            if (bind != null && bind.searchView.getText().length() < 2) renderRecentSuggestions(recent);
+        });
+        searchViewModel.getError().observe(getViewLifecycleOwner(), failed -> {
+            if (Boolean.TRUE.equals(failed) && bind != null)
+                com.google.android.material.snackbar.Snackbar.make(bind.getRoot(), R.string.piterfy_network_error, com.google.android.material.snackbar.Snackbar.LENGTH_LONG)
+                    .setAction(R.string.piterfy_retry, v -> search(searchViewModel.getQuery())).show();
+        });
+        searchViewModel.getLoadingAll().observe(getViewLifecycleOwner(), loading -> {
+            if (bind == null) return;
+            bind.allSongs.setEnabled(!Boolean.TRUE.equals(loading));
+            bind.allSongs.setText(Boolean.TRUE.equals(loading) ? R.string.search_all_songs_loading : R.string.piterfy_play_all_results);
+        });
+        bind.allSongs.setOnClickListener(v -> searchViewModel.loadAll().observe(getViewLifecycleOwner(), songs -> {
+            if (songs != null && !songs.isEmpty()) {
+                MediaManager.startQueue(mediaBrowserListenableFuture, songs, 0);
+                activity.setBottomSheetInPeek(true);
+            }
+        }));
     }
 
     @Override
@@ -97,6 +123,8 @@ public class SearchFragment extends Fragment implements ClickCallback {
 
     @Override
     public void onDestroyView() {
+        suggestionHandler.removeCallbacksAndMessages(null);
+        searchViewModel.cancel();
         super.onDestroyView();
         bind = null;
     }
@@ -165,11 +193,13 @@ public class SearchFragment extends Fragment implements ClickCallback {
 
                     @Override
                     public void onTextChanged(CharSequence charSequence, int start, int before, int count) {
-                        if (start + count > 1) {
-                            setSearchSuggestions(charSequence.toString());
-                        } else {
-                            setRecentSuggestions();
-                        }
+                        suggestionHandler.removeCallbacksAndMessages(null);
+                        searchViewModel.cancelSuggestions();
+                        String typed = charSequence.toString().trim();
+                        if (typed.length() > 1) {
+                            pendingSuggestion = () -> { if (bind != null) setSearchSuggestions(typed); };
+                            suggestionHandler.postDelayed(pendingSuggestion, 300);
+                        } else setRecentSuggestions();
                     }
 
                     @Override
@@ -180,9 +210,14 @@ public class SearchFragment extends Fragment implements ClickCallback {
     }
 
     public void setRecentSuggestions() {
-        bind.searchViewSuggestionContainer.removeAllViews();
+        List<String> recent = searchViewModel.getRecentSearchSuggestion().getValue();
+        renderRecentSuggestions(recent == null ? Collections.emptyList() : recent);
+    }
 
-        for (String suggestion : searchViewModel.getRecentSearchSuggestion()) {
+    private void renderRecentSuggestions(List<String> recent) {
+        if (bind == null || recent == null) return;
+        bind.searchViewSuggestionContainer.removeAllViews();
+        for (String suggestion : recent) {
             View view = LayoutInflater.from(bind.searchViewSuggestionContainer.getContext()).inflate(R.layout.item_search_suggestion, bind.searchViewSuggestionContainer, false);
 
             ImageView leadingImageView = view.findViewById(R.id.search_suggestion_icon);
@@ -205,6 +240,7 @@ public class SearchFragment extends Fragment implements ClickCallback {
 
     public void setSearchSuggestions(String query) {
         searchViewModel.getSearchSuggestion(query).observe(getViewLifecycleOwner(), suggestions -> {
+            if (bind == null || !bind.searchView.getText().toString().trim().equals(query)) return;
             bind.searchViewSuggestionContainer.removeAllViews();
 
             for (String suggestion : suggestions) {
@@ -227,7 +263,7 @@ public class SearchFragment extends Fragment implements ClickCallback {
 
     public void search(String query) {
         searchViewModel.setQuery(query);
-        bind.allSongs.setText(this.getView().getContext().getString(R.string.search_all_songs_loading));
+        bind.allSongs.setText(R.string.piterfy_play_all_results);
         playlistHorizontalAdapter.setItems(Collections.emptyList());
         bind.searchBar.setText(query);
         bind.searchView.hide();
@@ -245,10 +281,11 @@ public class SearchFragment extends Fragment implements ClickCallback {
         }
     }
     private void performSearch(String query) {
-        searchViewModel.search3(this, query).observe(getViewLifecycleOwner(), result -> {
+        searchViewModel.search3(query).observe(getViewLifecycleOwner(), result -> {
+            if (result == null || !query.equals(searchViewModel.getQuery())) return;
             int sectionsThatMatchedTheQuery = 0;
             if (bind != null) {
-                if (result.getArtists() != null) {
+                if (result.getArtists() != null && !result.getArtists().isEmpty()) {
                     bind.searchArtistSector.setVisibility(!result.getArtists().isEmpty() ? View.VISIBLE : View.GONE);
                     artistAdapter.setItems(result.getArtists());
                     sectionsThatMatchedTheQuery+=1;
@@ -257,7 +294,7 @@ public class SearchFragment extends Fragment implements ClickCallback {
                     bind.searchArtistSector.setVisibility(View.GONE);
                 }
 
-                if (result.getAlbums() != null) {
+                if (result.getAlbums() != null && !result.getAlbums().isEmpty()) {
                     bind.searchAlbumSector.setVisibility(!result.getAlbums().isEmpty() ? View.VISIBLE : View.GONE);
                     albumAdapter.setItems(result.getAlbums());
                     sectionsThatMatchedTheQuery+=1;
@@ -266,7 +303,7 @@ public class SearchFragment extends Fragment implements ClickCallback {
                     bind.searchAlbumSector.setVisibility(View.GONE);
                 }
 
-                if (result.getSongs() != null) {
+                if (result.getSongs() != null && !result.getSongs().isEmpty()) {
                     bind.searchSongSector.setVisibility(!result.getSongs().isEmpty() ? View.VISIBLE : View.GONE);
                     songHorizontalAdapter.setItems(result.getSongs());
                     sectionsThatMatchedTheQuery+=1;

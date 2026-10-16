@@ -88,6 +88,13 @@ public class ServerSignupDialog extends DialogFragment {
             }
         } else {
             loginViewModel.setServerToEdit(null);
+            // Piterfy: nowy serwer od razu podpowiada Piterfy (tylko w pustych polach, żeby nie nadpisać wpisanego)
+            if (bind.serverNameTextView.getText() == null || bind.serverNameTextView.getText().length() == 0) {
+                bind.serverNameTextView.setText(R.string.piterfy_default_server_name);
+            }
+            if (bind.serverTextView.getText() == null || bind.serverTextView.getText().length() == 0) {
+                bind.serverTextView.setText(R.string.piterfy_default_server_url);
+            }
         }
     }
 

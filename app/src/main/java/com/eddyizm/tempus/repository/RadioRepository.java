@@ -20,6 +20,7 @@ import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
+@androidx.annotation.OptIn(markerClass = androidx.media3.common.util.UnstableApi.class)
 public class RadioRepository {
     public MutableLiveData<List<InternetRadioStation>> getInternetRadioStations() {
         MutableLiveData<List<InternetRadioStation>> radioStation = new MutableLiveData<>(new ArrayList<>());
@@ -67,6 +68,7 @@ public class RadioRepository {
 
     private void mergeWithLocal(MutableLiveData<List<InternetRadioStation>> liveData, List<InternetRadioStation> subsonicStations) {
         new Thread(() -> {
+            com.eddyizm.tempus.util.PiterfyRadioCatalog.seedIfNeeded(App.getInstance());
             List<InternetRadioStationCache> localCaches = AppDatabase.getInstance().internetRadioStationDao().getLocal();
             List<InternetRadioStation> localStations = localCaches.stream()
                     .map(InternetRadioStationCache::toInternetRadioStation)
@@ -81,6 +83,7 @@ public class RadioRepository {
 
     private void fallbackToCache(MutableLiveData<List<InternetRadioStation>> liveData) {
         new Thread(() -> {
+            com.eddyizm.tempus.util.PiterfyRadioCatalog.seedIfNeeded(App.getInstance());
             List<InternetRadioStation> cached = AppDatabase.getInstance().internetRadioStationDao().getAll().stream()
                     .map(InternetRadioStationCache::toInternetRadioStation)
                     .collect(Collectors.toList());

@@ -1,0 +1,30 @@
+<resources>
+ <string name="piterfy_network_error">Could not refresh. Your saved content is still available.</string>
+ <string name="piterfy_retry">Retry</string>
+ <string name="piterfy_play_all_results">Play all results</string>
+ <string name="piterfy_podcast_heading">Your podcasts</string>
+ <string name="piterfy_podcast_subtitle">A space for stories, conversations and new episodes.</string>
+ <string name="piterfy_downloaded">Downloaded</string>
+ <string name="piterfy_no_downloaded_podcasts">No downloaded episodes yet. Download an episode to listen offline.</string>
+ <string name="piterfy_home_eyebrow">MADE FOR YOU</string>
+ <string name="piterfy_home_title">Your music.\nYour rhythm.</string>
+ <string name="piterfy_home_subtitle">Fresh discoveries from your Piterfy library.</string>
+ <string name="piterfy_taste">My taste ↗</string>
+ <string name="piterfy_discover">Discovered for you</string>
+ <string name="piterfy_discover_empty">Your discovery playlists will appear here after the next server update.</string>
+ <string name="piterfy_play">Play</string>
+ <string name="piterfy_download">Download</string>
+ <string name="piterfy_queued">Queued: %1$d tracks</string>
+ <string name="piterfy_device">This phone</string>
+ <string name="piterfy_output">Audio output · %1$s</string>
+ <string name="piterfy_headphones">Headphones</string>
+ <string name="piterfy_quality_unknown">Source quality · not analyzed</string>
+ <string name="piterfy_quality_lossless">Source · verified lossless</string>
+ <string name="piterfy_quality_suspect">Source · likely lossy (%1$s kbps)</string>
+ <string name="piterfy_quality_lossy">Source · lossy</string>
+ <string name="piterfy_quality_uncertain">Source · analysis inconclusive</string>
+ <string name="piterfy_quality_podcast">Podcast</string>
+ <string name="piterfy_discover_count">%1$d tracks · picked for you</string>
+<string name="piterfy_episode_progress">Continue from %1$s · %2$s</string><string name="piterfy_continue_episode">Continue an episode</string>
+    <string name="piterfy_radio_live">Live radio</string>
+</resources>

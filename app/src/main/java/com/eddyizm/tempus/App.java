@@ -49,7 +49,8 @@ public class App extends Application {
                 .apply();
 
         SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
-        String themePref = sharedPreferences.getString(Preferences.THEME, ThemeHelper.DEFAULT_MODE);
+        // Piterfy: domyślnie ciemny — tak jak Preferences.getTheme()
+        String themePref = sharedPreferences.getString(Preferences.THEME, ThemeHelper.DARK_MODE);
         ThemeHelper.applyTheme(themePref);
 
         instance = new App();
@@ -65,6 +66,14 @@ public class App extends Application {
         }
 
         return instance;
+    }
+
+    /**
+     * Piterfy: czy aplikacja skończyła start (onCreate). System potrafi poprosić o okładkę
+     * (AlbumArtContentProvider) wcześniej — np. ekran blokady po tym, jak system ubił aplikację w tle.
+     */
+    public static boolean isReady() {
+        return context != null && preferences != null;
     }
 
     public static Context getContext() {
@@ -112,7 +121,9 @@ public class App extends Application {
                                                 String password, String token, String salt,
                                                 boolean isLowSecurity) {
         SubsonicPreferences preferences = new SubsonicPreferences();
-        preferences.setServerUrl(serverAddress);
+        // Piterfy: „HTTPS://serwer” (np. po autokorekcie klawiatury) psuło wszystkie okładki — Glide rozpoznaje
+        // adresy tylko po małych literach. Ujednolicamy też adresy zapisane wcześniej.
+        preferences.setServerUrl(Preferences.normalizeServerUrl(serverAddress));
         preferences.setUsername(username);
         preferences.setAuthentication(password, token, salt, isLowSecurity);
 

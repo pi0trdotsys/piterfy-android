@@ -126,7 +126,8 @@
                     android:id="@+id/server_public_url_field"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="@string/la_server_field_server_public_url" />
+                    android:hint="@string/la_server_field_server_public_url"
+                    android:inputType="textUri" />
 
             </com.google.android.material.textfield.TextInputLayout>
 
@@ -161,7 +162,8 @@
                     android:id="@+id/server_local_url_field"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="@string/la_server_field_server_local_url" />
+                    android:hint="@string/la_server_field_server_local_url"
+                    android:inputType="textUri" />
 
             </com.google.android.material.textfield.TextInputLayout>
 

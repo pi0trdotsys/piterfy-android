@@ -51,7 +51,7 @@ class CastArtworkConverterTest {
     // AlbumArtContentProvider (see MappingUtil / SessionMediaItem).
     private fun albumItem(): MediaItem {
         val artworkUri = Uri.parse(
-            "content://com.eddyizm.tempus.debug.albumart.provider/albumArt/al-123"
+            "content://eu.prosinski.piterfy.debug.albumart.provider/albumArt/al-123"
         )
         return MediaItem.Builder()
             .setUri("https://example.org/rest/stream?id=42")

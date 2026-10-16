@@ -16,6 +16,7 @@ import com.eddyizm.tempus.ui.fragment.SearchFragment;
 import java.util.ArrayList;
 import java.util.List;
 
+@androidx.annotation.OptIn(markerClass = androidx.media3.common.util.UnstableApi.class)
 public class SearchViewModel extends AndroidViewModel {
     private static final String TAG = "SearchViewModel";
 
@@ -46,8 +47,8 @@ public class SearchViewModel extends AndroidViewModel {
     }
 
     @UnstableApi
-    public LiveData<SearchResult3> search3(SearchFragment sf, String title) {
-        return searchingRepository.search3(sf, title);
+    public LiveData<SearchResult3> search3(String title) {
+        return searchingRepository.search3(title);
     }
 
     public void insertNewSearch(String search) {
@@ -62,10 +63,11 @@ public class SearchViewModel extends AndroidViewModel {
         return searchingRepository.getSuggestions(query);
     }
 
-    public List<String> getRecentSearchSuggestion() {
-        ArrayList<String> suggestions = new ArrayList<>();
-        suggestions.addAll(searchingRepository.getRecentSearchSuggestion());
-
-        return suggestions;
-    }
+    public LiveData<List<String>> getRecentSearchSuggestion() { return searchingRepository.getRecentSearchSuggestion(); }
+    public LiveData<Boolean> getError() { return searchingRepository.error; }
+    public LiveData<Boolean> getLoadingAll() { return searchingRepository.loadingAll; }
+    public LiveData<List<com.eddyizm.tempus.subsonic.models.Child>> loadAll() { return searchingRepository.loadAll(query); }
+    public void cancel() { searchingRepository.cancelSearch(); searchingRepository.cancelSuggestions(); }
+    public void cancelSuggestions() { searchingRepository.cancelSuggestions(); }
+    @Override protected void onCleared() { searchingRepository.close(); }
 }

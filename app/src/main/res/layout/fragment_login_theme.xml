@@ -126,13 +126,13 @@
                 android:contentDescription="@string/la_theme_card_coral_red_description"
                 app:cardCornerRadius="16dp" />
 
-            <!-- Option 3: Emerald Green (#2E7D32) -->
+            <!-- Option 3: Piterfy (#1DB954) -->
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/card_emerald"
                 android:layout_width="0dp"
                 android:layout_height="64dp"
                 android:layout_columnWeight="1"
-                app:cardBackgroundColor="#2E7D32"
+                app:cardBackgroundColor="#1DB954"
                 android:contentDescription="@string/la_theme_card_emerald_green_description"
                 app:cardCornerRadius="16dp" />
 

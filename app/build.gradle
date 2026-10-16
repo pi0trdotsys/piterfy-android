@@ -4,7 +4,22 @@ plugins {
     alias(libs.plugins.kotlin.compose)
 }
 
+// Piterfy: local and CI use the same private release key, excluded from Git.
+def piterfySigning = new Properties()
+def piterfySigningFile = rootProject.file('.signing/keystore.properties')
+if (piterfySigningFile.exists()) piterfySigningFile.withInputStream { piterfySigning.load(it) }
+
 android {
+    signingConfigs {
+        if (piterfySigningFile.exists()) {
+            piterfyRelease {
+                storeFile file(piterfySigning['storeFile'])
+                storePassword piterfySigning['storePassword']
+                keyAlias piterfySigning['keyAlias']
+                keyPassword piterfySigning['keyPassword']
+            }
+        }
+    }
     namespace = 'com.eddyizm.tempus'
     //noinspection GradleDependency
     compileSdk = 37
@@ -15,8 +30,8 @@ android {
         //noinspection OldTargetApi
         targetSdk = 37
 
-        versionCode 50
-        versionName '4.29.0'
+        versionCode 51
+        versionName '4.29.0-piterfy.2'  // Piterfy: wersja Tempus + numer wydania Piterfy
         testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
 
         javaCompileOptions {
@@ -52,19 +67,21 @@ android {
     flavorDimensions += "default"
 
     productFlavors {
+        // Piterfy: własne identyfikatory, żeby Piterfy dało się zainstalować obok Tempus
         tempus {
             dimension = "default"
-            applicationId = 'com.eddyizm.tempus'
+            applicationId = 'eu.prosinski.piterfy'
         }
 
         degoogled {
             dimension = "default"
-            applicationId = "com.eddyizm.degoogled.tempus"
+            applicationId = "eu.prosinski.piterfy.degoogled"
         }
     }
 
     buildTypes {
         release {
+            if (piterfySigningFile.exists()) signingConfig signingConfigs.piterfyRelease
             shrinkResources = true
             minifyEnabled = true
             debuggable = false

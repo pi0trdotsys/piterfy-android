@@ -2,8 +2,8 @@
 
 ## Project Overview
 **Tempus** is an open-source Android music client for Subsonic servers. Two product flavors:
-- **tempus** (`com.eddyizm.tempus`) - GitHub release with Android Auto & Chromecast
-- **degoogled** (`com.eddyizm.degoogled.tempus`) - IzzyOnDroid/F-Droid release, no Google services
+- **tempus** (`eu.prosinski.piterfy`) - GitHub release with Android Auto & Chromecast
+- **degoogled** (`eu.prosinski.piterfy.degoogled`) - IzzyOnDroid/F-Droid release, no Google services
 
 ## Build & Development
 
@@ -12,7 +12,7 @@
 - **AGP**: 9.2.1
 - **Kotlin**: 2.2.10
 - **Java**: 21 (via Foojay toolchain resolver in `settings.gradle`)
-- **compileSdk/targetSdk**: 36
+- **compileSdk/targetSdk**: 37
 - **minSdk**: 24
 
 ### Key Commands
@@ -64,14 +64,14 @@
 ## Testing
 - **Unit tests**: JUnit 4 + Mockito + MockK (run via `test*UnitTest` tasks)
 - **Instrumented tests**: AndroidX Test + Espresso (run via `connected*AndroidTest`)
-- **No CI test execution** currently - tests run locally only
+- **CI test execution**: PR checks and Piterfy release workflow; run both flavor suites locally too
 - Test configs in `app/build.gradle`: `testOptions.unitTests.returnDefaultValues = true`
 
 ## CI / Release Process
 - **Prerelease** (`.github/workflows/github_prerelease.yml`): Triggered on `v*-dev*` tags, builds debug APKs, signs with release keystore
-- **Release** (`.github/workflows/github_release.yml`): Triggered on `v*` tags (non-dev), builds both release flavors, signs, creates GitHub release with APKs + ProGuard mapping files (gzipped)
-- **Signing**: Uses `r0adkll/sign-android-release` action with keystore from secrets
-- **Java**: Zulu JDK 21 in CI
+- **Release** (`.github/workflows/github_release.yml`): Triggered on `v*-piterfy.*` tags, builds both release flavors, signs, creates GitHub release with APKs + ProGuard mapping files (gzipped)
+- **Signing**: Piterfy release Gradle signing config uses `.signing/keystore.properties`; CI restores the private key from encrypted secrets
+- **Java**: Temurin JDK 21 in Piterfy release CI
 
 ## Key Files
 - `app/build.gradle` - Main build config, flavors, dependencies
@@ -85,7 +85,7 @@
 ## Contributing Notes (from CONTRIBUTING.md)
 - PRs against `development` branch
 - Include before/after screenshots for UI changes
-- Tests exist, but CI does not execute them; run the flavor-specific unit-test tasks locally.
+- CI and local validation run the flavor-specific unit-test tasks.
 - Update docs (`USAGE.md`) with changes
 - Crash logs are obfuscated in release; deobfuscate with mapping.txt:
   ```bash
@@ -104,11 +104,11 @@
 | Generate lint baseline | `./gradlew updateLintBaseline` |
 
 ## Gotchas
-- **Two app IDs**: `com.eddyizm.tempus` vs `com.eddyizm.degoogled.tempus` - debug adds `.debug` suffix
+- **Two app IDs**: `eu.prosinski.piterfy` vs `eu.prosinski.piterfy.degoogled` - debug adds `.debug` suffix
 - **Media3 Cast** only in `tempus` flavor (`tempusImplementation libs.media3.cast`)
 - **FFmpeg decoder** is a local AAR (`libs/lib-decoder-ffmpeg-release.aar`), built separately via `bin/build.sh`
 - **Room schemas** committed to `app/schemas/` - update on schema changes
-- **No tests in CI** - run locally before PR
+- **CI tests** plus local validation before publication
 - **Java 21 required** (managed by Foojay in Gradle)
 
 ## Proguard mapping for Release

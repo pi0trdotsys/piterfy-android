@@ -197,9 +197,12 @@ public class PlayerBottomSheetFragment extends Fragment {
     private void setMetadata(MediaMetadata mediaMetadata) {
         if (com.eddyizm.tempus.lan.LanRemoteSession.isActive() || bind == null) return;
         if (mediaMetadata.extras != null) {
-            playerBottomSheetViewModel.setLiveMedia(getViewLifecycleOwner(), mediaMetadata.extras.getString("type"), mediaMetadata.extras.getString("id"));
-            playerBottomSheetViewModel.setLiveAlbum(getViewLifecycleOwner(), mediaMetadata.extras.getString("type"), mediaMetadata.extras.getString("albumId"));
-            playerBottomSheetViewModel.setLiveArtist(getViewLifecycleOwner(), mediaMetadata.extras.getString("type"), mediaMetadata.extras.getString("artistId"));
+            // Library podcasts still use getSong/getAlbum, rather than Subsonic podcast endpoints.
+            String lookupType = com.eddyizm.tempus.util.PiterfyMedia.isPodcast(mediaMetadata.extras.getString("genre"))
+                && mediaMetadata.extras.getString("albumId") != null ? Constants.MEDIA_TYPE_MUSIC : mediaMetadata.extras.getString("type");
+            playerBottomSheetViewModel.setLiveMedia(getViewLifecycleOwner(), lookupType, mediaMetadata.extras.getString("id"));
+            playerBottomSheetViewModel.setLiveAlbum(getViewLifecycleOwner(), lookupType, mediaMetadata.extras.getString("albumId"));
+            playerBottomSheetViewModel.setLiveArtist(getViewLifecycleOwner(), lookupType, mediaMetadata.extras.getString("artistId"));
             playerBottomSheetViewModel.setLiveDescription(mediaMetadata.extras.getString("description", null));
 
             String type = mediaMetadata.extras.getString("type");

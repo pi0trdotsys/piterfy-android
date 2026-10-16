@@ -133,6 +133,13 @@ public class PlayerControllerFragment extends Fragment {
         com.eddyizm.tempus.lan.LanRemoteSession.state().observe(getViewLifecycleOwner(), state -> refreshPlaybackDestination());
         com.eddyizm.tempus.lan.LanRemoteSession.queueState().observe(getViewLifecycleOwner(), queue -> refreshPlaybackDestination());
         bind.playerRemoteToggle.setOnClickListener(v -> com.eddyizm.tempus.lan.LanDevicePicker.toggle(requireActivity()));
+        outputMonitor = new com.eddyizm.tempus.util.PiterfyOutputMonitor(requireContext(), label -> {
+            if (bind != null && !com.eddyizm.tempus.lan.LanRemoteSession.isActive()) {
+                bind.playerRemoteToggle.setText(label);
+                bind.playerRemoteToggle.setContentDescription(label);
+            }
+        });
+        qualityClient = new com.eddyizm.tempus.util.PiterfyQualityClient();
         initOverflowButton();
         initQuickActionView();
         initCoverLyricsSlideView();
@@ -151,22 +158,30 @@ public class PlayerControllerFragment extends Fragment {
         super.onStart();
         initializeBrowser();
         bindMediaController();
+        if (outputMonitor != null) outputMonitor.start();
     }
 
     @Override
     public void onStop() {
+        if (outputMonitor != null) outputMonitor.stop();
         releaseBrowser();
         super.onStop();
     }
 
     @Override
     public void onDestroyView() {
+        if (qualityClient != null) qualityClient.close();
+        qualityClient = null;
+        outputMonitor = null;
         super.onDestroyView();
         if (bind != null) bind.nowPlayingMediaControllerView.setPlayer(null);
         if (remotePlayer != null) remotePlayer.release();
         remotePlayer = null;
         bind = null;
     }
+
+    private com.eddyizm.tempus.util.PiterfyOutputMonitor outputMonitor;
+    private com.eddyizm.tempus.util.PiterfyQualityClient qualityClient;
 
     private void refreshPlaybackDestination() {
         if (bind == null || remotePlayer == null) return;
@@ -197,8 +212,8 @@ public class PlayerControllerFragment extends Fragment {
                 updateSleepTimerUI();
             } finally { renderingRemote = false; }
         } else {
-            bind.playerRemoteToggle.setText(R.string.lan_play_on);
-            bind.playerRemoteToggle.setContentDescription(getString(R.string.lan_play_on));
+            bind.playerRemoteToggle.setText(outputMonitor != null ? outputMonitor.label() : getString(R.string.piterfy_device));
+            bind.playerRemoteToggle.setContentDescription(bind.playerRemoteToggle.getText());
             bind.playerRemoteToggle.setSelected(false);
             buttonFavorite.setEnabled(true);
             MediaBrowser browser = getBrowser();
@@ -437,6 +452,11 @@ public class PlayerControllerFragment extends Fragment {
 
     private void setMediaInfo(MediaMetadata mediaMetadata) {
         if (bind == null || (com.eddyizm.tempus.lan.LanRemoteSession.isActive() && !renderingRemote)) return;
+        if (qualityClient != null && mediaMetadata.extras != null) {
+            String id = mediaMetadata.extras.getString("id");
+            if (id == null && getBrowser() != null && getBrowser().getCurrentMediaItem() != null) id = getBrowser().getCurrentMediaItem().mediaId;
+            qualityClient.show(id, bind.piterfySourceQuality);
+        }
         boolean isLocal = !com.eddyizm.tempus.lan.LanRemoteSession.isActive() && MusicUtil.isCurrentTrackLocal(getBrowser());
 
         if (mediaMetadata.extras != null) {

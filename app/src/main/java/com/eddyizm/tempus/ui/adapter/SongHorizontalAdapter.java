@@ -154,6 +154,20 @@ public class SongHorizontalAdapter extends RecyclerView.Adapter<SongHorizontalAd
                 )
         );
 
+        // Piterfy: show episode progress rather than codec details in spoken-word lists.
+        if (com.eddyizm.tempus.util.PiterfyMedia.isPodcast(song.getGenre())) {
+            long progress = Preferences.getResumePoint(song.getId());
+            if (progress == 0 && song.getBookmarkPosition() != null) progress = song.getBookmarkPosition();
+            String duration = MusicUtil.getReadableDurationString(song.getDuration(), false);
+            String detail = progress > 0 ? holder.itemView.getContext().getString(R.string.piterfy_episode_progress,
+                MusicUtil.getReadableDurationString((int)(progress / 1000), false), duration) : duration;
+            holder.item.searchResultSongSubtitleTextView.setText(detail);
+            holder.item.searchResultSongTitleTextView.setMaxLines(2);
+            holder.item.searchResultSongTitleTextView.setSingleLine(false);
+        } else {
+            holder.item.searchResultSongTitleTextView.setSingleLine(true);
+        }
+
         holder.item.trackNumberTextView.setText(MusicUtil.getReadableTrackNumber(holder.itemView.getContext(), song.getTrack()));
 
         if (Preferences.getDownloadDirectoryUri() == null) {

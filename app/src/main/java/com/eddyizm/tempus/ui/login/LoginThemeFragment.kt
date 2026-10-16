@@ -164,10 +164,10 @@ class LoginThemeFragment : Fragment() {
             applyAccentColor("HEX:#FF5722")
         }
         binding.cardEmerald.setOnClickListener {
-            applyAccentColor("HEX:#2E7D32")
+            applyAccentColor(Preferences.PITERFY_ACCENT) // Piterfy: zieleń Piterfy zamiast szmaragdu
         }
         binding.cardEmerald.setOnClickListener {
-            applyAccentColor("HEX:#2E7D32")
+            applyAccentColor(Preferences.PITERFY_ACCENT) // Piterfy: zieleń Piterfy zamiast szmaragdu
         }
         binding.cardBlue.setOnClickListener {
             applyAccentColor("HEX:#1976D2")

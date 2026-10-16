@@ -118,7 +118,7 @@ public class MappingUtil {
             bundle.putString("albumId", media.getAlbumId());
             bundle.putString("albumArtist", media.getAlbumArtist());
             bundle.putString("artistId", media.getArtistId());
-            bundle.putString("type", Constants.MEDIA_TYPE_MUSIC);
+            bundle.putString("type", (PiterfyMedia.isPodcast(media.getGenre()) || Constants.MEDIA_TYPE_PODCAST.equals(media.getType())) ? Constants.MEDIA_TYPE_PODCAST : Constants.MEDIA_TYPE_MUSIC); // Piterfy
             bundle.putLong("bookmarkPosition", media.getBookmarkPosition() != null ? media.getBookmarkPosition() : 0);
             bundle.putInt("originalWidth", media.getOriginalWidth() != null ? media.getOriginalWidth() : 0);
             bundle.putInt("originalHeight", media.getOriginalHeight() != null ? media.getOriginalHeight() : 0);

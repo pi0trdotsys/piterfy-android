@@ -1,25 +1,28 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <style name="InterFontFamily">
-        <item name="android:fontFamily">@font/inter</item>
+        <item name="android:fontFamily">@font/figtree</item>
     </style>
 
 
     <style name="HeadlineLarge" parent="InterFontFamily">
-        <item name="android:textSize">26sp</item>
+        <item name="android:textSize">30sp</item>
         <item name="android:textFontWeight">700</item>
+        <item name="android:letterSpacing">-0.02</item>
         <item name="android:textColor">@color/titleTextColor</item>
     </style>
 
     <style name="HeadlineMedium" parent="InterFontFamily">
         <item name="android:textSize">24sp</item>
         <item name="android:textFontWeight">700</item>
+        <item name="android:letterSpacing">-0.02</item>
         <item name="android:textColor">@color/titleTextColor</item>
     </style>
 
     <style name="HeadlineSmall" parent="InterFontFamily">
         <item name="android:textSize">22sp</item>
         <item name="android:textFontWeight">700</item>
+        <item name="android:letterSpacing">-0.02</item>
         <item name="android:textColor">@color/titleTextColor</item>
     </style>
 
@@ -27,6 +30,7 @@
     <style name="TitleLarge" parent="InterFontFamily">
         <item name="android:textSize">22sp</item>
         <item name="android:textFontWeight">700</item>
+        <item name="android:letterSpacing">-0.02</item>
         <item name="android:textColor">@color/titleTextColor</item>
     </style>
 
@@ -46,12 +50,14 @@
     <style name="LabelExtraLarge" parent="InterFontFamily">
         <item name="android:textSize">22sp</item>
         <item name="android:textFontWeight">700</item>
+        <item name="android:letterSpacing">-0.02</item>
         <item name="android:textColor">@color/titleTextColor</item>
     </style>
 
     <style name="LabelLarge" parent="InterFontFamily">
         <item name="android:textSize">18sp</item>
         <item name="android:textFontWeight">700</item>
+        <item name="android:letterSpacing">-0.02</item>
         <item name="android:textColor">@color/titleTextColor</item>
     </style>
 
@@ -68,7 +74,7 @@
     </style>
 
     <style name="LabelExtraSmall" parent="InterFontFamily">
-        <item name="android:textSize">10sp</item>
+        <item name="android:textSize">12sp</item>
         <item name="android:textFontWeight">300</item>
         <item name="android:textColor">@color/subtitleTextColor</item>
     </style>
@@ -77,6 +83,7 @@
     <style name="BodyLarge" parent="InterFontFamily">
         <item name="android:textSize">24sp</item>
         <item name="android:textFontWeight">700</item>
+        <item name="android:letterSpacing">-0.02</item>
         <item name="android:textColor">@color/titleTextColor</item>
     </style>
 

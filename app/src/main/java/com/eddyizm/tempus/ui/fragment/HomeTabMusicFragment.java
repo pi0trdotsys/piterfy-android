@@ -82,6 +82,7 @@ import java.util.stream.Collectors;
 public class HomeTabMusicFragment extends Fragment implements ClickCallback {
     private static final String TAG = "HomeFragment";
 
+    private View piterfyPanel;
     private FragmentHomeTabMusicBinding bind;
     private MainActivity activity;
     private HomeViewModel homeViewModel;
@@ -130,6 +131,11 @@ public class HomeTabMusicFragment extends Fragment implements ClickCallback {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
+        piterfyPanel = new com.eddyizm.tempus.ui.components.PiterfyHomePanel(this, songs -> {
+            MediaManager.startQueue(mediaBrowserListenableFuture, songs, 0);
+            activity.setBottomSheetInPeek(true);
+        });
+        bind.homeLinearLayoutContainer.addView(piterfyPanel, 0);
         initSyncStarredView();
         initSyncStarredAlbumsView();
         initSyncStarredArtistsView();
@@ -188,6 +194,7 @@ public class HomeTabMusicFragment extends Fragment implements ClickCallback {
     @Override
     public void onDestroyView() {
         super.onDestroyView();
+        piterfyPanel = null;
         bind = null;
     }
 
@@ -719,6 +726,13 @@ public class HomeTabMusicFragment extends Fragment implements ClickCallback {
         });
     }
 
+    private List<Preferences.ResumePoint> musicResumePoints() {
+        List<Preferences.ResumePoint> points = new java.util.ArrayList<>();
+        for (var point : Preferences.getContinueListening())
+            if (!Constants.MEDIA_TYPE_PODCAST.equals(point.getType())) points.add(point);
+        return points;
+    }
+
     private void initContinueListening() {
         if (homeViewModel.checkHomeSectorVisibility(Constants.HOME_SECTOR_CONTINUE_LISTENING)) return;
 
@@ -728,7 +742,7 @@ public class HomeTabMusicFragment extends Fragment implements ClickCallback {
         continueListeningAdapter = new ContinueListeningAdapter(mediaBrowserListenableFuture);
         bind.continueListeningRecyclerView.setAdapter(continueListeningAdapter);
 
-        List<Preferences.ResumePoint> resumePoints = Preferences.getContinueListening();
+        List<Preferences.ResumePoint> resumePoints = musicResumePoints();
         if (resumePoints.isEmpty()) {
             bind.homeContinueListeningSector.setVisibility(View.GONE);
         } else {
@@ -739,7 +753,7 @@ public class HomeTabMusicFragment extends Fragment implements ClickCallback {
         // Sync from server bookmarks (async) so cross-device resume points appear too, then refresh.
         new QueueRepository().syncBookmarksFromServer(() -> {
             if (continueListeningAdapter == null || bind == null) return;
-            List<Preferences.ResumePoint> synced = Preferences.getContinueListening();
+            List<Preferences.ResumePoint> synced = musicResumePoints();
             if (synced.isEmpty()) {
                 bind.homeContinueListeningSector.setVisibility(View.GONE);
             } else {
@@ -1255,6 +1269,7 @@ public class HomeTabMusicFragment extends Fragment implements ClickCallback {
 
     private ArrayList<View> buildDesiredOrder() {
         ArrayList<View> desired = new ArrayList<>();
+        if (piterfyPanel != null) desired.add(piterfyPanel);
 
         if (bind.homeSyncStarredCard.getVisibility() == View.VISIBLE) {
             desired.add(bind.homeSyncStarredCard);

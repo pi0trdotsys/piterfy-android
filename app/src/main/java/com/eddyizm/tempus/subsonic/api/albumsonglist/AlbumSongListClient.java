@@ -25,6 +25,12 @@ public class AlbumSongListClient {
         return albumSongListService.getAlbumList(subsonic.getParams(), type, size, offset);
     }
 
+    // Piterfy: albumy danego gatunku
+    public Call<ApiResponse> getAlbumListByGenre(String genre, int size, int offset) {
+        Log.d(TAG, "getAlbumListByGenre()");
+        return albumSongListService.getAlbumList2ByGenre(subsonic.getParams(), "byGenre", genre, size, offset, com.eddyizm.tempus.util.PiterfyMedia.isPodcast(genre) ? null : Preferences.getActiveMusicFolderId());
+    }
+
     public Call<ApiResponse> getAlbumList2(String type, int size, int offset, Integer fromYear, Integer toYear) {
         Log.d(TAG, "getAlbumList2()");
         return albumSongListService.getAlbumList2(subsonic.getParams(), type, size, offset, fromYear, toYear, Preferences.getActiveMusicFolderId());

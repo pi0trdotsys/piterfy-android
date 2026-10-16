@@ -98,7 +98,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:hint="@string/server_signup_dialog_hint_url"
-                    android:inputType="textNoSuggestions"
+                    android:inputType="textUri|textNoSuggestions"
                     android:textCursorDrawable="@null" />
             </com.google.android.material.textfield.TextInputLayout>
 
@@ -118,7 +118,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:hint="@string/server_signup_dialog_hint_local_address"
-                    android:inputType="textNoSuggestions"
+                    android:inputType="textUri|textNoSuggestions"
                     android:textCursorDrawable="@null" />
             </com.google.android.material.textfield.TextInputLayout>
 

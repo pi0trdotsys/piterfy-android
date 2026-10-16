@@ -54,7 +54,7 @@
     <string name="album_page_release_dates_label">%1$s argitaratua, jatorriz %2$s</string>
     <string name="album_page_shuffle_button">Nahastu</string>
     <string name="album_page_tracks_count_and_duration">%1$d abesti  •  %2$d minutu</string>
-    <string name="app_name">Tempus</string>
+    <string name="app_name">Piterfy</string>
     <string name="artist_adapter_radio_station_starting">Bilatzen…</string>
     <string name="artist_bottom_sheet_instant_mix">Berehalako nahasketa</string>
     <string name="artist_bottom_sheet_shuffle">Nahastu</string>
@@ -389,20 +389,20 @@
     <string name="server_unreachable_dialog_positive_button">Hala ere jarraitu</string>
     <string name="server_unreachable_dialog_summary">Eskatutako zerbitzaria ez dago erabilgarri. Jarraitzea aukeratzen baduzu, elkarrizketa-koadro hau ez da hurrengo orduan agertuko.</string>
     <string name="server_unreachable_dialog_title">Zerbitzaria eskuraezin</string>
-    <string name="settings_about_summary">Tempus Subsonic-erako iturri irekiko eta arina den musika-bezeroa da, Android-erako berariaz diseinatua eta eraikia.</string>
+    <string name="settings_about_summary">Piterfy Subsonic-erako iturri irekiko eta arina den musika-bezeroa da, Android-erako berariaz diseinatua eta eraikia.</string>
     <string name="settings_about_title">Honi buruz</string>
     <string name="settings_always_on_display">Beti pizturiko pantaila</string>
     <string name="settings_allow_playlist_duplicates">Zerrendan bikoiztuak onartu</string>
     <string name="settings_allow_playlist_duplicates_summary">Gaituta badago, ez da bikoizturik egiaztatuko zerrendara gehitzean.</string>
     <string name="settings_audio_transcode_download_format">Transkodetze-formatua</string>
-    <string name="settings_audio_transcode_download_priority_summary">Gaituta badago, Tempus-ek ez du behartuko abestia beheko transkodetze-ezarpenekin deskargatzera.</string>
+    <string name="settings_audio_transcode_download_priority_summary">Gaituta badago, Piterfy-ek ez du behartuko abestia beheko transkodetze-ezarpenekin deskargatzera.</string>
     <string name="settings_audio_transcode_download_priority_title">Emandako streaming ezarpenei lehentasuna eman deskarga jasotzean</string>
-    <string name="settings_audio_transcode_download_summary">Gaituta badago, Tempus-ek transkodetutako abestiak deskargatuko ditu.</string>
+    <string name="settings_audio_transcode_download_summary">Gaituta badago, Piterfy-ek transkodetutako abestiak deskargatuko ditu.</string>
     <string name="settings_audio_transcode_download_title">Transkodetutako abestiak deskargatu</string>
     <string name="settings_audio_transcode_format_download">Deskargen transkodetze-formatua</string>
     <string name="settings_audio_transcode_format_mobile">Transkodetze-formatua sare mugikorrean</string>
     <string name="settings_audio_transcode_format_wifi">Transkodetze-formatua Wi-Fi bidez</string>
-    <string name="settings_audio_transcode_priority_summary">Gaituta badago, Tempus-ek ez du behartuko abestia beheko transkodetze-ezarpenekin igortzera.</string>
+    <string name="settings_audio_transcode_priority_summary">Gaituta badago, Piterfy-ek ez du behartuko abestia beheko transkodetze-ezarpenekin igortzera.</string>
     <string name="settings_audio_transcode_priority_title">Zerbitzariaren transkodetze-ezarpenei lehentasuna eman</string>
     <string name="settings_audio_transcode_priority_toast">Abestiaren transkodetze-lehentasuna zerbitzariari eman zaio</string>
     <string name="settings_choose_download_folder">Aukeratu deskargatutako musika-fitxategien karpeta</string>
@@ -571,7 +571,7 @@
     <string name="toolbar_navigation_drawer_closed">Nabigazio-tiradera itxita</string>
     <string name="favorite_icon_description">Gogokoa</string>
 
-    <string name="asset_link_clipboard_label">Tempus-eko esteka</string>
+    <string name="asset_link_clipboard_label">Piterfy-eko esteka</string>
     <string name="asset_link_label_song">Abestiaren UIDa</string>
     <string name="asset_link_label_album">Diskoaren UIDa</string>
     <string name="asset_link_label_artist">Artistaren UIDa</string>
@@ -657,9 +657,9 @@
     <string name="undraw_page">unDraw</string>
     <string name="undraw_thanks">Esker berezi bat unDraw-i, zeinen ilustrazioak gabe aplikazio hau ederragoa egin ezin izango genukeen.</string>
     <string name="undraw_url" translatable="false">https://undraw.co/</string>
-    <string name="widget_label">Tempus Widgeta</string>
+    <string name="widget_label">Piterfy Widgeta</string>
     <string name="widget_not_playing">Ez da ezer erreproduzitzen ari</string>
-    <string name="widget_placeholder_subtitle">Tempus ireki</string>
+    <string name="widget_placeholder_subtitle">Piterfy ireki</string>
     <string name="widget_time_elapsed_placeholder">0:00</string>
     <string name="widget_time_duration_placeholder">0:00</string>
     <string name="widget_content_desc_album_art">Diskoaren azala</string>
@@ -729,12 +729,12 @@
         <item>@string/sleep_timer_end_of_track_label</item>
         <item>Pertsonalizatua…</item>
     </string-array>
-    <string name="customactivityoncrash_error_activity_error_occurred_explanation">Tempus kraskatu da.</string>
+    <string name="customactivityoncrash_error_activity_error_occurred_explanation">Piterfy kraskatu da.</string>
 
     <!-- Crash Activity -->
 
     <string name="ca_info_label">Informazioa</string>
-    <string name="ca_info_title">Tempus kraskatu da</string>
+    <string name="ca_info_title">Piterfy kraskatu da</string>
     <string name="ca_info_description">
         Mesedez, ireki arazo bat GitHub-en eta erantsi erregistroen kopia hau konpontzeko.
     </string>

@@ -15,6 +15,7 @@ import androidx.annotation.Nullable;
 
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.engine.DiskCacheStrategy;
+import com.eddyizm.tempus.App;
 import com.eddyizm.tempus.BuildConfig;
 import com.eddyizm.tempus.glide.CustomGlideRequest;
 import com.eddyizm.tempus.util.Preferences;
@@ -54,6 +55,11 @@ public class AlbumArtContentProvider extends ContentProvider {
     @Override
     public ParcelFileDescriptor openFile(@NonNull Uri uri, @NonNull String mode) throws FileNotFoundException {
         Context context = getContext();
+        // Piterfy: prośba o okładkę może przyjść, zanim aplikacja skończy start — wtedy ustawienia
+        // nie są jeszcze wczytane i całość się wysypywała. Czekamy na start najwyżej 3 sekundy.
+        for (int i = 0; i < 30 && !App.isReady(); i++) {
+            android.os.SystemClock.sleep(100);
+        }
         String albumId = uri.getLastPathSegment();
         Uri artworkUri = null;
         File localFile = null;

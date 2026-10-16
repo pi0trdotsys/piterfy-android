@@ -32,6 +32,13 @@
         <item name="android:statusBarColor">?attr/colorSurface</item>
         <item name="android:navigationBarColor">?attr/colorSurface</item>
         <item name="android:scrollbars">none</item>
+        <!-- Piterfy: shared visual language with the web player. -->
+        <item name="android:fontFamily">@font/figtree</item>
+        <item name="fontFamily">@font/figtree</item>
+        <item name="shapeAppearanceSmallComponent">@style/PiterfyShapeSmall</item>
+        <item name="shapeAppearanceMediumComponent">@style/PiterfyShapeMedium</item>
+        <item name="materialButtonStyle">@style/PiterfyButton</item>
+        <item name="materialCardViewStyle">@style/PiterfyCard</item>
 
         <item name="floatingActionButtonStyle">@style/FloatingActionButtonStyle</item>
         <item name="snackbarStyle">@style/Widget.App.Snackbar</item>
@@ -42,7 +49,7 @@
     <style name="AppTheme.Amoled.SurfacesOnly" parent="">
         <!-- Regular surface overriding -->
         <item name="colorSurface">@color/md_theme_amoled_surface_override</item>
-        <item name="colorSurfaceVariant">@color/md_theme_amoled_surface_override</item>
+        <item name="colorSurfaceVariant">#282828</item>
         <item name="colorSurfaceContainerLowest">@color/md_theme_amoled_surface_override</item>
         <item name="colorSurfaceContainerLow">@color/md_theme_amoled_surface_override</item>
         <item name="colorSurfaceContainer">@color/md_theme_amoled_surface_override</item>
@@ -60,9 +67,16 @@
         <item name="android:dialogTheme">@style/ThemeOverlay.App.Dialog.Amoled</item>
         <item name="dialogTheme">@style/ThemeOverlay.App.Dialog.Amoled</item>
 
-        <item name="android:colorBackground">@color/md_theme_amoled_surface_override</item>
-        <item name="android:windowBackground">@color/md_theme_amoled_surface_override</item>
+        <item name="android:colorBackground">#000000</item>
+        <item name="android:windowBackground">#000000</item>
         <item name="android:scrollbars">none</item>
+        <!-- Piterfy: shared visual language with the web player. -->
+        <item name="android:fontFamily">@font/figtree</item>
+        <item name="fontFamily">@font/figtree</item>
+        <item name="shapeAppearanceSmallComponent">@style/PiterfyShapeSmall</item>
+        <item name="shapeAppearanceMediumComponent">@style/PiterfyShapeMedium</item>
+        <item name="materialButtonStyle">@style/PiterfyButton</item>
+        <item name="materialCardViewStyle">@style/PiterfyCard</item>
 
         <!-- For API 24 to API 29-ish -->
         <item name="android:statusBarColor">@color/md_theme_amoled_surface_override</item>
@@ -85,7 +99,7 @@
 
         <!-- Regular surface overriding -->
         <item name="colorSurface">@color/md_theme_amoled_surface_override</item>
-        <item name="colorSurfaceVariant">@color/md_theme_amoled_surface_override</item>
+        <item name="colorSurfaceVariant">#282828</item>
         <item name="colorSurfaceContainerLowest">@color/md_theme_amoled_surface_override</item>
         <item name="colorSurfaceContainerLow">@color/md_theme_amoled_surface_override</item>
         <item name="colorSurfaceContainer">@color/md_theme_amoled_surface_override</item>
@@ -106,7 +120,7 @@
 
         <!-- Regular surface overriding -->
         <item name="colorSurface">@color/md_theme_amoled_surface_override</item>
-        <item name="colorSurfaceVariant">@color/md_theme_amoled_surface_override</item>
+        <item name="colorSurfaceVariant">#282828</item>
         <item name="colorSurfaceContainerLowest">@color/md_theme_amoled_surface_override</item>
         <item name="colorSurfaceContainerLow">@color/md_theme_amoled_surface_override</item>
         <item name="colorSurfaceContainer">@color/md_theme_amoled_surface_override</item>
@@ -127,7 +141,7 @@
 
         <!-- Regular surface overriding -->
         <item name="colorSurface">@color/md_theme_amoled_surface_override</item>
-        <item name="colorSurfaceVariant">@color/md_theme_amoled_surface_override</item>
+        <item name="colorSurfaceVariant">#282828</item>
         <item name="colorSurfaceContainerLowest">@color/md_theme_amoled_surface_override</item>
         <item name="colorSurfaceContainerLow">@color/md_theme_amoled_surface_override</item>
         <item name="colorSurfaceContainer">@color/md_theme_amoled_surface_override</item>
@@ -148,7 +162,7 @@
 
         <!-- Regular surface overriding -->
         <item name="colorSurface">@color/md_theme_amoled_surface_override</item>
-        <item name="colorSurfaceVariant">@color/md_theme_amoled_surface_override</item>
+        <item name="colorSurfaceVariant">#282828</item>
         <item name="colorSurfaceContainerLowest">@color/md_theme_amoled_surface_override</item>
         <item name="colorSurfaceContainerLow">@color/md_theme_amoled_surface_override</item>
         <item name="colorSurfaceContainer">@color/md_theme_amoled_surface_override</item>
@@ -169,7 +183,7 @@
 
         <!-- Regular surface overriding -->
         <item name="colorSurface">@color/md_theme_amoled_surface_override</item>
-        <item name="colorSurfaceVariant">@color/md_theme_amoled_surface_override</item>
+        <item name="colorSurfaceVariant">#282828</item>
         <item name="colorSurfaceContainerLowest">@color/md_theme_amoled_surface_override</item>
         <item name="colorSurfaceContainerLow">@color/md_theme_amoled_surface_override</item>
         <item name="colorSurfaceContainer">@color/md_theme_amoled_surface_override</item>

@@ -145,10 +145,11 @@ class LoginServerFragment : Fragment() {
         binding.createOrUpdateButton.text = getString(R.string.la_server_button_create)
         binding.deleteButton.isEnabled = false
         binding.testButton.isEnabled = false
-        binding.serverNameField.setText("")
+        // Piterfy: nowy serwer od razu podpowiada Piterfy
+        binding.serverNameField.setText(R.string.piterfy_default_server_name)
         binding.serverUserField.setText("")
         binding.serverPasswordField.setText("")
-        binding.serverPublicUrlField.setText("")
+        binding.serverPublicUrlField.setText(R.string.piterfy_default_server_url)
         binding.serverLocalUrlField.setText("")
         binding.serverCertField.setText("")
     }

@@ -24,3 +24,7 @@ app/tempus/
 app/degoogled/
 .agents/
 .kotlin
+/.signing/
+*.p12
+*.keystore
+*.jks

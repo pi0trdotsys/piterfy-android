@@ -29,7 +29,7 @@
         android:layout_height="wrap_content"
         android:paddingStart="16dp"
         android:paddingEnd="16dp"
-        android:text="@string/home_title_internet_radio_station"
+        android:text="@string/piterfy_radio_live"
         app:layout_constraintTop_toBottomOf="@id/internet_radio_station_pre_text_view"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />

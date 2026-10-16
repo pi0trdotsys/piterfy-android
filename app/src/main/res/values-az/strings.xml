@@ -54,7 +54,7 @@
     <string name="album_page_release_dates_label">Buraxılış tarixi: %1$s, ilk buraxılış: %2$s</string>
     <string name="album_page_shuffle_button">Qarışdır</string>
     <string name="album_page_tracks_count_and_duration">%1$d mahnı  •  %2$d dəqiqə</string>
-    <string name="app_name">Tempus</string>
+    <string name="app_name">Piterfy</string>
     <string name="artist_adapter_radio_station_starting">Axtarılır…</string>
     <string name="artist_bottom_sheet_instant_mix">Ani qarışıq yarat</string>
     <string name="artist_bottom_sheet_shuffle">Qarışdır</string>
@@ -425,20 +425,20 @@
     <string name="server_unreachable_dialog_positive_button">Yenə də davam et</string>
     <string name="server_unreachable_dialog_summary">İstənilən server əlçatan deyil. Davam etsəniz, bu dialoq növbəti bir saat ərzində görünməyəcək.</string>
     <string name="server_unreachable_dialog_title">Server əlçatan deyil</string>
-    <string name="settings_about_summary">Tempus xüsusi olaraq Android üçün hazırlanmış, Subsonic serverləri ilə işləyən açıq mənbəli və yüngül musiqi tətbiqidir.</string>
+    <string name="settings_about_summary">Piterfy xüsusi olaraq Android üçün hazırlanmış, Subsonic serverləri ilə işləyən açıq mənbəli və yüngül musiqi tətbiqidir.</string>
     <string name="settings_about_title">Haqqında</string>
     <string name="settings_always_on_display">Ekran həmişə açıq</string>
     <string name="settings_allow_playlist_duplicates">Pleylistə təkrar mahnı əlavə etməyə icazə ver</string>
     <string name="settings_allow_playlist_duplicates_summary">Aktiv olduqda pleylistə əlavə edilən mahnıların təkrarlanması yoxlanılmayacaq.</string>
     <string name="settings_audio_transcode_download_format">Transkodlaşdırma formatı</string>
-    <string name="settings_audio_transcode_download_priority_summary">Aktiv olduqda Tempus mahnının aşağıdakı transkodlaşdırma parametrləri ilə yüklənməsini məcbur etməyəcək.</string>
+    <string name="settings_audio_transcode_download_priority_summary">Aktiv olduqda Piterfy mahnının aşağıdakı transkodlaşdırma parametrləri ilə yüklənməsini məcbur etməyəcək.</string>
     <string name="settings_audio_transcode_download_priority_title">Yükləmələrdə serverin yayım parametrlərinə üstünlük ver</string>
-    <string name="settings_audio_transcode_download_summary">Aktiv olduqda Tempus transkodlaşdırılmış mahnıları yükləyəcək.</string>
+    <string name="settings_audio_transcode_download_summary">Aktiv olduqda Piterfy transkodlaşdırılmış mahnıları yükləyəcək.</string>
     <string name="settings_audio_transcode_download_title">Transkodlaşdırılmış mahnıları yüklə</string>
     <string name="settings_audio_transcode_format_download">Yükləmələr üçün transkodlaşdırma formatı</string>
     <string name="settings_audio_transcode_format_mobile">Mobil şəbəkədə transkodlaşdırma formatı</string>
     <string name="settings_audio_transcode_format_wifi">Wi-Fi şəbəkəsində transkodlaşdırma formatı</string>
-    <string name="settings_audio_transcode_priority_summary">Aktiv olduqda Tempus mahnının aşağıdakı transkodlaşdırma parametrləri ilə yayımlanmasını məcbur etməyəcək.</string>
+    <string name="settings_audio_transcode_priority_summary">Aktiv olduqda Piterfy mahnının aşağıdakı transkodlaşdırma parametrləri ilə yayımlanmasını məcbur etməyəcək.</string>
     <string name="settings_audio_transcode_priority_title">Serverin transkodlaşdırma parametrlərinə üstünlük ver</string>
     <string name="settings_audio_transcode_priority_toast">Mahnının transkodlaşdırılmasında serverə üstünlük verildi</string>
     <string name="settings_choose_download_folder">Yüklənmiş musiqi faylları üçün qovluq seç</string>
@@ -607,7 +607,7 @@
     <string name="toolbar_navigation_drawer_closed">Naviqasiya menyusu bağlıdır</string>
     <string name="favorite_icon_description">Sevimli</string>
 
-    <string name="asset_link_clipboard_label">Tempus element keçidi</string>
+    <string name="asset_link_clipboard_label">Piterfy element keçidi</string>
     <string name="asset_link_label_song">Mahnının UID-si</string>
     <string name="asset_link_label_album">Albomun UID-si</string>
     <string name="asset_link_label_artist">İfaçının UID-si</string>
@@ -691,9 +691,9 @@
     <string name="track_info_year">İl</string>
     <string name="undraw_page">unDraw</string>
     <string name="undraw_thanks">İllüstrasiyaları ilə bu tətbiqi daha gözəl etməyə kömək edən unDraw layihəsinə xüsusi təşəkkür edirik.</string>
-    <string name="widget_label">Tempus viceti</string>
+    <string name="widget_label">Piterfy viceti</string>
     <string name="widget_not_playing">Səsləndirilmir</string>
-    <string name="widget_placeholder_subtitle">Tempus tətbiqini aç</string>
+    <string name="widget_placeholder_subtitle">Piterfy tətbiqini aç</string>
     <string name="widget_time_elapsed_placeholder">0:00</string>
     <string name="widget_time_duration_placeholder">0:00</string>
     <string name="widget_content_desc_album_art">Albomun üz qabığı</string>
@@ -763,7 +763,7 @@
         <item>@string/sleep_timer_end_of_track_label</item>
         <item>Fərdi\u2026</item>
     </string-array>
-    <string name="customactivityoncrash_error_activity_error_occurred_explanation">Tempus qəza ilə dayandı.</string>
+    <string name="customactivityoncrash_error_activity_error_occurred_explanation">Piterfy qəza ilə dayandı.</string>
     <string name="playlist_error_not_found_title">Pleylist tapılmadı</string>
     <string name="playlist_error_not_found_message">Bu pleylist serverdə tapılmadı. O, yerli keşinizdən silinəcək.</string>
     <string name="playlist_error_not_found_toast">Pleylist keşdən silindi</string>
@@ -772,7 +772,7 @@
     <!-- Crash Activity -->
 
     <string name="ca_info_label">Məlumat</string>
-    <string name="ca_info_title">Tempus qəzası</string>
+    <string name="ca_info_title">Piterfy qəzası</string>
     <string name="ca_info_description">
         Problemi həll etmək üçün GitHub üzərində xəta bildirişi açın və qəza hesabatının surətini əlavə edin.
     </string>
@@ -808,7 +808,7 @@
     <string name="la_appbar_themes_title">Tema redaktoru</string>
     <string name="la_appbar_server_title">Server redaktoru</string>
 
-    <string name="la_greeting_description">Xüsusi olaraq Android üçün hazırlanmış, Subsonic serverləri ilə işləyən açıq mənbəli musiqi tətbiqi Tempus-a xoş gəlmisiniz.</string>
+    <string name="la_greeting_description">Xüsusi olaraq Android üçün hazırlanmış, Subsonic serverləri ilə işləyən açıq mənbəli musiqi tətbiqi Piterfy-a xoş gəlmisiniz.</string>
 
     <string name="la_server_title">Serverin qurulması</string>
     <string name="la_server_field_server_empty_error">Məcburi sahə</string>

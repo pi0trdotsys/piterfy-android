@@ -39,6 +39,13 @@
         <item name="android:statusBarColor">?attr/colorSurface</item>
         <item name="android:navigationBarColor">?attr/colorSurface</item>
         <item name="android:scrollbars">none</item>
+        <!-- Piterfy: shared visual language with the web player. -->
+        <item name="android:fontFamily">@font/figtree</item>
+        <item name="fontFamily">@font/figtree</item>
+        <item name="shapeAppearanceSmallComponent">@style/PiterfyShapeSmall</item>
+        <item name="shapeAppearanceMediumComponent">@style/PiterfyShapeMedium</item>
+        <item name="materialButtonStyle">@style/PiterfyButton</item>
+        <item name="materialCardViewStyle">@style/PiterfyCard</item>
 
         <item name="floatingActionButtonStyle">@style/FloatingActionButtonStyle</item>
         <item name="snackbarStyle">@style/Widget.App.Snackbar</item>
