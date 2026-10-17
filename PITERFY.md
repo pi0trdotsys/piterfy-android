@@ -86,3 +86,14 @@ Szkielet Tempus (fragmenty, logika, odtwarzanie) bez zmian; przerobiona jest tyl
 | Pełny odtwarzacz: duży biały przycisk play, cienki biały pasek postępu, serce zielone po polubieniu, losowo/powtarzaj zielone gdy włączone | `inner_fragment_player_controller_layout.xml`, `PlayerControllerFragment.tintModeButtons` |
 | Strona albumu i playlisty: gradient z okładki, tytuł do lewej, zielony przycisk „Odtwórz” | `fragment_album_page.xml`, `fragment_playlist_page.xml` |
 | Okrągłe zdjęcia wykonawców | `Artist*Adapter.java` (`circleCrop`) |
+
+### Poprawki wyglądu (po testach na telefonie)
+
+| Zmiana | Gdzie |
+|---|---|
+| Tekst chipsów Muzyka/Podcasty/Radio na środku pigułki (własny widok zakładki; odstępy jako marginesy, bo padding paska przesuwał tło względem tekstu) | `layout/piterfy_chip_tab.xml`, `piterfy_chips_tabs.xml`, `HomeFragment.styleChips` |
+| Przycisk play/pauza: białe koło z czarną ikoną bez własnego kółka (podmienione ikony Media3) | `drawable/exo_styled_controls_play.xml`, `exo_styled_controls_pause.xml` |
+| Jakość utworu zielonym słowem: Niska / Normalna / Wysoka / Bezstratna (z formatu i bitrate, od razu); analiza widma z serwera koryguje: pomarańczowo przy fałszywych kopiach, żółto przy niepewnych | `util/PiterfyQualityClient.java` |
+| Logo 18 stacji radiowych wbudowane w aplikację (`res/raw/radio_<id>.png`) i kopiowane do okładek radia; Jedynka, Dwójka i RMF Classic mają własne kafelki, bo nie ma do nich oficjalnych logo do pobrania | `util/PiterfyRadioCatalog.installCovers` |
+
+Logo stacji są znakami towarowymi ich właścicieli — wykorzystane tylko jako ikony stacji w prywatnej aplikacji.

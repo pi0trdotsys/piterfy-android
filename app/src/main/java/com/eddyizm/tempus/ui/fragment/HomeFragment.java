@@ -82,6 +82,25 @@ public class HomeFragment extends Fragment {
         appBarLayout.addView(tabLayout);
     }
 
+    /** Piterfy: odstepy chipsow (margines) i wewnetrzny padding tekstu - tekst ma byc na srodku pigulki. */
+    private void styleChips() {
+        if (tabLayout == null) return;
+        float density = getResources().getDisplayMetrics().density;
+        int sideMargin = Math.round(4 * density), verticalMargin = Math.round(6 * density);
+        int sidePadding = Math.round(16 * density), verticalPadding = Math.round(8 * density);
+        for (int i = 0; i < tabLayout.getTabCount(); i++) {
+            TabLayout.Tab tab = tabLayout.getTabAt(i);
+            if (tab == null) continue;
+            android.view.ViewGroup.LayoutParams params = tab.view.getLayoutParams();
+            if (params instanceof android.view.ViewGroup.MarginLayoutParams) {
+                ((android.view.ViewGroup.MarginLayoutParams) params).setMargins(i == 0 ? Math.round(16 * density) : sideMargin, verticalMargin, sideMargin, verticalMargin);
+                tab.view.setLayoutParams(params);
+            }
+            tab.view.setPaddingRelative(sidePadding, verticalPadding, sidePadding, verticalPadding);
+            tab.view.setMinimumWidth(0);
+        }
+    }
+
     private void initHomePager() {
         HomePager pager = new HomePager(this);
 
@@ -99,17 +118,14 @@ public class HomeFragment extends Fragment {
 
         new TabLayoutMediator(tabLayout, bind.homeViewPager,
                 (tab, position) -> {
+                    tab.setCustomView(R.layout.piterfy_chip_tab);  // Piterfy: tekst chipsa na srodku
                     tab.setText(pager.getPageTitle(position));
                     // tab.setIcon(pager.getPageIcon(position));
                 }
         ).attach();
 
-        tabLayout.postDelayed(() -> {  // font wczytuje sie chwile - przelicz szerokosc chipsow, zeby tekst sie miescil
-            for (int i = 0; i < tabLayout.getTabCount(); i++) {
-                TabLayout.Tab tab = tabLayout.getTabAt(i);
-                if (tab != null) tab.view.requestLayout();
-            }
-        }, 400);
+        styleChips();
+        tabLayout.postDelayed(this::styleChips, 400);  // font wczytuje sie chwile - przelicz chipsy ponownie
         tabLayout.setVisibility(View.VISIBLE);
         tabLayout.setTabIndicatorFullWidth(false);
         tabLayout.setSelectedTabIndicatorColor(android.graphics.Color.TRANSPARENT);

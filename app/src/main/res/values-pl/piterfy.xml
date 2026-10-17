@@ -27,4 +27,10 @@
  <string name="piterfy_discover_count">%1$d utworów · dobrane dla Ciebie</string>
 <string name="piterfy_episode_progress">Kontynuuj od %1$s · %2$s</string><string name="piterfy_continue_episode">Dokończ odcinek</string>
     <string name="piterfy_radio_live">Radio na żywo</string>
+ <string name="piterfy_q_low">Niska</string>
+ <string name="piterfy_q_normal">Normalna</string>
+ <string name="piterfy_q_high">Wysoka</string>
+ <string name="piterfy_q_lossless">Bezstratna</string>
+ <string name="piterfy_quality_fake">%1$s · ≈ MP3 %2$s kb/s (plik udaje lepszy)</string>
+ <string name="piterfy_quality_maybe">%1$s · niepewne</string>
 </resources>

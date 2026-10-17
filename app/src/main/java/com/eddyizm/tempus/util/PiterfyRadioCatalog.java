@@ -50,7 +50,30 @@ public final class PiterfyRadioCatalog {
         return result;
     }
     private static String normalized(String value) { return value == null ? "" : value.trim().toLowerCase(Locale.ROOT); }
+    /**
+     * Logo stacji startowych sa wbudowane w aplikacje (res/raw/radio_<id>.png) i kopiowane do katalogu okladek
+     * radia - tego samego, z ktorego korzystaja listy, powiadomienie i ekran blokady. Istniejacych plikow
+     * (np. okladki wybranej przez uzytkownika) nie nadpisuje.
+     */
+    static void installCovers(Context context) {
+        for (String[] row : STATIONS) {
+            java.io.File target = RadioCoverArtDownloader.getLocalCoverFile("local_piterfy_" + row[0]);
+            if (target.exists()) continue;
+            int res = context.getResources().getIdentifier("radio_" + row[0], "raw", context.getPackageName());
+            if (res == 0) continue;
+            try (java.io.InputStream in = context.getResources().openRawResource(res);
+                 java.io.OutputStream out = new java.io.FileOutputStream(target)) {
+                byte[] buffer = new byte[8192];
+                int read;
+                while ((read = in.read(buffer)) != -1) out.write(buffer, 0, read);
+            } catch (java.io.IOException e) {
+                target.delete();  // niepelny plik zostalby wzięty za okladke
+            }
+        }
+    }
+
     public static synchronized void seedIfNeeded(Context context) {
+        installCovers(context);
         var prefs = context.getSharedPreferences("piterfy_radio_catalog", Context.MODE_PRIVATE);
         if (prefs.getBoolean("v1_added", false)) return;
         AppDatabase db = AppDatabase.getInstance();

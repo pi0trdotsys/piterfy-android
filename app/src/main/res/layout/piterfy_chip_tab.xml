@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Piterfy: wlasna tresc zakladki-chipsa - tekst dokladnie na srodku pigulki
+     (domyslna tresc zakladki Material rezerwuje miejsce na ikone i przesuwa tekst).
+     android:id/text1 - pod tym id TabLayout sam wstawia tytul zakladki. -->
+<TextView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@android:id/text1"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:layout_gravity="center"
+    android:ellipsize="none"
+    android:fontFamily="@font/figtree_family"
+    android:gravity="center"
+    android:singleLine="true"
+    android:textColor="@color/piterfy_chip_text"
+    android:textSize="14sp"
+    android:textStyle="bold" />

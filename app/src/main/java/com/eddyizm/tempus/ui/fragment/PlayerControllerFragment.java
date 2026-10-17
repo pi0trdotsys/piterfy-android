@@ -468,7 +468,7 @@ public class PlayerControllerFragment extends Fragment {
         if (qualityClient != null && mediaMetadata.extras != null) {
             String id = mediaMetadata.extras.getString("id");
             if (id == null && getBrowser() != null && getBrowser().getCurrentMediaItem() != null) id = getBrowser().getCurrentMediaItem().mediaId;
-            qualityClient.show(id, bind.piterfySourceQuality);
+            qualityClient.show(id, bind.piterfySourceQuality, mediaMetadata.extras.getString("suffix"), mediaMetadata.extras.getInt("bitrate", 0));
         }
         boolean isLocal = !com.eddyizm.tempus.lan.LanRemoteSession.isActive() && MusicUtil.isCurrentTrackLocal(getBrowser());
 

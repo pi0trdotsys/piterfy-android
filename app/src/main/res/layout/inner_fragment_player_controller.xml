@@ -8,8 +8,8 @@
         android:layout_width="match_parent" android:layout_height="wrap_content"
         app:icon="@drawable/ic_lan_remote" app:iconTint="@null" app:iconGravity="textStart" android:minHeight="48dp" android:text="@string/lan_play_on" />
 <TextView android:id="@+id/piterfy_source_quality" android:layout_width="match_parent" android:layout_height="wrap_content"
- android:gravity="center" android:paddingHorizontal="16dp" android:paddingBottom="8dp" android:textSize="12sp"
- android:textColor="?attr/colorOnSurfaceVariant" android:text="@string/piterfy_quality_unknown"/>
+ android:gravity="center" android:paddingHorizontal="16dp" android:paddingBottom="8dp" android:textSize="15sp"
+ android:textStyle="bold" android:textColor="#FF1ED760" android:text=""/>
 <androidx.media3.ui.PlayerControlView
     android:id="@+id/now_playing_media_controller_view"
     android:layout_width="match_parent"
