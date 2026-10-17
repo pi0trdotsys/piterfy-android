@@ -76,9 +76,8 @@ public class HomeFragment extends Fragment {
 
         Objects.requireNonNull(materialToolbar.getOverflowIcon()).setTint(requireContext().getResources().getColor(R.color.titleTextColor, null));
 
-        tabLayout = new TabLayout(requireContext());
-        tabLayout.setTabGravity(TabLayout.GRAVITY_FILL);
-        tabLayout.setTabMode(TabLayout.MODE_FIXED);
+        // Piterfy: zakladki jako chipsy w stylu Spotify (layout piterfy_chips_tabs)
+        tabLayout = (TabLayout) getLayoutInflater().inflate(R.layout.piterfy_chips_tabs, appBarLayout, false);
 
         appBarLayout.addView(tabLayout);
     }
@@ -105,9 +104,15 @@ public class HomeFragment extends Fragment {
                 }
         ).attach();
 
+        tabLayout.postDelayed(() -> {  // font wczytuje sie chwile - przelicz szerokosc chipsow, zeby tekst sie miescil
+            for (int i = 0; i < tabLayout.getTabCount(); i++) {
+                TabLayout.Tab tab = tabLayout.getTabAt(i);
+                if (tab != null) tab.view.requestLayout();
+            }
+        }, 400);
         tabLayout.setVisibility(View.VISIBLE);
         tabLayout.setTabIndicatorFullWidth(false);
-        tabLayout.setSelectedTabIndicatorColor(0xff1db954);
+        tabLayout.setSelectedTabIndicatorColor(android.graphics.Color.TRANSPARENT);
 
         bind.homeViewPager.registerOnPageChangeCallback(new ViewPager2.OnPageChangeCallback() {
             @Override

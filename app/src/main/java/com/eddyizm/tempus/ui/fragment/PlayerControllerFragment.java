@@ -361,17 +361,30 @@ public class PlayerControllerFragment extends Fragment {
             @Override
             public void onShuffleModeEnabledChanged(boolean shuffleModeEnabled) {
                 Preferences.setShuffleModeEnabled(shuffleModeEnabled);
+                tintModeButtons(shuffleModeEnabled, Preferences.getRepeatMode());
             }
 
             @Override
             public void onRepeatModeChanged(int repeatMode) {
                 Preferences.setRepeatMode(repeatMode);
+                tintModeButtons(Preferences.isShuffleModeEnabled(), repeatMode);
             }
         });
     }
 
+    /** Piterfy: jak w Spotify - wlaczone losowanie/powtarzanie swieci na zielono, wylaczone jest biale. */
+    private void tintModeButtons(boolean shuffle, int repeatMode) {
+        if (bind == null) return;
+        int green = 0xFF1ED760, white = 0xFFFFFFFF;
+        android.widget.ImageView shuffleButton = bind.nowPlayingMediaControllerView.findViewById(R.id.exo_shuffle);
+        android.widget.ImageView repeatButton = bind.nowPlayingMediaControllerView.findViewById(R.id.exo_repeat_toggle);
+        if (shuffleButton != null) shuffleButton.setColorFilter(shuffle ? green : white);
+        if (repeatButton != null) repeatButton.setColorFilter(repeatMode != Player.REPEAT_MODE_OFF ? green : white);
+    }
+
     private void setMetadata(MediaMetadata mediaMetadata) {
         if (bind == null || (com.eddyizm.tempus.lan.LanRemoteSession.isActive() && !renderingRemote)) return;
+        tintModeButtons(Preferences.isShuffleModeEnabled(), Preferences.getRepeatMode());
         String type = mediaMetadata.extras != null ? mediaMetadata.extras.getString("type") : null;
 
         if (Objects.equals(type, Constants.MEDIA_TYPE_RADIO)) {

@@ -898,4 +898,6 @@
     <string name="hello_blank_fragment">Hello blank fragment</string>
 
     <string name="piterfy_podcasts_empty">No podcasts yet. Add shows to podcasts.txt on the Piterfy server.</string>
+    <string name="piterfy_profile">Profile</string>
+    <string name="piterfy_favorites">Liked Songs</string>
 </resources>

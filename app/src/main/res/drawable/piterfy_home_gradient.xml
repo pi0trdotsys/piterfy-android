@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Piterfy: zielona poswiata u gory strony glownej, jak w Spotify -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android">
+    <gradient
+        android:angle="270"
+        android:startColor="#FF1B5E3A"
+        android:centerColor="#FF173F2B"
+        android:endColor="#FF121212"
+        android:centerY="0.18" />
+</shape>

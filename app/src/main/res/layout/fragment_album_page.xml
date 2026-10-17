@@ -10,7 +10,7 @@
         android:id="@+id/anim_toolbar"
         android:layout_width="match_parent"
         android:layout_height="?attr/actionBarSize"
-        android:background="?attr/colorSurface"
+        android:background="@android:color/transparent"
         app:layout_collapseMode="pin"
         app:navigationIcon="@drawable/ic_arrow_back" />
 
@@ -20,7 +20,10 @@
         <com.google.android.material.appbar.AppBarLayout
             android:id="@+id/app_bar_layout"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content">
+            android:layout_height="wrap_content"
+            android:background="@android:color/transparent"
+            android:stateListAnimator="@null"
+            app:liftOnScroll="false">
 
             <androidx.constraintlayout.widget.ConstraintLayout
                 android:id="@+id/album_info_sector"
@@ -48,14 +51,18 @@
                     style="@style/LabelExtraLarge"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
+                    android:layout_marginStart="18dp"
                     android:ellipsize="end"
                     android:maxLines="2"
-                    android:paddingTop="8dp"
+                    android:paddingTop="12dp"
                     android:singleLine="false"
                     android:text="@string/label_placeholder"
-                    android:textAlignment="center"
-                    app:layout_constraintEnd_toEndOf="@+id/album_cover_image_view"
-                    app:layout_constraintStart_toStartOf="@+id/album_cover_image_view"
+                    android:textAlignment="viewStart"
+                    android:textColor="#FFFFFFFF"
+                    android:textSize="24sp"
+                    android:textStyle="bold"
+                    app:layout_constraintEnd_toStartOf="@+id/album_other_info_button"
+                    app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toBottomOf="@+id/album_cover_image_view" />
 
                 <FrameLayout
@@ -78,6 +85,9 @@
                 <TextView
                     android:id="@+id/album_artist_label"
                     style="@style/LabelMedium"
+                    android:textColor="#FFFFFFFF"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="18dp"
@@ -85,7 +95,7 @@
                     android:ellipsize="end"
                     android:maxLines="1"
                     android:text="@string/label_placeholder"
-                    android:textAlignment="center"
+                    android:textAlignment="viewStart"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toBottomOf="@+id/album_name_label" />
@@ -97,8 +107,9 @@
                     android:layout_height="wrap_content"
                     android:layout_marginStart="18dp"
                     android:layout_marginEnd="18dp"
+                    android:textColor="#FFB3B3B3"
                     android:text="@string/label_placeholder"
-                    android:textAlignment="center"
+                    android:textAlignment="viewStart"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toBottomOf="@+id/album_artist_label" />
@@ -179,6 +190,7 @@
                 <View
                     android:id="@+id/upper_button_divider"
                     style="@style/Divider"
+                    android:visibility="invisible"
                     android:layout_marginStart="18dp"
                     android:layout_marginTop="4dp"
                     android:layout_marginEnd="18dp"
@@ -217,6 +229,9 @@
                             android:padding="10dp"
                             android:text="@string/album_page_play_button"
                             android:textAllCaps="false"
+                            android:textColor="#FF000000"
+                            app:backgroundTint="#FF1ED760"
+                            app:iconTint="#FF000000"
                             app:icon="@drawable/ic_play"
                             app:iconGravity="textStart"
                             app:iconPadding="18dp" />
@@ -231,6 +246,9 @@
                             android:padding="10dp"
                             android:text="@string/album_page_shuffle_button"
                             android:textAllCaps="false"
+                            android:textColor="#FFFFFFFF"
+                            app:backgroundTint="#33FFFFFF"
+                            app:iconTint="#FFFFFFFF"
                             app:icon="@drawable/ic_shuffle"
                             app:iconGravity="textStart"
                             app:iconPadding="18dp" />
@@ -270,6 +288,7 @@
                 <View
                     android:id="@+id/bottom_button_divider"
                     style="@style/Divider"
+                    android:visibility="invisible"
                     android:layout_marginStart="18dp"
                     android:layout_marginEnd="18dp"
                     android:layout_marginBottom="18dp"

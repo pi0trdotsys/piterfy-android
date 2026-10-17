@@ -33,8 +33,8 @@
         <item name="android:navigationBarColor">?attr/colorSurface</item>
         <item name="android:scrollbars">none</item>
         <!-- Piterfy: shared visual language with the web player. -->
-        <item name="android:fontFamily">@font/figtree</item>
-        <item name="fontFamily">@font/figtree</item>
+        <item name="android:fontFamily">@font/figtree_family</item>
+        <item name="fontFamily">@font/figtree_family</item>
         <item name="shapeAppearanceSmallComponent">@style/PiterfyShapeSmall</item>
         <item name="shapeAppearanceMediumComponent">@style/PiterfyShapeMedium</item>
         <item name="materialButtonStyle">@style/PiterfyButton</item>
@@ -71,8 +71,8 @@
         <item name="android:windowBackground">#000000</item>
         <item name="android:scrollbars">none</item>
         <!-- Piterfy: shared visual language with the web player. -->
-        <item name="android:fontFamily">@font/figtree</item>
-        <item name="fontFamily">@font/figtree</item>
+        <item name="android:fontFamily">@font/figtree_family</item>
+        <item name="fontFamily">@font/figtree_family</item>
         <item name="shapeAppearanceSmallComponent">@style/PiterfyShapeSmall</item>
         <item name="shapeAppearanceMediumComponent">@style/PiterfyShapeMedium</item>
         <item name="materialButtonStyle">@style/PiterfyButton</item>

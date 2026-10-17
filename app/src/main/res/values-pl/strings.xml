@@ -898,4 +898,6 @@
 	
     <string name="hello_blank_fragment">Witaj pusty fragmencie</string>
     <string name="piterfy_podcasts_empty">Brak audycji. Dopisz je w pliku podcasts.txt na serwerze Piterfy.</string>
+    <string name="piterfy_profile">Profil</string>
+    <string name="piterfy_favorites">Ulubione</string>
 </resources>

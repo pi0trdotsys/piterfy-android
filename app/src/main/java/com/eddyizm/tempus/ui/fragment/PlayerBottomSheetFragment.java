@@ -69,6 +69,11 @@ public class PlayerBottomSheetFragment extends Fragment {
 
         customizeBottomSheetAction();
         initViewPager();
+        // Piterfy: kolor z okladki jak w Spotify - karta mini-odtwarzacza i gradient pelnego odtwarzacza
+        com.eddyizm.tempus.util.PiterfyAmbient.observe(getViewLifecycleOwner(), color -> {
+            ambient = color;
+            paintAmbient();
+        });
         setHeaderBookmarksButton();
         com.eddyizm.tempus.lan.LanRemoteSession.state().observe(getViewLifecycleOwner(), this::renderRemote);
 
@@ -113,8 +118,30 @@ public class PlayerBottomSheetFragment extends Fragment {
         bind = null;
     }
 
+    private int ambient = com.eddyizm.tempus.util.PiterfyAmbient.DEFAULT;
+
     private void customizeBottomSheetBackground() {
-        bind.playerHeaderLayout.getRoot().setBackgroundColor(SurfaceColors.getColorForElevation(requireContext(), 8));
+        paintAmbient();
+    }
+
+    /** Piterfy: zaokraglona karta mini-odtwarzacza i gradient tla pelnego odtwarzacza w kolorze okladki. */
+    private void paintAmbient() {
+        if (bind == null) return;
+        float density = getResources().getDisplayMetrics().density;
+        android.graphics.drawable.GradientDrawable card = new android.graphics.drawable.GradientDrawable();
+        card.setColor(ambient);
+        card.setCornerRadius(8 * density);
+        android.graphics.drawable.ColorDrawable base = new android.graphics.drawable.ColorDrawable(com.eddyizm.tempus.util.PiterfyAmbient.SURFACE);
+        bind.playerHeaderLayout.getRoot().setBackground(new android.graphics.drawable.LayerDrawable(new android.graphics.drawable.Drawable[]{
+                base,
+                new android.graphics.drawable.InsetDrawable(card, Math.round(8 * density), Math.round(4 * density), Math.round(8 * density), Math.round(4 * density))}));
+
+        View body = bind.getRoot().findViewById(R.id.player_body_layout);  // id z <include> nadpisuje id korzenia
+        if (body != null) {
+            body.setBackground(new android.graphics.drawable.GradientDrawable(
+                    android.graphics.drawable.GradientDrawable.Orientation.TOP_BOTTOM,
+                    new int[]{ambient, com.eddyizm.tempus.util.PiterfyAmbient.SURFACE, com.eddyizm.tempus.util.PiterfyAmbient.SURFACE}));
+        }
     }
 
     private void customizeBottomSheetAction() {
@@ -206,6 +233,8 @@ public class PlayerBottomSheetFragment extends Fragment {
             playerBottomSheetViewModel.setLiveDescription(mediaMetadata.extras.getString("description", null));
 
             String type = mediaMetadata.extras.getString("type");
+            com.eddyizm.tempus.util.PiterfyAmbient.update(requireContext(),
+                    Objects.equals(type, Constants.MEDIA_TYPE_RADIO) ? null : mediaMetadata.extras.getString("coverArtId"));
 
             if (Objects.equals(type, Constants.MEDIA_TYPE_RADIO)) {
                 // For radio: keep header consistent with full player

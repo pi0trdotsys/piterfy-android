@@ -71,3 +71,18 @@ Prywatny klucz jest w `.signing/piterfy-release.p12`, a hasła w `.signing/keyst
 `./gradlew assembleTempusRelease assembleDegoogledRelease` używa tego podpisu, jeśli lokalna konfiguracja istnieje. Bez niej powstaje APK bez podpisu. Workflow dla tagów `v*-piterfy.*` testuje, sprawdza lint i buduje oba warianty przed publikacją. Debug (`eu.prosinski.piterfy.debug`) i wydanie stabilne (`eu.prosinski.piterfy`) to osobne instalacje; stabilna wymaga pierwszego logowania.
 
 Wersja standardowa i degoogled także mają osobne identyfikatory. Ekran aktualizacji otwiera stronę wydania, gdzie wybierasz APK swojego wariantu.
+
+## Wygląd w stylu Spotify (warstwa wizualna)
+
+Szkielet Tempus (fragmenty, logika, odtwarzanie) bez zmian; przerobiona jest tylko warstwa wizualna:
+
+| Element | Gdzie |
+|---|---|
+| Font Figtree z wagami 400–800 (plik zmienny wymaga rodziny z `fontVariationSettings`, inaczej wszystko było „regular”) | `res/font/figtree_family.xml` |
+| Dolna nawigacja: bez „pigułki”, aktywny element biały, pełny domek, czarny gradient | `PiterfyBottomNav` (`piterfy_styles.xml`), `piterfy_nav_*` |
+| Nagłówek: awatar (zdjęcie z `/piterfy-api/avatar/…` albo zielone kółko z inicjałem), zakładki jako chipsy, zielony gradient u góry | `fragment_toolbar.xml`, `piterfy_chips_tabs.xml`, `ToolbarFragment.initAvatar` |
+| Strona główna: kafelki szybkiego dostępu 2×4, półka „Odkryte dla Ciebie” z kwadratowymi okładkami i zielonym przyciskiem play (dłuższe przytrzymanie = pobierz offline) | `ui/components/PiterfyHomePanel.java` |
+| Kolor „z okładki”: karta mini-odtwarzacza i gradient pełnego odtwarzacza | `util/PiterfyAmbient.java`, `PlayerBottomSheetFragment.paintAmbient` |
+| Pełny odtwarzacz: duży biały przycisk play, cienki biały pasek postępu, serce zielone po polubieniu, losowo/powtarzaj zielone gdy włączone | `inner_fragment_player_controller_layout.xml`, `PlayerControllerFragment.tintModeButtons` |
+| Strona albumu i playlisty: gradient z okładki, tytuł do lewej, zielony przycisk „Odtwórz” | `fragment_album_page.xml`, `fragment_playlist_page.xml` |
+| Okrągłe zdjęcia wykonawców | `Artist*Adapter.java` (`circleCrop`) |

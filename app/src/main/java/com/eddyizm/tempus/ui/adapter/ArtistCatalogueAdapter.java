@@ -79,6 +79,7 @@ public class ArtistCatalogueAdapter extends RecyclerView.Adapter<ArtistCatalogue
         CustomGlideRequest.Builder
                 .from(holder.itemView.getContext(), artist.getCoverArtId(), CustomGlideRequest.ResourceType.Artist)
                 .build()
+                .circleCrop()
                 .into(holder.item.artistCatalogueCoverImageView);
     }
 

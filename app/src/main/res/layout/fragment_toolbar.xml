@@ -4,13 +4,16 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/appbar"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content">
+    android:layout_height="wrap_content"
+    android:background="@android:color/transparent"
+    android:stateListAnimator="@null"
+    app:liftOnScroll="false">
 
     <com.google.android.material.appbar.MaterialToolbar
         android:id="@+id/toolbar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="?attr/colorSurface"
+        android:background="@android:color/transparent"
         app:layout_scrollFlags="scroll|enterAlways|snap">
 
         <!--
@@ -27,24 +30,44 @@
             android:layout_gravity="top"
             android:orientation="horizontal">
 
-            <ImageView
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:layout_gravity="top"
-                android:layout_marginTop="10dp"
-                android:layout_marginEnd="6dp"
-                android:background="@drawable/ic_toolbar_tempo" />
+            <FrameLayout
+                android:id="@+id/toolbar_avatar"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:layout_gravity="center_vertical"
+                android:layout_marginEnd="8dp"
+                android:background="@drawable/piterfy_avatar_bg"
+                android:clickable="true"
+                android:focusable="true"
+                android:contentDescription="@string/piterfy_profile">
+
+                <TextView
+                    android:id="@+id/toolbar_avatar_initial"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:gravity="center"
+                    android:text="P"
+                    android:textColor="#FF000000"
+                    android:textSize="16sp"
+                    android:textStyle="bold" />
+
+                <ImageView
+                    android:id="@+id/toolbar_avatar_image"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:scaleType="centerCrop"
+                    android:importantForAccessibility="no" />
+            </FrameLayout>
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_gravity="top"
-                android:layout_marginTop="6dp"
+                android:layout_gravity="center_vertical"
                 android:orientation="vertical">
 
                 <TextView
                     style="@style/HeadlineMedium"
-                    android:textSize="@dimen/_17sdp"
+                    android:textSize="20sp"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:paddingStart="@dimen/_8sdp"

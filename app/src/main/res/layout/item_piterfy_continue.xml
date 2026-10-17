@@ -5,12 +5,12 @@
  <ImageView android:id="@+id/continue_listening_cover_image_view" android:layout_width="64dp" android:layout_height="64dp"
  android:scaleType="centerCrop" app:layout_constraintStart_toStartOf="parent" app:layout_constraintTop_toTopOf="parent"/>
  <TextView android:id="@+id/continue_listening_title_label" android:layout_width="0dp" android:layout_height="wrap_content"
- android:layout_marginStart="12dp" android:fontFamily="@font/figtree" android:textStyle="bold" android:textSize="14sp" android:maxLines="2" android:ellipsize="end"
+ android:layout_marginStart="12dp" android:fontFamily="@font/figtree_family" android:textStyle="bold" android:textSize="14sp" android:maxLines="2" android:ellipsize="end"
  android:textColor="?attr/colorOnSurface" app:layout_constraintStart_toEndOf="@id/continue_listening_cover_image_view" app:layout_constraintEnd_toEndOf="parent" app:layout_constraintTop_toTopOf="parent"/>
  <TextView android:id="@+id/continue_listening_album_label" android:layout_width="0dp" android:layout_height="wrap_content"
- android:fontFamily="@font/figtree" android:textSize="12sp" android:maxLines="1" android:ellipsize="end"
+ android:fontFamily="@font/figtree_family" android:textSize="12sp" android:maxLines="1" android:ellipsize="end"
  android:textColor="?attr/colorOnSurfaceVariant" app:layout_constraintStart_toStartOf="@id/continue_listening_title_label" app:layout_constraintEnd_toEndOf="parent" app:layout_constraintTop_toBottomOf="@id/continue_listening_title_label"/>
  <TextView android:id="@+id/continue_listening_resume_label" android:layout_width="0dp" android:layout_height="wrap_content"
- android:fontFamily="@font/figtree" android:textSize="12sp" android:textColor="?attr/colorPrimary" android:layout_marginTop="4dp"
+ android:fontFamily="@font/figtree_family" android:textSize="12sp" android:textColor="?attr/colorPrimary" android:layout_marginTop="4dp"
  app:layout_constraintStart_toStartOf="@id/continue_listening_title_label" app:layout_constraintEnd_toEndOf="parent" app:layout_constraintTop_toBottomOf="@id/continue_listening_album_label" app:layout_constraintBottom_toBottomOf="parent"/>
 </androidx.constraintlayout.widget.ConstraintLayout>

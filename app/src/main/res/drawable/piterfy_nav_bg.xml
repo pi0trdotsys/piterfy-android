@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Piterfy: tlo dolnej nawigacji jak w Spotify - nieprzezroczysty gradient do czerni -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android">
+    <gradient
+        android:angle="90"
+        android:startColor="#FF000000"
+        android:endColor="#FF0B0B0B" />
+</shape>

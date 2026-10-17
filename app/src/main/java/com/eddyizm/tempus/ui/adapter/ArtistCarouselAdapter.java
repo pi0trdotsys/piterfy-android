@@ -51,6 +51,7 @@ public class ArtistCarouselAdapter extends RecyclerView.Adapter<ArtistCarouselAd
         CustomGlideRequest.Builder
                 .from(holder.itemView.getContext(), artist.getCoverArtId(), CustomGlideRequest.ResourceType.Artist)
                 .build()
+                .circleCrop()
                 .into(holder.item.artistCoverImageView);
     }
 

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <style name="InterFontFamily">
-        <item name="android:fontFamily">@font/figtree</item>
+        <item name="android:fontFamily">@font/figtree_family</item>
     </style>
 
 

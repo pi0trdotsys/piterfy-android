@@ -84,6 +84,34 @@ public class ToolbarFragment extends Fragment {
         super.onViewCreated(view, savedInstanceState);
 
         initMusicLibrarySwitcher();
+        initAvatar();
+    }
+
+    /** Piterfy: awatar jak w Spotify - zdjecie z serwera (profile_api.py) albo zielone kolko z inicjalem. */
+    private void initAvatar() {
+        String user = Preferences.getUser();
+        String base = Preferences.getInUseServerAddress();
+        bind.toolbarAvatarInitial.setText(user != null && !user.isEmpty() ? user.substring(0, 1).toUpperCase() : "P");
+        bind.toolbarAvatar.setOnClickListener(v -> activity.navController.navigate(R.id.settingsFragment));
+        if (user == null || base == null) return;
+        String url = base.replaceAll("/+$", "") + "/piterfy-api/avatar/" + android.net.Uri.encode(user);
+        com.bumptech.glide.Glide.with(this)
+                .load(url)
+                .circleCrop()
+                .signature(new com.bumptech.glide.signature.ObjectKey(System.currentTimeMillis() / 600000L))
+                .listener(new com.bumptech.glide.request.RequestListener<android.graphics.drawable.Drawable>() {
+                    @Override
+                    public boolean onLoadFailed(@Nullable com.bumptech.glide.load.engine.GlideException e, Object model, @NonNull com.bumptech.glide.request.target.Target<android.graphics.drawable.Drawable> target, boolean isFirstResource) {
+                        return false;  // zostaje inicjal
+                    }
+
+                    @Override
+                    public boolean onResourceReady(@NonNull android.graphics.drawable.Drawable resource, @NonNull Object model, com.bumptech.glide.request.target.Target<android.graphics.drawable.Drawable> target, @NonNull com.bumptech.glide.load.DataSource dataSource, boolean isFirstResource) {
+                        if (bind != null) bind.toolbarAvatarInitial.setVisibility(View.GONE);
+                        return false;
+                    }
+                })
+                .into(bind.toolbarAvatarImage);
     }
 
     @Override

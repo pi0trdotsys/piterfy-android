@@ -27,6 +27,8 @@
         android:insetBottom="0dp"
         app:cornerRadius="64dp"
         android:alpha="0.7"
+        app:backgroundTint="#66000000"
+        app:iconTint="#FFFFFFFF"
         app:icon="@drawable/ic_tap"
         app:layout_constraintEnd_toEndOf="@+id/now_playing_artwork_pager"
         app:layout_constraintBottom_toBottomOf="@+id/now_playing_artwork_pager" />

@@ -383,6 +383,10 @@ public class AlbumPageFragment extends Fragment implements ClickCallback {
         albumPageViewModel.getAlbum().observe(getViewLifecycleOwner(), album -> {
             if (bind != null && album != null) {
                 CustomGlideRequest.Builder.from(requireContext(), album.getCoverArtId(), CustomGlideRequest.ResourceType.Album).build().into(bind.albumCoverImageView);
+                // Piterfy: tlo strony w kolorze okladki jak w Spotify
+                com.eddyizm.tempus.util.PiterfyAmbient.forCover(requireContext(), album.getCoverArtId(), color -> {
+                    if (bind != null) bind.getRoot().setBackground(com.eddyizm.tempus.util.PiterfyAmbient.pageGradient(color));
+                });
             }
         });
     }

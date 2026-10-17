@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Piterfy: serce jak w Spotify - zielone wypelnione po polubieniu, biale puste przed -->
 <selector xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:drawable="@drawable/ic_favorite" android:state_checked="true" />
-    <item android:drawable="@drawable/ic_favorites_outlined" android:state_checked="false" />
+    <item android:drawable="@drawable/piterfy_heart_on" android:state_checked="true" />
+    <item android:drawable="@drawable/piterfy_heart_off" android:state_checked="false" />
 </selector>
