@@ -26,6 +26,7 @@ jobs:
           node connect/web/lyrics-core.test.cjs
           node --check connect/web/lyrics.js
           node --check connect/web/connect.js
+          node --check connect/web/miniplayer.js
       - name: Restore release signing
         env:
           KEYSTORE: ${{ secrets.KEYSTORE_BASE64 }}

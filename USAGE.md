@@ -446,6 +446,12 @@ Shortcuts are displayed only if the function is selected from root level:
 
 ## Known Issues
 
+### Piterfy web mini player
+
+In desktop Chrome/Edge, click the small window icon beside the queue to open the floating mini player. Drag its edges to resize, or use its size button to switch between compact and cover views. It includes play/pause, previous/next, seeking and volume. Keep the original Piterfy tab open; closing only the mini player does not stop the music.
+
+To keep it on all Windows virtual desktops, use **Win+Tab → right-click the window → Show this window on all desktops**, if your browser exposes that option. The help button inside the mini player also explains this limitation.
+
 ### Piterfy lyrics
 
 Open the full Android player and select the lyrics icon. In the browser, use **♫ Tekst**. Timed lyrics highlight the current line and follow playback. Tap a line to seek, scroll to read ahead, then use **Wróć do tekstu** to resume following. The timing button adjusts synchronization in half-second steps and remembers the correction for that song.

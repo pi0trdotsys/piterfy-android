@@ -290,15 +290,25 @@
     current() {
       if (enabled && state?.owner && !local()) {
         const song = state.items[state.index];
-        return song ? { ...song, position: state.position + (state.playing ? Math.min(9000, performance.now() - lastOk) * state.speed : 0), remote: true } : null;
+        return song ? { ...song, position: state.position + (state.playing ? Math.min(9000, performance.now() - lastOk) * state.speed : 0), playing: state.playing, volume: state.volume, output: state.devices.find(x => x.id === state.owner)?.name || 'Inne urządzenie', remote: true } : null;
       }
       const report = snapshot();
       const song = report?.items[report.index];
-      return song ? { ...song, position: report.position, remote: false } : null;
+      return song ? { ...song, position: report.position, playing: report.playing, volume: report.volume, remote: false } : null;
     },
     seek(position) {
       if (enabled && state?.owner && !local()) return command('seek', { position });
       if (audio()) audio().currentTime = position / 1000;
+    },
+    control(action, value) {
+      if (!['play', 'pause', 'previous', 'next', 'volume'].includes(action)) return;
+      if (enabled && state?.owner && !local()) return command(action, action === 'volume' ? { value } : {});
+      const element = audio();
+      if (!element) return;
+      if (action === 'volume') { element.volume = Math.max(0, Math.min(1, value)); return; }
+      if (action === 'play') return element.play();
+      if (action === 'pause') { element.pause(); return; }
+      document.querySelector('.music-player-panel .' + (action === 'next' ? 'next-audio' : 'prev-audio'))?.click();
     }
   };
   boot();
