@@ -65,6 +65,13 @@ public class PlayerBottomSheetViewModel extends AndroidViewModel {
     private final MutableLiveData<List<Child>> instantMix = new MutableLiveData<>(null);
     private final Gson gson = new Gson();
     private boolean lyricsSyncState = true;
+    private final com.eddyizm.tempus.util.PiterfyLyricsLoader lyricsLoader = new com.eddyizm.tempus.util.PiterfyLyricsLoader();
+    private final MutableLiveData<String> lyricsStatus = new MutableLiveData<>("");
+    public LiveData<String> getLyricsStatus() { return lyricsStatus; }
+    private String cacheKey(String id) { return Preferences.getServer() + "|" + Preferences.getUser() + "|" + id; }
+    public void setSyncLyricsState(boolean follow) { lyricsSyncState = follow; }
+    @Override protected void onCleared() { lyricsLoader.close(); clearCachedLyricsObserver(); super.onCleared(); }
+
     private LiveData<LyricsCache> cachedLyricsSource;
     private String currentSongId;
     private final Observer<LyricsCache> cachedLyricsObserver = this::onCachedLyricsChanged;
@@ -151,50 +158,24 @@ public class PlayerBottomSheetViewModel extends AndroidViewModel {
     }
 
     public void refreshMediaInfo(LifecycleOwner owner, Child media) {
-        lyricsLiveData.postValue(null);
-        lyricsListLiveData.postValue(null);
-        lyricsCachedLiveData.postValue(false);
-
+        lyricsLoader.cancel();
+        lyricsLiveData.setValue(null);
+        lyricsListLiveData.setValue(null);
+        lyricsCachedLiveData.setValue(false);
         clearCachedLyricsObserver();
-
         String songId = media != null ? media.getId() : currentSongId;
-
-        if (TextUtils.isEmpty(songId) || owner == null) {
-            return;
-        }
-
+        if (TextUtils.isEmpty(songId) || owner == null) { lyricsStatus.setValue(""); return; }
         currentSongId = songId;
-
-        observeCachedLyrics(owner, songId);
-
-        LyricsCache cachedLyrics = lyricsRepository.getLyrics(songId);
-        if (cachedLyrics != null) {
-            onCachedLyricsChanged(cachedLyrics);
-        }
-
-        if (NetworkUtil.isOffline() || media == null) {
-            return;
-        }
-
-        if (OpenSubsonicExtensionsUtil.isSongLyricsExtensionAvailable()) {
-            openRepository.getLyricsBySongId(media.getId()).observe(owner, lyricsList -> {
-                lyricsListLiveData.postValue(lyricsList);
-                lyricsLiveData.postValue(null);
-
-                if (shouldAutoDownloadLyrics() && hasStructuredLyrics(lyricsList)) {
-                    saveLyricsToCache(media, null, lyricsList);
-                }
-            });
-        } else {
-            songRepository.getSongLyrics(media).observe(owner, lyrics -> {
-                lyricsLiveData.postValue(lyrics);
-                lyricsListLiveData.postValue(null);
-
-                if (shouldAutoDownloadLyrics() && !TextUtils.isEmpty(lyrics)) {
-                    saveLyricsToCache(media, lyrics, null);
-                }
-            });
-        }
+        observeCachedLyrics(owner, cacheKey(songId));
+        lyricsStatus.setValue("Szukam tekstu…");
+        lyricsLoader.load(media, cacheKey(songId), NetworkUtil.isOffline(), result -> {
+            if (!java.util.Objects.equals(currentSongId, songId)) return;
+            lyricsListLiveData.setValue(result.lines());
+            lyricsLiveData.setValue(result.text());
+            lyricsStatus.setValue(result.status());
+            lyricsCachedLiveData.setValue(result.cached());
+            if (!result.cached() && shouldAutoDownloadLyrics()) saveLyricsToCache(media, result.text(), result.lines());
+        });
     }
 
     public LiveData<Child> getLiveMedia() {
@@ -202,6 +183,7 @@ public class PlayerBottomSheetViewModel extends AndroidViewModel {
     }
 
     public void setLiveMedia(LifecycleOwner owner, String mediaType, String mediaId) {
+        lyricsLoader.cancel();
         currentSongId = mediaId;
 
         if (!TextUtils.isEmpty(mediaId)) {
@@ -325,6 +307,7 @@ public class PlayerBottomSheetViewModel extends AndroidViewModel {
     }
 
     private void onCachedLyricsChanged(LyricsCache lyricsCache) {
+        if (lyricsCache != null && !java.util.Objects.equals(lyricsCache.getSongId(), cacheKey(currentSongId))) return;
         if (lyricsCache == null) {
             lyricsCachedLiveData.postValue(false);
             return;
@@ -356,7 +339,7 @@ public class PlayerBottomSheetViewModel extends AndroidViewModel {
             return;
         }
 
-        LyricsCache lyricsCache = new LyricsCache(media.getId());
+        LyricsCache lyricsCache = new LyricsCache(cacheKey(media.getId()));
         lyricsCache.setArtist(media.getArtist());
         lyricsCache.setTitle(media.getTitle());
         lyricsCache.setUpdatedAt(System.currentTimeMillis());
@@ -374,12 +357,7 @@ public class PlayerBottomSheetViewModel extends AndroidViewModel {
     }
 
     private boolean hasStructuredLyrics(LyricsList lyricsList) {
-        return lyricsList != null
-                && lyricsList.getStructuredLyrics() != null
-                && !lyricsList.getStructuredLyrics().isEmpty()
-                && lyricsList.getStructuredLyrics().get(0) != null
-                && lyricsList.getStructuredLyrics().get(0).getLine() != null
-                && !lyricsList.getStructuredLyrics().get(0).getLine().isEmpty();
+        return com.eddyizm.tempus.util.LyricsTiming.hasLines(lyricsList);
     }
 
     private boolean shouldAutoDownloadLyrics() {

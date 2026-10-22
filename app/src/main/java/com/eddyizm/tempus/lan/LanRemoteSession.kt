@@ -26,6 +26,26 @@ import javax.net.ssl.SSLSocket
 /** Process-local selection, shared by setup, full player and mini player. No Activity references. */
 @androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
 object LanRemoteSession {
+    private var connectTarget = false
+    @JvmStatic fun isConnect() = connectTarget
+    @JvmStatic fun hasLocalNetworkTarget() = isActive() && !connectTarget
+    fun acceptConnect(state: LanRemoteState, items: List<Child>) {
+        if (hasLocalNetworkTarget()) return
+        connectTarget = true
+        loadedRevision = state.revision
+        queueUpdates.value = items
+        updates.value = state
+    }
+    fun clearConnect() {
+        if (!connectTarget) return
+        connectTarget = false
+        loadedRevision = null
+        queueUpdates.value = emptyList()
+        updates.value = LanRemoteState()
+    }
+    fun connectUnavailable() {
+        if (connectTarget) updates.value = current().copy(connected = false)
+    }
     private val main = Handler(Looper.getMainLooper())
     private val updates = MutableLiveData(LanRemoteState())
     private val queueUpdates = MutableLiveData<List<Child>>(emptyList())
@@ -58,6 +78,10 @@ object LanRemoteSession {
 
     @JvmStatic fun disconnect() {
         check(Looper.myLooper() == Looper.getMainLooper())
+        if (connectTarget) {
+            com.eddyizm.tempus.connect.ConnectSession.disable()
+            return
+        }
         LanRemoteVolume.release()
         generation++
         target = null; pin = null
@@ -71,6 +95,7 @@ object LanRemoteSession {
     }
 
     @JvmStatic @JvmOverloads fun connect(context: Context, info: NsdServiceInfo, expectedPin: String? = null) {
+        com.eddyizm.tempus.connect.ConnectSession.disable()
         disconnect()
         val token = generation
         val app = context.applicationContext
@@ -180,6 +205,7 @@ object LanRemoteSession {
     }
 
     @JvmStatic @JvmOverloads fun command(name: String, value: Long = 0) {
+        if (connectTarget) { com.eddyizm.tempus.connect.ConnectSession.command(name, value); return }
         if (!current().connected) return
         val body = JSONObject().put("command", name)
         if (name == "seek") body.put("position", value)
@@ -190,6 +216,7 @@ object LanRemoteSession {
     }
 
     fun adjustDeviceVolume(direction: Int) {
+        if (connectTarget) { com.eddyizm.tempus.connect.ConnectSession.unsupported(); return }
         if (!current().connected || direction !in listOf(android.media.AudioManager.ADJUST_RAISE, android.media.AudioManager.ADJUST_LOWER)) return
         request(JSONObject().put("command", "device_volume").put("direction", direction)) { json ->
             val state = current().copy(deviceVolume = json.optInt("deviceVolume"), deviceVolumeMax = json.optInt("deviceVolumeMax"))
@@ -199,6 +226,7 @@ object LanRemoteSession {
     }
 
     fun setDeviceVolume(volume: Int) {
+        if (connectTarget) { com.eddyizm.tempus.connect.ConnectSession.unsupported(); return }
         if (!current().connected) return
         request(JSONObject().put("command", "device_volume").put("level", volume.coerceIn(0, current().deviceVolumeMax))) { json ->
             val state = current().copy(deviceVolume = json.optInt("deviceVolume"), deviceVolumeMax = json.optInt("deviceVolumeMax"))
@@ -208,11 +236,13 @@ object LanRemoteSession {
     }
 
     @JvmStatic fun playbackParameters(speed: Float, pitch: Float) {
+        if (connectTarget) { com.eddyizm.tempus.connect.ConnectSession.speed(speed); return }
         if (!current().connected) return
         request(JSONObject().put("command", "speed").put("speed", speed).put("pitch", pitch)) { }
     }
 
     @JvmStatic fun sleepTimer(mode: String, minutes: Int) {
+        if (connectTarget) { com.eddyizm.tempus.connect.ConnectSession.unsupported(); return }
         if (!current().connected) return
         request(JSONObject().put("command", "timer").put("mode", mode).put("minutes", minutes)) { }
     }
@@ -300,6 +330,7 @@ object LanRemoteSession {
 
     /** A replacement may start at a saved playback position. */
     @JvmStatic fun routeSongs(songs: List<Child>, action: String, index: Int, positionMs: Long): Boolean {
+        if (connectTarget) { com.eddyizm.tempus.connect.ConnectSession.songs(songs, action, index, positionMs); return true }
         if (!isActive()) return false
         if (!current().connected) { notify(R.string.lan_reconnecting); return true }
         if (action == "reorder" && loadedRevision != current().revision) {
@@ -322,6 +353,7 @@ object LanRemoteSession {
         .put("revision", loadedRevision ?: current().revision)
 
     @JvmStatic fun routeEdit(action: String, from: Int, to: Int): Boolean {
+        if (connectTarget) { com.eddyizm.tempus.connect.ConnectSession.edit(action, from, to); return true }
         if (!isActive()) return false
         if (!current().connected) { notify(R.string.lan_reconnecting); return true }
         if (action != "clear" && loadedRevision != current().revision) {

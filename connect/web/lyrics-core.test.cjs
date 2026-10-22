@@ -1,0 +1,17 @@
+const assert = require('node:assert/strict');
+const core = require('./lyrics-core.js');
+const parsed = core.parse('[offset:500]\n[00:12.5][00:42.050]  Sample line  \n[00:05]Earlier\n[ar:Test]');
+assert.deepEqual(parsed.lines.map(x => x.start), [5000, 12500, 42050]);
+assert.equal(parsed.lines[1].value, 'Sample line');
+assert.equal(core.active(parsed.lines, 0, parsed.offset), -1);
+assert.equal(core.active(parsed.lines, 4500, parsed.offset), 0);
+assert.equal(core.active(parsed.lines, 12000, parsed.offset), 1);
+assert.equal(core.parse('No timestamps').synced, false);
+const gaps = core.parse('[00:02]First\n[00:04]\n[00:08]Last');
+assert.equal(gaps.lines[1].value, '');
+assert.equal(core.active(gaps.lines, 6000), 1);
+assert.equal(core.active(gaps.lines, 3000), 0);
+assert.equal(core.structured([{synced:true,line:[{value:'Missing time'}]}]), null);
+assert.equal(core.structured([{synced:false,line:[{value:'Plain'}]}]).synced, false);
+assert.equal(core.structured([{synced:true,line:[{value:'Missing time'}]}, {synced:false,line:[{value:'Fallback'}]}]).lines[0].value, 'Fallback');
+console.log('Lyrics timing: 12 assertions passed');

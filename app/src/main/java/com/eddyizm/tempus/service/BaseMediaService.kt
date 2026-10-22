@@ -314,6 +314,9 @@ open class BaseMediaService : MediaLibraryService(), MediaManager.QueueTarget {
 
     fun initializePlayerListener(player: Player) {
         player.addListener(object : Player.Listener {
+            override fun onPlayWhenReadyChanged(playWhenReady: Boolean, reason: Int) {
+                com.eddyizm.tempus.connect.ConnectSession.guardPlayback(player)
+            }
             override fun onPlayerError(error: PlaybackException) {
                 // A network switch (WiFi <-> mobile) surfaces here as a source/network
                 // error. Without recovery the player goes idle and stays silent until the
@@ -783,6 +786,7 @@ open class BaseMediaService : MediaLibraryService(), MediaManager.QueueTarget {
         initializeNetworkListener()
         initializeUpnpRoutes()
         restorePlayerFromQueue(mediaLibrarySession.player)
+        com.eddyizm.tempus.connect.ConnectSession.attach(this) { livePlayer() }
     }
 
     override fun onGetSession(controllerInfo: ControllerInfo): MediaLibrarySession {
@@ -790,6 +794,7 @@ open class BaseMediaService : MediaLibraryService(), MediaManager.QueueTarget {
     }
 
     override fun onDestroy() {
+        com.eddyizm.tempus.connect.ConnectSession.detach()
         QueuePreloader.cancel()
         serviceDestroyed = true
         // Process scoped, so it outlives the service unless it is cleared here.

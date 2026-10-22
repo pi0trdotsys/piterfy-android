@@ -234,6 +234,10 @@ public class SettingsContainerFragment extends PreferenceFragmentCompat {
                     }
                     category.setOnClickListener(cat -> {
                         String key = cat.getKey();
+                        if ("piterfy_connect".equals(key)) {
+                            com.eddyizm.tempus.connect.ConnectDevicePicker.show(requireActivity());
+                            return;
+                        }
                         if ("lan_playback".equals(key)) {
                             startActivity(new Intent(requireContext(), com.eddyizm.tempus.lan.LanPlaybackActivity.class));
                             return;

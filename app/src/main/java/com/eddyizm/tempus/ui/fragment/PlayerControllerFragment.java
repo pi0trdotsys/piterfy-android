@@ -132,10 +132,10 @@ public class PlayerControllerFragment extends Fragment {
         remotePlayer = new com.eddyizm.tempus.lan.LanPlayerAdapter();
         com.eddyizm.tempus.lan.LanRemoteSession.state().observe(getViewLifecycleOwner(), state -> refreshPlaybackDestination());
         com.eddyizm.tempus.lan.LanRemoteSession.queueState().observe(getViewLifecycleOwner(), queue -> refreshPlaybackDestination());
-        bind.playerRemoteToggle.setOnClickListener(v -> com.eddyizm.tempus.lan.LanDevicePicker.toggle(requireActivity()));
+        bind.playerRemoteToggle.setOnClickListener(v -> com.eddyizm.tempus.connect.ConnectDevicePicker.show(requireActivity()));
         outputMonitor = new com.eddyizm.tempus.util.PiterfyOutputMonitor(requireContext(), label -> {
             if (bind != null && !com.eddyizm.tempus.lan.LanRemoteSession.isActive()) {
-                bind.playerRemoteToggle.setText(label);
+                bind.playerRemoteToggle.setText(com.eddyizm.tempus.connect.ConnectSession.INSTANCE.getEnabled() ? com.eddyizm.tempus.connect.ConnectSession.INSTANCE.outputLabel() : label);
                 bind.playerRemoteToggle.setContentDescription(label);
             }
         });
@@ -189,7 +189,7 @@ public class PlayerControllerFragment extends Fragment {
             remotePlayer.refresh();
             bind.nowPlayingMediaControllerView.setPlayer(remotePlayer);
             com.eddyizm.tempus.lan.LanRemoteState state = com.eddyizm.tempus.lan.LanRemoteSession.current();
-            bind.playerRemoteToggle.setText(getString(R.string.lan_operating_on, state.getName()));
+            bind.playerRemoteToggle.setText(com.eddyizm.tempus.lan.LanRemoteSession.isConnect() ? "Gra na: " + state.getName() : getString(R.string.lan_operating_on, state.getName()));
             bind.playerRemoteToggle.setContentDescription(getString(R.string.lan_controlling, state.getName()));
             bind.playerRemoteToggle.setSelected(true);
             bind.nowPlayingMediaControllerView.setShowShuffleButton(true);
@@ -266,7 +266,7 @@ public class PlayerControllerFragment extends Fragment {
 
                 popup.setOnMenuItemClickListener(item -> {
                     if (item.getItemId() == R.id.action_lan_playback) {
-                        com.eddyizm.tempus.lan.LanDevicePicker.toggle(requireActivity());
+                        com.eddyizm.tempus.connect.ConnectDevicePicker.show(requireActivity());
                         return true;
                     }
                     if (item.getItemId() == R.id.action_open_equalizer) {

@@ -20,6 +20,12 @@ jobs:
       - name: Install Android SDK
         run: sdkmanager "platforms;android-37.0" "build-tools;36.1.0"
       - uses: gradle/actions/setup-gradle@v4
+      - name: Check Connect and browser lyrics
+        run: |
+          python3 -m unittest discover -s connect/server -p test_connect.py
+          node connect/web/lyrics-core.test.cjs
+          node --check connect/web/lyrics.js
+          node --check connect/web/connect.js
       - name: Restore release signing
         env:
           KEYSTORE: ${{ secrets.KEYSTORE_BASE64 }}

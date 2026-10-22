@@ -279,6 +279,12 @@
         android:title="@string/lan_title"
         android:icon="@drawable/ic_navigate_next" />
 
+    <com.eddyizm.tempus.util.ClickablePreferenceCategory
+        android:key="piterfy_connect"
+        android:title="Piterfy Connect"
+        android:summary="Wspólna kolejka i przekazywanie odtwarzania"
+        android:icon="@drawable/ic_navigate_next" />
+
     <com.eddyizm.tempus.util.ClickablePreferenceCategory app:title="@string/settings_title_playlist">
         <SwitchPreference
             android:title="@string/settings_allow_playlist_duplicates"

@@ -38,9 +38,12 @@ public final class PiterfyOutputMonitor {
     }
     public void stop() { running=false;main.removeCallbacks(tick);if(audio!=null)audio.unregisterAudioDeviceCallback(callback); }
     public String label() {
+        return context.getString(R.string.piterfy_output, destination());
+    }
+    public String destination() {
         MediaRouter.RouteInfo route=MediaRouter.getInstance(context).getSelectedRoute();
         if(route!=null && route.getPlaybackType()==MediaRouter.RouteInfo.PLAYBACK_TYPE_REMOTE)
-            return context.getString(R.string.piterfy_output,route.getName());
+            return String.valueOf(route.getName());
         if(audio!=null) {
             try {
                 if(Build.VERSION.SDK_INT>=33) {
@@ -55,7 +58,7 @@ public final class PiterfyOutputMonitor {
                 }
             } catch(SecurityException ignored) { }
         }
-        return context.getString(R.string.piterfy_output,context.getString(R.string.piterfy_device));
+        return context.getString(R.string.piterfy_device);
     }
     private String describe(AudioDeviceInfo device) {
         int type=device.getType();
@@ -64,6 +67,6 @@ public final class PiterfyOutputMonitor {
         String name=String.valueOf(device.getProductName());
         if(type==AudioDeviceInfo.TYPE_BUILTIN_SPEAKER||type==AudioDeviceInfo.TYPE_BUILTIN_EARPIECE)name=context.getString(R.string.piterfy_device);
         else if(name.isBlank())name=context.getString(R.string.piterfy_headphones);
-        return context.getString(R.string.piterfy_output,(bluetooth?"Bluetooth · ":"")+name);
+        return (bluetooth?"Bluetooth · ":"")+name;
     }
 }

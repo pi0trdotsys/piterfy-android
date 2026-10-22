@@ -1,0 +1,21 @@
+# Merge this service into the existing Piterfy compose stack. No host port is exposed.
+services:
+  piterfy-connect:
+    image: python:3.12-alpine
+    container_name: piterfy-connect
+    restart: unless-stopped
+    networks:
+      - piterfy_net
+    entrypoint: ["python", "-u", "/app/app.py"]
+    environment:
+      NAVIDROME_URL: http://piterfy-navidrome:4533
+      CONNECT_STATE_DIR: /state
+    volumes:
+      - ./discover/connectserver:/app:ro
+      - ./discover/state/connect:/state
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop: [ALL]
+    mem_limit: 192m
+    pids_limit: 64

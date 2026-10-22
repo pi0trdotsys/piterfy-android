@@ -145,7 +145,7 @@ public class PlayerBottomSheetFragment extends Fragment {
     }
 
     private void customizeBottomSheetAction() {
-        bind.playerHeaderLayout.playerHeaderRemoteButton.setOnClickListener(v -> com.eddyizm.tempus.lan.LanDevicePicker.toggle(requireActivity()));
+        bind.playerHeaderLayout.playerHeaderRemoteButton.setOnClickListener(v -> com.eddyizm.tempus.connect.ConnectDevicePicker.show(requireActivity()));
         bind.playerHeaderLayout.getRoot().setOnClickListener(view -> ((MainActivity) requireActivity()).expandBottomSheet());
     }
 

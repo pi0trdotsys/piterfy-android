@@ -446,6 +446,16 @@ Shortcuts are displayed only if the function is selected from root level:
 
 ## Known Issues
 
+### Piterfy lyrics
+
+Open the full Android player and select the lyrics icon. In the browser, use **♫ Tekst**. Timed lyrics highlight the current line and follow playback. Tap a line to seek, scroll to read ahead, then use **Wróć do tekstu** to resume following. The timing button adjusts synchronization in half-second steps and remembers the correction for that song.
+
+**Offline** saves lyrics on Android. Library lyrics are preferred; if missing, Piterfy looks up the exact recording on LRCLIB using song metadata. Availability and timing depend on the source. Plain lyrics are displayed without invented timestamps.
+
+### Piterfy Connect preview
+
+Enable **Piterfy Connect** in the device picker/settings on Android and in the browser's Connect panel. Use the same server account on both. Select a destination or **Przenieś tutaj** to transfer the queue and position. The receiving browser must remain open. The preview supports library music queues up to 500 tracks; radio transfer and shared shuffle order are not yet supported. See `connect/README.md` for deployment and testing details.
+
 ### Airsonic Distorted Playback
 
 First reported in issue [#226](https://github.com/eddyizm/tempus/issues/226)  
