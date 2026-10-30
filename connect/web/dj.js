@@ -2,7 +2,7 @@
 (() => {
   'use strict';
   if(window.PiterfyDJ)return;
-  let dialog,mode='dj',states={},account='',busy=false,clip=null,clipUrl='',narrating=false,lastRefill=0,wantStart='',speechGeneration=0;
+  let dialog,mode='dj',states={},account=localStorage.getItem('username')||'',busy=false,clip=null,clipUrl='',narrating=false,lastRefill=0,wantStart='',speechGeneration=0;
   const element=()=>document.querySelector('audio.music-player-audio');
   const current=()=>window.PiterfyPlayback?.current();
   const messages={queued:'Przygotowuję następny blok…',downloading:'Szukam i pobieram nowe utwory…',
