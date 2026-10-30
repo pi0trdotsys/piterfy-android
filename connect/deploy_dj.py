@@ -5,6 +5,7 @@ from pathlib import Path
 import subprocess
 import datetime
 import shutil
+import re
 
 root = Path('/home/user/piterfy-stack')
 stage = root/'discover/connectserver'
@@ -41,8 +42,9 @@ if (stage/'dj.js').exists():
     try:
         for name in ('dj.js','connect.js'):shutil.copyfile(stage/name,ui/name)
         main=ui/'piterfy.js';source=main.read_text()
-        source=source.replace('s.src = "/piterfy-ui/connect.js?v=" + Math.floor(Date.now()/6e5);',
-            's.src = "/piterfy-ui/connect.js?v=" + Math.floor(Date.now()/6e5) + "-dj1";')
+        source,count=re.subn(r's\.src\s*=\s*"/piterfy-ui/connect\.js\?v="[^;]*;',
+            's.src = "/piterfy-ui/connect.js?v=" + "'+stamp+'";',source)
+        assert count==1, 'Connect loader not found'
         main.write_text(source)
         subprocess.run(['python3',str(stage/'deploy_library.py')],check=True)
     except Exception:

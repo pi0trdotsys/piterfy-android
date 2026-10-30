@@ -48,7 +48,7 @@
     return ranked.items.map(row=>({...byId.get(row.id),piterfyReason:row.reason}));
   }
   window.PiterfyLibrary={rankSongs, play, exploration:()=>preferences.exploration??50, candidates:()=>subsonic('getRandomSongs',{size:100}).then(r=>r.randomSongs?.song||[])};
-  const djScript=document.createElement('script');djScript.src='/piterfy-ui/dj.js?v=20261030-2';document.head.append(djScript);
+  const djScript=document.createElement('script');djScript.src='/piterfy-ui/dj.js?v='+encodeURIComponent(new URL(document.currentScript?.src||location.href).searchParams.get('v')||Date.now());document.head.append(djScript);
   async function records(songs) {
     const byId=new Map();
     for(let offset=0;offset<songs.length;offset+=40){
@@ -331,6 +331,6 @@
     setTimeout(()=>{if(findStore()?.getState().player.current?.song?.id!==before.id&&before.position>=3000&&before.position<Math.min(30000,before.duration*.3))api({action:'skip',...before}).catch(()=>{});},1000);
   },true);
   window.addEventListener('pagehide',()=>saveQueue());
-  const css=el('link','',document.head);css.rel='stylesheet';css.href='/piterfy-ui/library.css?v=20261030-5';
+  const css=el('link','',document.head);css.rel='stylesheet';css.href='/piterfy-ui/library.css?v='+encodeURIComponent(new URL(document.currentScript?.src||location.href).searchParams.get('v')||Date.now());
   mount();setInterval(mount,2000);setInterval(observe,500);
 })();
