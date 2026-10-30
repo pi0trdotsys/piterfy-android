@@ -106,7 +106,16 @@
       bar=el('div','',document.body,'pf-mobile-bar');
       const open=button(bar,'',()=>{
         if(window.PiterfyPlayback?.current()?.remote)document.getElementById('pf-connect-button')?.click();
-        else {bar.hidden=true;document.querySelector('.music-player-controller')?.click();}
+        else {
+          const controller=document.querySelector('.music-player-controller');
+          if(!controller)return;
+          // The native mini controller opens on drag-stop, rather than click.
+          const point=controller.getBoundingClientRect();
+          const event={bubbles:true,button:0,clientX:point.x+1,clientY:point.y+1};
+          controller.dispatchEvent(new MouseEvent('mousedown',event));
+          document.dispatchEvent(new MouseEvent('mouseup',event));
+          controller.click();
+        }
       },'pf-mobile-track');
       const art=el('img','',open);art.alt='';
       const labels=el('span','',open);el('strong','',labels);el('small','',labels);
@@ -318,6 +327,6 @@
     setTimeout(()=>{if(findStore()?.getState().player.current?.song?.id!==before.id&&before.position>=3000&&before.position<Math.min(30000,before.duration*.3))api({action:'skip',...before}).catch(()=>{});},1000);
   },true);
   window.addEventListener('pagehide',()=>saveQueue());
-  const css=el('link','',document.head);css.rel='stylesheet';css.href='/piterfy-ui/library.css?v=20261030-4';
+  const css=el('link','',document.head);css.rel='stylesheet';css.href='/piterfy-ui/library.css?v=20261030-5';
   mount();setInterval(mount,2000);setInterval(observe,500);
 })();
