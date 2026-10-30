@@ -25,6 +25,14 @@ class DJTest(unittest.TestCase):
         self.assertIsNotNone(self.s.take())
         self.assertIsNone(self.s.take())
 
+    def test_refresh_changes_future_seeds_without_duplicate_job(self):
+        first=self.start(mode='discover')
+        updated=self.s.handle('a',dict(action='start',mode='discover',exploration=95,seeds=[dict(artist='New artist',genre='Phonk')]))
+        self.assertEqual(first['id'],updated['id'])
+        self.assertEqual(95,updated['exploration'])
+        self.assertEqual('New artist',updated['seeds'][0]['artist'])
+        self.assertIsNotNone(self.s.take());self.assertIsNone(self.s.take())
+
     def test_stop_does_not_accept_old_worker_result(self):
         self.start(); job = self.s.take()
         self.s.handle('a', dict(action='stop'))

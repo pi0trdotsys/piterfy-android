@@ -23,7 +23,7 @@
     const valid=seeds.filter(s=>s.artist&&!/podcast/i.test(s.genre||'')).slice(0,6);
     if(!valid.length)throw Error('Wybierz najpierw muzykę, od której zaczniemy.');
     const state=await request({action:'start',mode:kind,seeds:valid.map(s=>({id:s.id,artist:s.artist,title:s.title,genre:s.genre||''})),
-      exploration:Number(dialog?.querySelector('input[type=range]')?.value||50)});
+      exploration:dialog?.open&&mode===kind?Number(dialog.querySelector('input[type=range]').value):window.PiterfyLibrary.exploration()});
     states[kind]=state;return state;
   }
   async function speak(state,block){

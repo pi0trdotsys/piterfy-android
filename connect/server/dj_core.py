@@ -63,6 +63,9 @@ class Sessions:
                     state = dict(active=True, id=uuid.uuid4().hex, mode=mode, seeds=clean, blocks=[],
                                  exploration=int(number(body.get('exploration', 50), 0, 100)),
                                  voice=state.get('voice', mode == 'dj'), revision=state['revision'] + 1, updated=time.time())
+                else:
+                    state['seeds'] = clean
+                    state['exploration'] = int(number(body.get('exploration', state['exploration']), 0, 100))
             elif action == 'stop':
                 state['active'] = False
                 db.execute("UPDATE jobs SET state='cancelled' WHERE owner=? AND mode=? AND state='queued'", (owner, mode))
