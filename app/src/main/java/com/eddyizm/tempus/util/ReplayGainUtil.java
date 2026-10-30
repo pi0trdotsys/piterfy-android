@@ -616,6 +616,15 @@ public class ReplayGainUtil {
         return Math.max(-60f, Math.min(15f, totalGain));
     }
 
+    /** Independent auxiliary deck must use the same normalization as the queued next track. */
+    public static float gainForCrossfade(Player player, MediaItem item) {
+        if (Objects.equals(Preferences.getReplayGainMode(), "disabled")) return 0f;
+        ReplayGainInfo info = extractServerInfo(item);
+        List<ReplayGain> gains = info != null ? serverInfoToGains(info) : gainDataMap.get(item.mediaId);
+        if (gains == null || gains.isEmpty()) return computeTotalGain(0f, 0f);
+        return computeTotalGain(resolveGainForNextTrack(player, gains), resolvePeakForNextTrack(player, gains));
+    }
+
     /**
      * Reads OpenSubsonic ReplayGain info from the MediaItem's extras bundle
      * (populated at mapping time from the `replayGain` object on the

@@ -12,7 +12,7 @@
         android:id="@+id/action_download_playlist"
         android:icon="@drawable/ic_file_download"
         android:title="@string/menu_download_all_button"
-        app:showAsAction="never" />
+        app:showAsAction="ifRoom" />
     <item
         android:id="@+id/action_add_to_queue"
         android:icon="@drawable/ic_queue"

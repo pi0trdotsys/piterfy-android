@@ -58,6 +58,7 @@ public class App extends Application {
         preferences = PreferenceManager.getDefaultSharedPreferences(context);
 
         ClientCertManager.setupSslSocketFactory(context);
+        com.eddyizm.tempus.service.PiterfyPodcastDownloads.schedule(context);
     }
 
     public static App getInstance() {

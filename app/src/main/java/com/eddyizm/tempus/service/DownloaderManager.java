@@ -79,13 +79,17 @@ public class DownloaderManager {
     }
 
     public boolean download(MediaItem mediaItem, com.eddyizm.tempus.model.Download download) {
+        return download(mediaItem, download, false);
+    }
+
+    public boolean download(MediaItem mediaItem, com.eddyizm.tempus.model.Download download, boolean foreground) {
         MusicUtil.applyTranscodedDownloadMetadata(download);
         download.setDownloadUri(mediaItem.requestMetadata.mediaUri.toString());
         // Marked before the send so a completion racing this call cannot leave the id behind.
         DownloadRequest request = buildDownloadRequest(mediaItem);
         requested.add(mediaItem.mediaId);
         try {
-            DownloadService.sendAddDownload(context, DownloaderService.class, request, false);
+            DownloadService.sendAddDownload(context, DownloaderService.class, request, foreground);
         } catch (IllegalStateException e) {
             requested.remove(mediaItem.mediaId);
             Log.w(TAG, "Download service not started for " + mediaItem.mediaId, e);
@@ -96,9 +100,13 @@ public class DownloaderManager {
     }
 
     public int download(List<MediaItem> mediaItems, List<com.eddyizm.tempus.model.Download> downloads) {
+        return download(mediaItems, downloads, false);
+    }
+
+    public int download(List<MediaItem> mediaItems, List<com.eddyizm.tempus.model.Download> downloads, boolean foreground) {
         int sent = 0;
         for (int counter = 0; counter < mediaItems.size(); counter++) {
-            if (download(mediaItems.get(counter), downloads.get(counter))) sent++;
+            if (download(mediaItems.get(counter), downloads.get(counter), foreground)) sent++;
         }
         return sent;
     }

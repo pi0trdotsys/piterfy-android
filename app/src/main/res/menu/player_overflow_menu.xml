@@ -1,5 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:id="@+id/action_more_like" android:title="Więcej takich" />
+    <item android:id="@+id/action_less_like" android:title="Mniej takich" />
+    <item android:id="@+id/action_podcast_subscribe" android:title="Podcast · automatyczne pobieranie" />
+    <item android:id="@+id/action_music_queue" android:title="Wróć do kolejki muzyki" />
+    <item android:id="@+id/action_podcast_queue" android:title="Wróć do kolejki podcastów" />
     <item android:id="@+id/action_lan_playback" android:title="@string/lan_play_on" />
     <item
         android:id="@+id/action_open_equalizer"

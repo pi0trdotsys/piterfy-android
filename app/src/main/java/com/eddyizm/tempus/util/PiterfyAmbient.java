@@ -48,12 +48,12 @@ public final class PiterfyAmbient {
                 .into(new CustomTarget<Bitmap>(32, 32) {
                     @Override
                     public void onResourceReady(@NonNull Bitmap bitmap, @Nullable Transition<? super Bitmap> transition) {
-                        COLOR.postValue(fromBitmap(bitmap));
+                        if (coverId.equals(lastCover)) COLOR.postValue(fromBitmap(bitmap));
                     }
 
                     @Override
                     public void onLoadFailed(@Nullable Drawable errorDrawable) {
-                        COLOR.postValue(DEFAULT);
+                        if (coverId.equals(lastCover)) COLOR.postValue(DEFAULT);
                     }
 
                     @Override
@@ -90,8 +90,8 @@ public final class PiterfyAmbient {
         int best = 0;
         for (int i = 1; i < 12; i++) if (weight[i] > weight[best]) best = i;
         hsv[0] = (float) (hue[best] / weight[best]);
-        hsv[1] = (float) Math.max(0.45, Math.min(0.85, saturation[best] / weight[best]));
-        hsv[2] = 0.42f;
+        hsv[1] = (float) Math.max(0.3, Math.min(0.65, saturation[best] / weight[best]));
+        hsv[2] = 0.32f;
         return Color.HSVToColor(hsv);
     }
 

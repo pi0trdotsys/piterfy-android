@@ -69,6 +69,8 @@ open class BaseMediaService : MediaLibraryService(), MediaManager.QueueTarget {
     }
 
     protected lateinit var exoplayer: ExoPlayer
+    private var piterfyCrossfade: PiterfyCrossfade? = null
+    private var piterfyPodcastSync: PiterfyPodcastSync? = null
     protected lateinit var mediaLibrarySession: MediaLibrarySession
     protected var sessionCallback: MediaLibrarySession.Callback? = null
     private var upnpRouteProvider: UpnpRouteProvider? = null
@@ -96,6 +98,7 @@ open class BaseMediaService : MediaLibraryService(), MediaManager.QueueTarget {
             if (now - lastResumeSaveAt >= RESUME_SAVE_INTERVAL_MS) {
                 lastResumeSaveAt = now
                 MediaManager.setResumePoint(player.currentMediaItem, player.currentPosition)
+                PiterfyQueues.save(player)
             }
             updateWidget(player)
             widgetUpdateHandler.postDelayed(this, WIDGET_UPDATE_INTERVAL_MS)
@@ -124,6 +127,11 @@ open class BaseMediaService : MediaLibraryService(), MediaManager.QueueTarget {
         initializePlayerListener(exoplayer)
         initializeSleepTimer()
         setPlayer(null, exoplayer)
+        piterfyCrossfade = PiterfyCrossfade(this, exoplayer) {
+            !serviceDestroyed && livePlayer() === exoplayer &&
+                !com.eddyizm.tempus.lan.LanRemoteSession.isActive()
+        }
+        piterfyPodcastSync = PiterfyPodcastSync(exoplayer)
     }
 
     open fun getMediaLibrarySessionCallback(): MediaLibrarySession.Callback {
@@ -632,6 +640,8 @@ open class BaseMediaService : MediaLibraryService(), MediaManager.QueueTarget {
                     // SEEK only: scrobble a genuine user skip, not other index changes such as removing the currently playing track (REMOVE).
                     if (oldPosition.mediaItem?.mediaMetadata?.extras?.getString("type") == Constants.MEDIA_TYPE_MUSIC) {
                         val durationMs = ((oldPosition.mediaItem?.mediaMetadata?.extras?.getInt("duration") ?: 0).toLong()) * 1000L
+                        PiterfyLibrary.skip(oldPosition.mediaItem!!.mediaId,
+                            oldPosition.mediaItem?.mediaMetadata?.artist?.toString().orEmpty(), oldPosition.positionMs, durationMs)
                         if (MediaManager.meetsScrobbleThreshold(oldPosition.positionMs, durationMs)) {
                             MediaManager.scrobble(oldPosition.mediaItem, true)
                             MediaManager.saveChronology(oldPosition.mediaItem)
@@ -794,6 +804,8 @@ open class BaseMediaService : MediaLibraryService(), MediaManager.QueueTarget {
     }
 
     override fun onDestroy() {
+        piterfyCrossfade?.close()
+        piterfyPodcastSync?.close()
         com.eddyizm.tempus.connect.ConnectSession.detach()
         QueuePreloader.cancel()
         serviceDestroyed = true

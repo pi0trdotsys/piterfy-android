@@ -86,6 +86,9 @@
             </intent-filter>
         </service>
 
+        <service android:name=".service.PiterfyPodcastDownloads"
+            android:permission="android.permission.BIND_JOB_SERVICE" android:exported="true" />
+
         <service
             android:name=".service.DownloaderService"
             android:exported="true"

@@ -36,16 +36,26 @@ Stage `web/crossfade-core.js`, `web/crossfade.js`, `web/crossfade.css`, `web/con
 
 Browser verification on 2026-10-30 covered the 1/10 second limits, off switch, narrow and desktop layouts, and a real 10-second transition from Hollywood to workin!. Both audio elements advanced during overlap; the auxiliary deck was removed after handoff and the native player continued the incoming song beyond its already-played introduction. Fifteen crossfade tests, eight Connect tests and twelve lyrics assertions passed. Live Android/browser transfer during overlap remains unverified.
 
+## Discovery and podcast state
+
+The authenticated `/piterfy-api/connect/library` endpoint adds per-account discovery preferences, explicit feedback, idempotent early-skip events, ranked candidate IDs, subscriptions and revisioned podcast progress. State lives under `CONNECT_STATE_DIR/library`, with hashed account filenames and atomic replacement. Request bodies never select their owning account. No credentials or stream URLs are persisted in this state.
+
+`web/library.js` integrates these capabilities with Navidrome's existing Redux queue, stream resolver and authenticated API. Native Android uses `PiterfyLibrary`, separate queue snapshots, podcast sync and a constrained periodic subscription job. Queue snapshots contain IDs or private library metadata; they are scoped by account. The existing Media3 download index and Room metadata remain authoritative for offline files.
+
+Run `deploy_library.py` after staging `server/connect_api.py` as `library-connect_api.py`, `server/library_core.py` as `library-core-staged.py`, and `web/library.js`, `web/library.css`. It backs up the deployed API, UI assets, loader and Caddyfile, validates Caddy, then restarts only Connect and reloads Caddy. The daily discovery daemon is not restarted by this deployment.
+
 ## Checks
 
 ```
 python -m unittest discover -s connect/server -p test_connect.py
+python -m unittest discover -s connect/server -p 'test_*.py'
 node connect/web/lyrics-core.test.cjs
 node --check connect/web/lyrics.js
 node --check connect/web/connect.js
 node --check connect/web/miniplayer.js
 node --test connect/web/crossfade-core.test.cjs
 node --check connect/web/crossfade.js
+node --check connect/web/library.js
 ./gradlew testTempusDebugUnitTest testDegoogledDebugUnitTest lintTempusRelease lintDegoogledRelease assembleTempusRelease assembleDegoogledRelease
 ```
 

@@ -22,13 +22,14 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
       - name: Check Connect and browser lyrics
         run: |
-          python3 -m unittest discover -s connect/server -p test_connect.py
+          python3 -m unittest discover -s connect/server -p 'test_*.py'
           node connect/web/lyrics-core.test.cjs
           node --check connect/web/lyrics.js
           node --check connect/web/connect.js
           node --check connect/web/miniplayer.js
           node --test connect/web/crossfade-core.test.cjs
           node --check connect/web/crossfade.js
+          node --check connect/web/library.js
       - name: Restore release signing
         env:
           KEYSTORE: ${{ secrets.KEYSTORE_BASE64 }}

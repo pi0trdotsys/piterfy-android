@@ -2,14 +2,16 @@
 import json
 import os
 from connect_core import Broker, Rejected
+from library_core import Library
 
 broker = Broker(os.environ.get("CONNECT_STATE_DIR", "/app/state/connect"))
+library = Library(os.environ.get("CONNECT_STATE_DIR", "/app/state/connect"))
 
 
 def handle(handler):
     path = handler.route()
     headers = {"Cache-Control": "no-store"}
-    if path not in ("/piterfy-api/connect/poll", "/piterfy-api/connect/command"):
+    if path not in ("/piterfy-api/connect/poll", "/piterfy-api/connect/command", "/piterfy-api/connect/library"):
         return handler.send(404)
     # Token is checked by Navidrome; the client cannot choose an account identifier.
     user = handler.authorized_user()
@@ -23,7 +25,8 @@ def handle(handler):
         body = json.loads(handler.rfile.read(length))
         if not isinstance(body, dict):
             raise Rejected("invalid_body", 400)
-        result = broker.poll(user, body) if path.endswith("/poll") else broker.command(user, body)
+        result = library.handle(user, body) if path.endswith('/library') else (
+            broker.poll(user, body) if path.endswith("/poll") else broker.command(user, body))
         handler.send(200, json.dumps(result, ensure_ascii=False), "application/json; charset=utf-8", headers)
     except Rejected as error:
         handler.send(error.status, json.dumps({"error": error.reason}), "application/json", headers)

@@ -69,6 +69,8 @@ public class HomeTabPiterfyPodcastFragment extends Fragment implements ClickCall
         model.failed.observe(getViewLifecycleOwner(), failed -> render());
         bind.piterfyPodcastRefresh.setOnRefreshListener(() -> model.refresh(true));
         bind.piterfyPodcastRetry.setOnClickListener(v -> model.refresh(true));
+        bind.piterfyPodcastSubscriptions.setOnClickListener(v -> com.eddyizm.tempus.ui.dialog.PiterfyPodcastSubscriptions.show(requireContext(),
+            model.albums.getValue() == null ? new ArrayList<>() : model.albums.getValue()));
         bind.piterfyPodcastFilter.setChecked(model.downloadedOnly);
         bind.piterfyPodcastFilter.setOnCheckedChangeListener((button, checked) -> { model.downloadedOnly = checked; render(); });
     }

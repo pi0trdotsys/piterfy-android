@@ -138,7 +138,7 @@ object ConnectSession {
         return JSONObject().put("items", items).put("index", p.currentMediaItemIndex.coerceAtLeast(0))
             .put("position", p.currentPosition.coerceAtLeast(0)).put("playing", p.playWhenReady && p.playbackState != Player.STATE_ENDED)
             .put("repeat", p.repeatMode).put("shuffle", p.shuffleModeEnabled)
-            .put("speed", p.playbackParameters.speed.toDouble()).put("volume", p.volume.toDouble())
+            .put("speed", p.playbackParameters.speed.toDouble()).put("volume", com.eddyizm.tempus.service.PiterfyCrossfade.reportedVolume(p).toDouble())
     }
 
     private fun poll() {
@@ -225,6 +225,7 @@ object ConnectSession {
         val pending = next.optJSONObject("pending")
         val version = next.getString("version")
         if (pending?.optString("from") == device) {
+            com.eddyizm.tempus.service.PiterfyCrossfade.cancelActive()
             player?.invoke()?.pause()
             stopped = pending.getString("id"); applied = version; applying = null
             main.post { if (!busy && enabled) poll() }
@@ -314,6 +315,7 @@ object ConnectSession {
     }
 
     private fun configure(p: Player, s: JSONObject, moved: Boolean) {
+        com.eddyizm.tempus.service.PiterfyCrossfade.cancelActive()
         if (p.mediaItemCount > 0) {
             if (moved || p.currentMediaItemIndex != s.optInt("index") || kotlin.math.abs(p.currentPosition - s.optLong("position")) > 1500)
                 p.seekTo(s.optInt("index"), s.optLong("position"))

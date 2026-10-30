@@ -5,9 +5,13 @@
  android:textSize="28sp" android:fontFamily="@font/figtree_family" android:textStyle="bold" android:textColor="?attr/colorOnSurface" android:paddingStart="20dp" android:paddingEnd="20dp" android:paddingTop="20dp"/>
  <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/piterfy_podcast_subtitle"
  android:textSize="14sp" android:paddingHorizontal="20dp" android:paddingTop="8dp" android:paddingBottom="12dp"/>
+ <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical">
  <com.google.android.material.chip.Chip android:id="@+id/piterfy_podcast_filter"
  android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="16dp"
  android:text="@string/piterfy_downloaded" android:checkable="true" android:minHeight="48dp"/>
+ <com.google.android.material.button.MaterialButton android:id="@+id/piterfy_podcast_subscriptions"
+  style="@style/Widget.Material3.Button.TextButton" android:layout_width="wrap_content" android:layout_height="48dp" android:text="Subskrypcje" />
+ </LinearLayout>
  <LinearLayout android:id="@+id/piterfy_podcast_error" android:layout_width="match_parent" android:layout_height="wrap_content"
  android:paddingHorizontal="20dp" android:orientation="vertical" android:visibility="gone">
  <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/piterfy_network_error"/>

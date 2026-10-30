@@ -208,6 +208,7 @@ public class SettingsContainerFragment extends PreferenceFragmentCompat {
     @Override
     public void onCreatePreferences(Bundle savedInstanceState, String rootKey) {
         setPreferencesFromResource(R.xml.global_preferences, rootKey);
+        com.eddyizm.tempus.ui.components.PiterfyPlaybackPreferences.install(getPreferenceScreen());
 
         if (!BuildConfig.FLAVOR.equals("tempus")) {
             PreferenceCategory githubUpdateCategory = findPreference("settings_github_update_category_key");

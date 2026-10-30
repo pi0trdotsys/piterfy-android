@@ -258,6 +258,16 @@ public class PlayerControllerFragment extends Fragment {
             playerOverflowButton.setOnClickListener(v -> {
                 PopupMenu popup = new PopupMenu(requireContext(), v);
                 popup.inflate(R.menu.player_overflow_menu);
+                  boolean localSong = !com.eddyizm.tempus.lan.LanRemoteSession.isActive();
+                  boolean currentPodcast = false;
+                  try {
+                      var selected = mediaBrowserListenableFuture.isDone() ? mediaBrowserListenableFuture.get().getCurrentMediaItem() : null;
+                      localSong = localSong && selected != null;
+                      if (selected != null) currentPodcast = com.eddyizm.tempus.util.PiterfyQueues.podcast(com.eddyizm.tempus.util.MappingUtil.mapToChild(selected));
+                  } catch (Exception ignored) { localSong = false; }
+                  popup.getMenu().findItem(R.id.action_more_like).setVisible(localSong && !currentPodcast);
+                  popup.getMenu().findItem(R.id.action_less_like).setVisible(localSong && !currentPodcast);
+                  popup.getMenu().findItem(R.id.action_podcast_subscribe).setVisible(localSong && currentPodcast);
 
                 int selectedEq = Preferences.getSelectedEqualizer();
                 if (selectedEq == 0 || selectedEq == 2) {
@@ -265,6 +275,33 @@ public class PlayerControllerFragment extends Fragment {
                 }
 
                 popup.setOnMenuItemClickListener(item -> {
+                      if (item.getItemId() == R.id.action_music_queue || item.getItemId() == R.id.action_podcast_queue) {
+                          boolean found = com.eddyizm.tempus.util.PiterfyQueues.restore(item.getItemId() == R.id.action_podcast_queue, mediaBrowserListenableFuture);
+                          if (!found) Toast.makeText(requireContext(), "Ta kolejka jest jeszcze pusta", Toast.LENGTH_SHORT).show();
+                          return true;
+                      }
+                      if (item.getItemId() == R.id.action_more_like || item.getItemId() == R.id.action_less_like || item.getItemId() == R.id.action_podcast_subscribe) {
+                          try {
+                              var current = mediaBrowserListenableFuture.get().getCurrentMediaItem();
+                              if (current == null) return true;
+                              var song = com.eddyizm.tempus.util.MappingUtil.mapToChild(current);
+                              boolean podcast = com.eddyizm.tempus.util.PiterfyQueues.podcast(song);
+                              java.util.function.Consumer<String> message = text -> { if (isAdded()) Toast.makeText(requireContext(), text, Toast.LENGTH_LONG).show(); };
+                              if (item.getItemId() == R.id.action_podcast_subscribe) {
+                                  if (!podcast || song.getAlbumId() == null) { message.accept("Wybierz odcinek podcastu"); return true; }
+                                  var subscriptions = com.eddyizm.tempus.util.PiterfyLibrary.cached().optJSONArray("subscriptions");
+                                  boolean enabled = false;
+                                  if (subscriptions != null) for (int i = 0; i < subscriptions.length(); i++) if (song.getAlbumId().equals(subscriptions.optString(i))) enabled = true;
+                                  final boolean next = !enabled;
+                                  com.eddyizm.tempus.util.PiterfyLibrary.request(new org.json.JSONObject().put("action", "subscribe").put("id", song.getAlbumId()).put("enabled", next),
+                                      state -> { message.accept(next ? "Nowe odcinki będą pobierane automatycznie przez Wi-Fi" : "Wyłączono automatyczne pobieranie audycji");
+                                          if (next && isAdded()) com.eddyizm.tempus.service.PiterfyPodcastDownloads.refreshSoon(requireContext()); }, message);
+                              } else if (!podcast) {
+                                  com.eddyizm.tempus.util.PiterfyLibrary.feedback(song.getId(), song.getArtist(), item.getItemId() == R.id.action_more_like ? 1 : -1, state -> message.accept("Zapisano preferencję"), message);
+                              }
+                          } catch (Exception ignored) { }
+                          return true;
+                      }
                     if (item.getItemId() == R.id.action_lan_playback) {
                         com.eddyizm.tempus.connect.ConnectDevicePicker.show(requireActivity());
                         return true;

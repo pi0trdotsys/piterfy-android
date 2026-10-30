@@ -452,6 +452,20 @@ In desktop Chrome/Edge, click the small window icon beside the queue to open the
 
 To keep it on all Windows virtual desktops, use **Win+Tab → right-click the window → Show this window on all desktops**, if your browser exposes that option. The help button inside the mini player also explains this limitation.
 
+### Piterfy discovery, podcasts and playback (Piterfy 6)
+
+**Odkrywaj** is available in the web header and on Android's music home screen. **Więcej takich / Mniej takich** changes future suggestions and intelligent playback. **Poziom eksperymentowania** ranges from familiar music to new sounds; settings and reactions follow the signed-in account between the browser and phone. Deliberate early skips (after three seconds, within the first thirty seconds and first 30% of the song) lower its recommendation score. Pausing, buffering and seeking within a track do not count as skips.
+
+Music and podcasts have separate saved queues. In the browser's discovery panel, choose **Kolejka muzyki / Kolejka podcastów**; the podcast page also offers queue shortcuts and **Kontynuuj słuchanie**. On Android, use the player's overflow menu to return to either queue. Each saved queue retains its selected item and position. Radio remains independent of these library queues.
+
+On Android's **Podcasty** tab choose **Subskrypcje**, or use **Podcast · automatyczne pobieranie** from a playing episode's menu. Subscriptions sync with the web album's **Subskrybuj** button. The phone checks hourly over an unmetered connection and can run later when Android schedules background work. Enabling a show queues at most its three newest episodes initially; subsequent refreshes queue new episodes. Existing completed/requested downloads are retained and deduplicated. The **Pobrane** podcast filter and the bottom **Pobrane** destination provide offline access. A playlist's toolbar download button queues its missing songs; **Keep synced** remains available from its menu.
+
+Podcast positions sync while online, periodically and when pausing. Older device revisions cannot overwrite a newer server position. Android also retains its existing local resume points for offline playback. The web's automatic podcast downloads are performed by the Android app.
+
+Android **Settings → Piterfy · odtwarzanie i odkrywanie** now contains **Płynne przejścia** and a 1–10 second duration (default: five seconds). Crossfade applies to music playing locally on the phone. Podcasts, radio, remote receivers, repeat-one and an active sleep timer use normal transitions. Both outgoing and incoming buffers must be ready; otherwise normal playback takes priority. The web has its separate per-browser crossfade setting on the player.
+
+The desktop web player uses a full-width timeline with controls above it. Android's timeline has a larger touch target in portrait, landscape and tablet layouts. Both use dark surfaces and restrained cover-color accents.
+
 ### Piterfy web crossfade
 
 Click **Przejście · 5 s** on the browser player to configure **Płynne przejścia**. Crossfade is enabled by default at five seconds; choose 1–10 seconds or turn it off. The setting is saved per account in this browser. It starts the next track under the fading end of the current one, so its quiet introduction overlaps existing music. It does not detect silence or cut a fixed number of seconds from recordings.

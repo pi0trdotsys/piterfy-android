@@ -278,6 +278,15 @@ public class MediaManager {
 
     @OptIn(markerClass = UnstableApi.class)
     public static void startQueue(ListenableFuture<MediaBrowser> mediaBrowserListenableFuture, List<Child> media, int startIndex, long startPositionMs) {
+        List<Child> partitioned = com.eddyizm.tempus.util.PiterfyQueues.partition(media, startIndex);
+        if (partitioned.isEmpty()) return;
+        if (partitioned.size() != media.size()) {
+            int index = 0;
+            for (int i = 0; i < startIndex; i++)
+                if (com.eddyizm.tempus.util.PiterfyQueues.podcast(media.get(i)) == com.eddyizm.tempus.util.PiterfyQueues.podcast(media.get(startIndex))) index++;
+            startQueue(mediaBrowserListenableFuture, partitioned, index, startPositionMs);
+            return;
+        }
         if (LanRemoteSession.routeSongs(media, "replace", startIndex, startPositionMs)) return;
         if (mediaBrowserListenableFuture != null) {
 
@@ -296,6 +305,7 @@ public class MediaManager {
                             new Handler(Looper.getMainLooper()).post(() -> {
                                 if (LanRemoteSession.isActive()) return;
                                 justStarted.set(true);
+                                com.eddyizm.tempus.util.PiterfyQueues.save(browser);
                                 browser.setMediaItems(items, startIndex, startPositionMs);
                                 browser.prepare();
 
@@ -336,6 +346,7 @@ public class MediaManager {
                         if (LanRemoteSession.isActive()) return;
                         MediaBrowser browser = mediaBrowserListenableFuture.get();
                         justStarted.set(true);
+                        com.eddyizm.tempus.util.PiterfyQueues.save(browser);
                         browser.setMediaItem(MappingUtil.mapMediaItem(media));
                         browser.prepare();
                         browser.play();
@@ -357,6 +368,7 @@ public class MediaManager {
                         if (LanRemoteSession.isActive()) return;
                         MediaBrowser mediaBrowser = mediaBrowserListenableFuture.get();
                         justStarted.set(true);
+                        com.eddyizm.tempus.util.PiterfyQueues.save(mediaBrowser);
                         mediaBrowser.setMediaItem(mediaItem);
                         mediaBrowser.prepare();
                         mediaBrowser.play();
@@ -433,6 +445,8 @@ public class MediaManager {
         }
 
         Log.d(TAG, "enqueue");
+        media = com.eddyizm.tempus.util.PiterfyQueues.routeEnqueue(player, media);
+        if (media.isEmpty()) return;
         int current = player.getCurrentMediaItemIndex();
         if (playImmediatelyAfter && current != C.INDEX_UNSET) {
             enqueueDatabase(media, false, current + 1);
@@ -452,14 +466,7 @@ public class MediaManager {
                         if (LanRemoteSession.isActive()) return;
                         Log.e(TAG, "enqueue");
                         MediaBrowser browser = mediaBrowserListenableFuture.get();
-                        int current = browser.getCurrentMediaItemIndex();
-                        if (playImmediatelyAfter && current != C.INDEX_UNSET) {
-                            enqueueDatabase(media, false, current + 1);
-                            insertPlayNext(queueTargetFor(browser), browser, Collections.singletonList(MappingUtil.mapMediaItem(media)));
-                        } else {
-                            enqueueDatabase(media, false, mediaBrowserListenableFuture.get().getMediaItemCount());
-                            mediaBrowserListenableFuture.get().addMediaItem(MappingUtil.mapMediaItem(media));
-                        }
+                        enqueue(queueTargetFor(browser), Collections.singletonList(media), playImmediatelyAfter);
                     }
                 } catch (ExecutionException | InterruptedException e) {
                     e.printStackTrace();
@@ -728,8 +735,11 @@ public class MediaManager {
                     List<Child> filtered = dedupAgainstQueue(media, queueTarget);
                     if (!filtered.isEmpty()) {
                         Log.d(TAG, "Continuous Play: adding " + filtered.size() + " similar tracks");
-                        enqueue(queueTarget, filtered, true);
-                        continuousPlayIsRunning.set(false);
+                        com.eddyizm.tempus.util.PiterfyLibrary.rankSongs(filtered, ranked -> {
+                            Player live = queueTarget.livePlayer();
+                            if (live != null && live.getCurrentMediaItem() != null && trackId.equals(live.getCurrentMediaItem().mediaId)) enqueue(queueTarget, ranked, true);
+                            continuousPlayIsRunning.set(false);
+                        });
                         return;
                     }
                 }
@@ -745,7 +755,12 @@ public class MediaManager {
                                 List<Child> filtered = dedupAgainstQueue(random, queueTarget);
                                 if (!filtered.isEmpty()) {
                                     Log.d(TAG, "Continuous Play: adding " + filtered.size() + " random tracks");
-                                    enqueue(queueTarget, filtered, true);
+                                    com.eddyizm.tempus.util.PiterfyLibrary.rankSongs(filtered, ranked -> {
+                                        Player live = queueTarget.livePlayer();
+                                        if (live != null && live.getCurrentMediaItem() != null && trackId.equals(live.getCurrentMediaItem().mediaId)) enqueue(queueTarget, ranked, true);
+                                        continuousPlayIsRunning.set(false);
+                                    });
+                                    return;
                                 } else {
                                     Log.w(TAG, "Continuous Play: random tracks already in queue");
                                 }

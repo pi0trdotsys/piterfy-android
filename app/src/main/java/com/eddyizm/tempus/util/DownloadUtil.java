@@ -311,6 +311,10 @@ public final class DownloadUtil {
      * many reached the download service, or a negative number when every start was refused. Call on the main thread.
      */
     public static void downloadMissing(Context context, List<Child> songs, String playlistId, String playlistName, IntConsumer onQueued) {
+        downloadMissing(context, songs, playlistId, playlistName, onQueued, false);
+    }
+
+    public static void downloadMissing(Context context, List<Child> songs, String playlistId, String playlistName, IntConsumer onQueued, boolean foreground) {
         // A playlist can list the same track twice.
         Map<String, Child> byId = new LinkedHashMap<>();
         for (Child song : songs) byId.putIfAbsent(song.getId(), song);
@@ -329,7 +333,7 @@ public final class DownloadUtil {
                         toDownload.setPlaylistId(playlistId);
                         toDownload.setPlaylistName(playlistName);
                         return toDownload;
-                    }).collect(Collectors.toList())
+                    }).collect(Collectors.toList()), foreground
             );
             onQueued.accept(sent == 0 && !missing.isEmpty() ? -1 : sent);
         } else {
