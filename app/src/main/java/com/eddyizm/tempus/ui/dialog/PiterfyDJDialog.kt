@@ -41,7 +41,7 @@ object PiterfyDJDialog {
                 if(pendingStart&&i==0){pendingStart=false;play.accept(songs)}
             }
         }
-        fun request(body:JSONObject){PiterfyLibrary.dj(body.put("mode",mode),{state=it;if(!initialized){if(it.has("exploration"))slider.progress=it.optInt("exploration");initialized=true};render()},{status.text=it;starting=false})}
+        fun request(body:JSONObject){PiterfyLibrary.dj(body.put("mode",mode),{state=it;PiterfyDJSession.acceptState(it);if(!initialized){if(it.has("exploration"))slider.progress=it.optInt("exploration");initialized=true};render()},{status.text=it;starting=false})}
         fun button(text:String, action:()->Unit):MaterialButton{val b=MaterialButton(context).apply{this.text=text;setOnClickListener{action()}};content.addView(b);return b}
         slider.setOnSeekBarChangeListener(object:SeekBar.OnSeekBarChangeListener{
             override fun onProgressChanged(bar:SeekBar,p:Int,user:Boolean){label.text="Eksperymentowanie · $p%"}

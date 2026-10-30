@@ -25,6 +25,16 @@ import java.util.concurrent.Executors
 class PiterfyDJSession(private val player: Player) : Player.Listener {
     companion object {
         private var instance:PiterfyDJSession?=null
+        private var pendingState:JSONObject?=null
+        private var pendingAccount=""
+        @JvmStatic fun acceptState(state:JSONObject){
+            val account=PiterfyLibrary.account()
+            if(pendingAccount!=account)pendingState=JSONObject()
+            pendingAccount=account
+            if(pendingState==null)pendingState=JSONObject()
+            pendingState!!.put(state.optString("mode","dj"),state)
+            instance?.takeIf{it.account==account}?.states?.put(state.optString("mode","dj"),state)
+        }
         @JvmStatic fun cancelNarration(){instance?.let{it.finishVoice(it.player.currentMediaItem?.mediaId.orEmpty())}}
         @JvmStatic fun stopNarration(){instance?.stopVoice()}
         @JvmStatic fun isNarrating(player:Player):Boolean=instance?.let{it.player===player&&it.speaking}==true
@@ -37,13 +47,13 @@ class PiterfyDJSession(private val player: Player) : Player.Listener {
     }
     private val main = Handler(Looper.getMainLooper())
     private val io = Executors.newSingleThreadExecutor()
-    private var states = JSONObject()
+    private var states = if(pendingAccount==PiterfyLibrary.account())pendingState?:JSONObject() else JSONObject()
     private var account = PiterfyLibrary.account()
     private var closed = false
     private var busy = false
     private var lastPoll = 0L
     private var lastRefill = 0L
-    private var seen = ""
+    private val announcements=DJAnnouncementGate()
     private var speech: MediaPlayer? = null
     private var speechFile: File? = null
     private var speaking = false
@@ -68,12 +78,12 @@ class PiterfyDJSession(private val player: Player) : Player.Listener {
     }
     private fun request(body: JSONObject, done: (JSONObject)->Unit) {
         body.put("device",ConnectSession.deviceId())
-        PiterfyLibrary.dj(body, {if(!closed)done(it)}, {busy=false})
+        PiterfyLibrary.dj(body, {if(!closed)done(it)}, {busy=false;android.util.Log.w("PiterfyDJ","DJ request unavailable: "+body.optString("action"))})
     }
     private val tick=object:Runnable {
         override fun run(){
             if(closed)return
-            if(account!=PiterfyLibrary.account()){stopVoice();states=JSONObject();seen="";account=PiterfyLibrary.account();generation++}
+            if(account!=PiterfyLibrary.account()){stopVoice();states=JSONObject();announcements.clear();account=PiterfyLibrary.account();generation++}
             if(!local())stopVoice()
             if(speaking&&(states.optJSONObject("dj")?.optBoolean("voice")!=true||states.optJSONObject("dj")?.optBoolean("active")!=true))finishVoice(player.currentMediaItem?.mediaId.orEmpty())
             val now=android.os.SystemClock.elapsedRealtime()
@@ -86,7 +96,8 @@ class PiterfyDJSession(private val player: Player) : Player.Listener {
                 for(index in 0 until blocks.length()){
                     val block=blocks.getJSONObject(index);val tracks=block.getJSONArray("tracks")
                     if((0 until tracks.length()).none{tracks.getJSONObject(it).optString("id")==id})continue
-                    if(id!=seen&&tracks.getJSONObject(0).optString("id")==id&&player.currentPosition<3000&&player.isPlaying)
+                    if(announcements.shouldStart(block.optString("id"),id,tracks.getJSONObject(0).optString("id"),player.isPlaying,
+                            player.currentPosition,state.optBoolean("voice")&&!block.isNull("voiceKey"),block.optBoolean("announced")))
                         speak(state,block,id)
                     if(tracks.getJSONObject(tracks.length()-1).optString("id")==id&&player.playbackState==Player.STATE_ENDED&&index+1<blocks.length())
                         play(blocks.getJSONObject(index+1))
@@ -95,7 +106,7 @@ class PiterfyDJSession(private val player: Player) : Player.Listener {
                     }
                 }
             }
-            seen=id.orEmpty();main.postDelayed(this,1000)
+            main.postDelayed(this,1000)
         }
     }
     init{
@@ -120,13 +131,17 @@ class PiterfyDJSession(private val player: Player) : Player.Listener {
     }
     private fun speak(state:JSONObject,block:JSONObject,id:String){
         if(!state.optBoolean("voice")||block.isNull("voiceKey")||speaking)return
+        android.util.Log.d("PiterfyDJ","Claiming introduction for playable block")
         val guard=generation
         request(JSONObject().put("action","claim").put("mode",state.getString("mode")).put("block",block.getString("id"))){claim->
-            if(!claim.optBoolean("speak")||closed||guard!=generation||!local())return@request
+            if(!claim.optBoolean("speak")||closed||guard!=generation||!local()){
+                android.util.Log.d("PiterfyDJ","Introduction already claimed, cancelled, or receiver changed")
+                return@request
+            }
             request(JSONObject().put("action","audio").put("mode",state.getString("mode")).put("key",claim.getString("voiceKey"))){data->
                 if(closed||guard!=generation||!local()||player.currentMediaItem?.mediaId!=id||!player.isPlaying)return@request
                 stopVoice();speaking=true;PiterfyCrossfade.cancelActive();player.pause()
-                if(!focus()){finishVoice(id);return@request}
+                if(!focus()){android.util.Log.w("PiterfyDJ","Speech audio focus denied");finishVoice(id);return@request}
                 try{
                     val file=File.createTempFile("dj-", ".wav",App.getContext().cacheDir)
                     file.writeBytes(Base64.decode(data.getString("audio"),Base64.DEFAULT));speechFile=file
@@ -134,9 +149,9 @@ class PiterfyDJSession(private val player: Player) : Player.Listener {
                         setAudioAttributes(android.media.AudioAttributes.Builder().setUsage(android.media.AudioAttributes.USAGE_MEDIA).build())
                         setDataSource(file.absolutePath);setVolume(player.volume,player.volume)
                         setOnCompletionListener{finishVoice(id)};setOnErrorListener{_,_,_->finishVoice(id);true}
-                        setOnPreparedListener{if(speaking&&local())it.start() else stopVoice()};prepareAsync()
+                        setOnPreparedListener{if(speaking&&local()){it.start();android.util.Log.d("PiterfyDJ","Speech playback started")}else stopVoice()};prepareAsync()
                     }
-                }catch(_:Exception){finishVoice(id)}
+                }catch(_:Exception){android.util.Log.w("PiterfyDJ","Speech playback unavailable");finishVoice(id)}
             }
         }
     }
