@@ -114,6 +114,10 @@ public final class PiterfyHomePanel extends LinearLayout implements DefaultLifec
         discoverySettings.setText("Odkrywaj · dopasuj swój gust"); discoverySettings.setAllCaps(false);
         discoverySettings.setOnClickListener(v -> com.eddyizm.tempus.ui.dialog.PiterfyDiscoveryDialog.show(getContext(), play));
         addView(discoverySettings);
+        MaterialButton dj = new MaterialButton(getContext());
+        dj.setText("Piterfy DJ · Twoja audycja"); dj.setAllCaps(false);
+        dj.setOnClickListener(v -> com.eddyizm.tempus.ui.dialog.PiterfyDJDialog.show(getContext(), play, "dj"));
+        addView(dj);
 
         tiles = new LinearLayout(getContext());
         tiles.setOrientation(VERTICAL);

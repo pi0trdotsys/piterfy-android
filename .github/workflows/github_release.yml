@@ -30,6 +30,7 @@ jobs:
           node --test connect/web/crossfade-core.test.cjs
           node --check connect/web/crossfade.js
           node --check connect/web/library.js
+          node --check connect/web/dj.js
       - name: Restore release signing
         env:
           KEYSTORE: ${{ secrets.KEYSTORE_BASE64 }}

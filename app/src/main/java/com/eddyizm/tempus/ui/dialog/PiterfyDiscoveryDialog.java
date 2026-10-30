@@ -30,6 +30,8 @@ public final class PiterfyDiscoveryDialog {
         exploration.setProgress(PiterfyLibrary.cached().optInt("exploration",50)); content.addView(exploration);
         TextView status = new TextView(context); status.setText("Znajome brzmienia ← → Nowi wykonawcy"); content.addView(status);
         MaterialButton refresh = new MaterialButton(context); refresh.setText("Odkryj muzykę"); content.addView(refresh);
+        MaterialButton fresh = new MaterialButton(context); fresh.setText("Nowe utwory · niezależne pobieranie"); content.addView(fresh);
+        fresh.setOnClickListener(v -> PiterfyDJDialog.show(context, play, "discover"));
         LinearLayout results = new LinearLayout(context); results.setOrientation(LinearLayout.VERTICAL); content.addView(results);
         ScrollView scroll = new ScrollView(context); scroll.addView(content);
         var dialog = new MaterialAlertDialogBuilder(context).setTitle("Odkrywaj").setView(scroll).setNegativeButton("Zamknij",null).create();
@@ -61,6 +63,11 @@ public final class PiterfyDiscoveryDialog {
                             refresh.setEnabled(true);status.setText("Propozycje uwzględniają Twoje reakcje i wczesne pominięcia.");
                             JSONArray rows=ranked.optJSONArray("items"); List<Child> playlist=new ArrayList<>();
                             if(rows!=null)for(int i=0;i<Math.min(20,rows.length());i++){Child song=songs.get(rows.optJSONObject(i).optString("id"));if(song!=null)playlist.add(song);}
+                            try {
+                                JSONArray seeds=new JSONArray();
+                                for(Child song:playlist.subList(0,Math.min(6,playlist.size())))seeds.put(new JSONObject().put("id",song.getId()).put("artist",song.getArtist()).put("title",song.getTitle()).put("genre",song.getGenre()==null?"":song.getGenre()));
+                                if(seeds.length()>0)PiterfyLibrary.dj(new JSONObject().put("action","start").put("mode","discover").put("seeds",seeds).put("exploration",exploration.getProgress()),null,null);
+                            }catch(JSONException ignored){}
                             if(play!=null&&!playlist.isEmpty()){MaterialButton all=new MaterialButton(context);all.setText("Odtwórz propozycje");all.setOnClickListener(b->{play.accept(playlist);dialog.dismiss();});results.addView(all);}
                             for(Child song:playlist){
                                 TextView title=new TextView(context); title.setText(song.getTitle()+"\n"+song.getArtist());title.setTextSize(15);title.setPadding(0,padding,0,0);results.addView(title);

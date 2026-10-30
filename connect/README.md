@@ -44,6 +44,16 @@ The authenticated `/piterfy-api/connect/library` endpoint adds per-account disco
 
 Run `deploy_library.py` after staging `server/connect_api.py` as `library-connect_api.py`, `server/library_core.py` as `library-core-staged.py`, and `web/library.js`, `web/library.css`. It backs up the deployed API, UI assets, loader and Caddyfile, validates Caddy, then restarts only Connect and reloads Caddy. The daily discovery daemon is not restarted by this deployment.
 
+## DJ worker
+
+`server/dj_core.py` stores independent account-scoped DJ/discovery sessions and acquisition jobs in SQLite WAL. `server/dj_worker.py` imports only the existing acquisition adapters from the stack's `/legacy/discover.py`; it never invokes the daily daemon, mail, cleanup, or playlist scheduling. New music must be imported/indexed before entering a block. A single worker and durable cooldown records bound concurrent interactive acquisition. The account/hour budget applies across stop/start cycles.
+
+Build the separate worker with `server/Dockerfile.dj`. It includes Piper 1.8.0 and the Polish `pl_PL-darkman-medium` model. Speech is synthesized in a time-limited subprocess and cached locally. Check the bundled model license when redistributing the image; the model is not packaged in Android APKs. The worker port is private to the Docker network. `/piterfy-api/connect/dj` validates Navidrome authentication and derives the account server-side. Voice claims/audio require the current Connect receiver, with durable at-most-once claims.
+
+For this stack, stage the DJ Python files, Dockerfile, `.dockerignore`, web `dj.js`/`connect.js`/`library.js`, `connect_api.py` as `library-connect_api.py`, and `deploy_dj.py` in `discover/connectserver`. Run `deploy_dj.py`. It derives only the existing music-provider credentials into a private mode-600 compose JSON file, builds the limited worker, checks it internally, backs up UI assets, and invokes the library deployment. It does not restart Navidrome, beets or the daily discovery daemon. Worker source updates require a cached image rebuild. Connect API changes restart only Connect.
+
+Browser speech uses a separate audio clip and the native music queue remains authoritative. Android uses a separate MediaPlayer with transient audio focus; focus loss, output disconnect, queue changes, account changes and Connect handoff cancel narration. DJ blocks move through the existing music queue, and speech is never stored as a music item.
+
 ## Checks
 
 ```
@@ -56,6 +66,7 @@ node --check connect/web/miniplayer.js
 node --test connect/web/crossfade-core.test.cjs
 node --check connect/web/crossfade.js
 node --check connect/web/library.js
+node --check connect/web/dj.js
 ./gradlew testTempusDebugUnitTest testDegoogledDebugUnitTest lintTempusRelease lintDegoogledRelease assembleTempusRelease assembleDegoogledRelease
 ```
 

@@ -71,6 +71,7 @@ open class BaseMediaService : MediaLibraryService(), MediaManager.QueueTarget {
     protected lateinit var exoplayer: ExoPlayer
     private var piterfyCrossfade: PiterfyCrossfade? = null
     private var piterfyPodcastSync: PiterfyPodcastSync? = null
+    private var piterfyDJSession: PiterfyDJSession? = null
     protected lateinit var mediaLibrarySession: MediaLibrarySession
     protected var sessionCallback: MediaLibrarySession.Callback? = null
     private var upnpRouteProvider: UpnpRouteProvider? = null
@@ -132,6 +133,7 @@ open class BaseMediaService : MediaLibraryService(), MediaManager.QueueTarget {
                 !com.eddyizm.tempus.lan.LanRemoteSession.isActive()
         }
         piterfyPodcastSync = PiterfyPodcastSync(exoplayer)
+        piterfyDJSession = PiterfyDJSession(exoplayer)
     }
 
     open fun getMediaLibrarySessionCallback(): MediaLibrarySession.Callback {
@@ -806,6 +808,7 @@ open class BaseMediaService : MediaLibraryService(), MediaManager.QueueTarget {
     override fun onDestroy() {
         piterfyCrossfade?.close()
         piterfyPodcastSync?.close()
+        piterfyDJSession?.close()
         com.eddyizm.tempus.connect.ConnectSession.detach()
         QueuePreloader.cancel()
         serviceDestroyed = true

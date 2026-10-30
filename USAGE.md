@@ -472,6 +472,16 @@ Click **Przejście · 5 s** on the browser player to configure **Płynne przejś
 
 Applies to local library music, including shuffled queues and repeat-all. Podcasts, radio, repeat-one and the end of a non-repeating queue play normally. The next track is prepared near the end of the current track; if it is not buffered, normal playback takes priority. Pause, seeking, queue changes and Connect transfer cancel the overlap. This feature is web-only; it does not change Android playback.
 
+### Piterfy DJ and on-demand discoveries
+
+In the browser, open **DJ** or **Odkrywaj → Piterfy DJ**. On Android, choose **Piterfy DJ · Twoja audycja** on the home screen. Start a session, adjust exploration, and use **Zmień klimat** to request another block. Each block lists its songs and can be played directly. **Więcej takich / Mniej takich** records feedback about the current song. Voice can be disabled independently of music.
+
+Polish introductions are generated locally on the server using Piper. They name the opening artist/song and, when supported by the selected tracks, the explored genre. Music pauses for an introduction and resumes afterwards. Speech is not a library song or a scrobble. Connect receivers claim an introduction once; a transfer will not replay an already claimed introduction. If voice generation or delivery fails, music takes priority.
+
+**Odkrywaj → Nowe utwory · pobieranie** opens an independent acquisition session. Refreshing interactive discovery also requests its own background batch. DJ and interactive discovery have separate sessions and never run the daily discovery mailer. They reuse the existing acquisition/import adapters, avoid duplicate interactive searches, and only queue new music after it is indexed in Navidrome. Until then, library music is available as fallback.
+
+Each account may request eight batches per hour, with up to five new acquisitions per batch and a shared check for at most two active downloader transfers. Source availability and import delays affect results. Pausing music stops automatic refills; stopping a session cancels queued work. Transfers already submitted to the downloader may finish. Imported music stays in the library; there is no automatic deletion of these discoveries.
+
 ### Piterfy lyrics
 
 Open the full Android player and select the lyrics icon. In the browser, use **♫ Tekst**. Timed lyrics highlight the current line and follow playback. Tap a line to seek, scroll to read ahead, then use **Wróć do tekstu** to resume following. The timing button adjusts synchronization in half-second steps and remembers the correction for that song.

@@ -10,7 +10,7 @@
   let store, state, enabled = false, busy = false, applying = false, lastOk = 0, applied = '', stopped = '', message = '';
   let identity = '', timer, modal, button, generation = 0;
   const audio = () => document.querySelector('audio.music-player-audio, .react-jinke-music-player-main audio');
-  const pauseLocal = () => { window.PiterfyCrossfade?.cancel(); audio()?.pause(); };
+  const pauseLocal = () => { window.PiterfyDJ?.cancelNarration(); window.PiterfyCrossfade?.cancel(); audio()?.pause(); };
   const local = () => state?.owner === id;
   const safe = value => typeof value === 'string' ? value.slice(0, 512) : '';
   const errors = { session_changed: 'Kolejka się zmieniła. Spróbuj ponownie.', transfer_pending: 'Trwa przenoszenie odtwarzania.',
@@ -45,7 +45,7 @@
       artistId: safe(x.song?.artistId), cover: safe(x.trackId), suffix: safe(x.song?.suffix),
       duration: Number(x.song?.duration || x.duration || 0), bitrate: Number(x.song?.bitRate || 0) }));
     return { items, index: Math.max(0, player.queue.findIndex(x => x.uuid === player.current?.uuid)),
-      position: Math.round((element.currentTime || 0) * 1000), playing: !element.paused && !element.ended,
+      position: Math.round((element.currentTime || 0) * 1000), playing: (!element.paused || window.PiterfyDJ?.isNarrating()) && !element.ended,
       repeat: player.mode === 'singleLoop' ? 1 : player.mode === 'orderLoop' ? 2 : 0,
       shuffle: player.mode === 'shufflePlay', speed: element.playbackRate || 1, volume: element.volume };
   }
@@ -127,16 +127,18 @@
           element?.pause();
           throw Error('Odświeżono sesję odtwarzania. Spróbuj ponownie.');
         }
-        if (Math.abs(element.currentTime * 1000 - next.position) > 1000 || previousOwner !== id)
+        if (Math.abs(element.currentTime * 1000 - next.position) > 1000 || previousOwner !== id) {
+          window.PiterfyDJ?.cancelNarration();
           element.currentTime = next.position / 1000;
+        }
         element.playbackRate = next.speed;
         element.volume = next.volume;
         s.dispatch({ type: 'PLAYER_SET_MODE', data: { mode: next.shuffle ? 'shufflePlay' : next.repeat === 1 ? 'singleLoop' : next.repeat === 2 ? 'orderLoop' : 'order' } });
         applying = false;
         if (next.playing) {
-          try { await element.play(); }
+          try { if(!window.PiterfyDJ?.isNarrating())await element.play(); }
           catch (_) { message = 'Kliknij ▶ w odtwarzaczu, aby zezwolić przeglądarce na dźwięk.'; }
-        } else element.pause();
+        } else pauseLocal();
       }
       applied = next.version;
     } finally { applying = false; }
@@ -289,6 +291,7 @@
   }
   // A narrow same-page bridge for the lyrics view; never exposes credentials or stream URLs.
   window.PiterfyPlayback = {
+    deviceId() { return id; },
     canCrossfade() { return !enabled || (!applying && !state?.pending && (!state?.owner || (local() && performance.now() - lastOk < 9000))); },
     current() {
       if (enabled && state?.owner && !local()) {

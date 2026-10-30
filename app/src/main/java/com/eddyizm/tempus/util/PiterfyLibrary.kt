@@ -39,7 +39,9 @@ object PiterfyLibrary {
             return JSONObject(response.body?.string() ?: "{}")
         }
     }
-    @JvmStatic fun request(body: JSONObject, done: Consumer<JSONObject>?, failed: Consumer<String>?) {
+    @JvmStatic fun request(body: JSONObject, done: Consumer<JSONObject>?, failed: Consumer<String>?) = requestAt("library", body, done, failed)
+    @JvmStatic fun dj(body: JSONObject, done: Consumer<JSONObject>?, failed: Consumer<String>?) = requestAt("dj", body, done, failed)
+    private fun requestAt(endpoint: String, body: JSONObject, done: Consumer<JSONObject>?, failed: Consumer<String>?) {
         val identity = account()
         val origin = runCatching { (Preferences.getServer() ?: "").toHttpUrl().newBuilder().encodedPath("/").query(null).fragment(null).build().toString().trimEnd('/') }.getOrNull()
         if (origin == null || !origin.startsWith("https://")) { failed?.accept("Potrzebny jest adres HTTPS serwera Piterfy."); return }
@@ -52,9 +54,9 @@ object PiterfyLibrary {
                     token = execute("$origin/auth/login", JSONObject().put("username", user).put("password", password)).getString("token")
                     tokenAccount = identity; tokenAt = SystemClock.elapsedRealtime()
                 }
-                val result = execute("$origin/piterfy-api/connect/library", body, token)
+                val result = execute("$origin/piterfy-api/connect/$endpoint", body, token)
                 check(account() == identity)
-                if (result.has("exploration")) prefs().edit().putString(identity, result.toString()).apply()
+                if (endpoint == "library" && result.has("exploration")) prefs().edit().putString(identity, result.toString()).apply()
                 main.post { if (account() == identity) done?.accept(result) }
             } catch (_: Exception) { main.post { if (account() == identity) failed?.accept("Nie udało się zapisać zmian. Spróbuj ponownie po połączeniu.") } }
         }

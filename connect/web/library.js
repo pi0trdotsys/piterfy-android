@@ -47,7 +47,8 @@
     const byId=new Map(unique.map(s=>[s.id,s]));
     return ranked.items.map(row=>({...byId.get(row.id),piterfyReason:row.reason}));
   }
-  window.PiterfyLibrary={rankSongs};
+  window.PiterfyLibrary={rankSongs, play, exploration:()=>preferences.exploration??50, candidates:()=>subsonic('getRandomSongs',{size:100}).then(r=>r.randomSongs?.song||[])};
+  const djScript=document.createElement('script');djScript.src='/piterfy-ui/dj.js?v=20261030-2';document.head.append(djScript);
   async function records(songs) {
     const byId=new Map();
     for(let offset=0;offset<songs.length;offset+=40){
@@ -160,6 +161,8 @@
     slider.oninput=update;slider.onchange=()=>api({action:'settings',exploration:Number(slider.value)}).then(()=>message('Zapisane na Twoim koncie.')).catch(e=>message(e.message));
     el('p','Znajome brzmienia ← → Nowi wykonawcy',dialog,'pf-library-muted');
     const actions=el('div','',dialog,'pf-library-actions');
+    button(actions,'Piterfy DJ',()=>{dialog.close();window.PiterfyDJ?.open('dj');});
+    button(actions,'Nowe utwory · pobieranie',()=>{dialog.close();window.PiterfyDJ?.open('discover');});
     const status=el('p','',dialog,'pf-library-muted');status.setAttribute('role','status');
     const current=window.PiterfyPlayback?.current()?.remote?null:findStore()?.getState().player.current?.song;
     if(current&&!podcast(current)){
@@ -174,6 +177,7 @@
         const random=(await subsonic('getRandomSongs',{size:150})).randomSongs?.song||[];
         const similar=current?.artistId?(await subsonic('getSimilarSongs2',{id:current.artistId,count:40}).catch(()=>({}))).similarSongs2?.song||[]:[];
         const songs=(await rankSongs([...similar,...random])).slice(0,20);if(token!==generation||!dialog.open)return;
+        window.PiterfyDJ?.prepare('discover',songs.slice(0,5)).catch(()=>{});
         if(songs.length)button(results,'Odtwórz propozycje',()=>play(songs).then(()=>dialog.close()).catch(e=>message(e.message)));
         for(const song of songs){
           const row=el('article','',results,'pf-library-song');el('strong',song.title,row);el('span',song.artist,row,'pf-library-muted');el('small',song.piterfyReason,row,'pf-library-muted');
