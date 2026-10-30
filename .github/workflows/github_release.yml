@@ -27,6 +27,8 @@ jobs:
           node --check connect/web/lyrics.js
           node --check connect/web/connect.js
           node --check connect/web/miniplayer.js
+          node --test connect/web/crossfade-core.test.cjs
+          node --check connect/web/crossfade.js
       - name: Restore release signing
         env:
           KEYSTORE: ${{ secrets.KEYSTORE_BASE64 }}

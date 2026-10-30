@@ -26,6 +26,16 @@ Windows virtual desktop visibility is controlled by the browser/OS. When availab
 
 For this stack, stage `web/miniplayer.js`, `web/miniplayer.css`, `web/connect.js` and `deploy_miniplayer.py` directly in `/home/user/piterfy-stack/discover/connectserver/`, then run the deployment script there. It backs up assets and Caddy configuration, versions the loaders and reloads Caddy without restarting the music server. The user confirmed the separate window opens in their desktop browser; native cross-desktop visibility and all transport operations remain manual verification areas.
 
+## Web crossfade
+
+`crossfade-core.js` implements two-deck equal-power fades, queue selection, volume isolation and a bounded handoff back to the native audio element at the already-played incoming position. `crossfade.js` adapts Navidrome 0.64 / navidrome-music-player 4.25.4. One auxiliary deck preloads the next song in the last 25 seconds, using the queue's existing URL resolver and same-origin stream endpoints. It is released on every cancellation. The auxiliary Web Audio graph applies the next song's ReplayGain independently of the native audio graph.
+
+The browser player exposes a 1–10 second slider, on/off switch and per-account browser storage (default: enabled, 5 seconds). This is overlap, not automatic silence detection. Radio, podcasts, repeat-one and the final non-repeating track are excluded. Unbuffered or autoplay-blocked auxiliary audio falls back to normal playback. Connect cancels overlap before a transfer/pause/remote command; reports are suppressed during the short native handoff. The original native queue remains authoritative.
+
+Stage `web/crossfade-core.js`, `web/crossfade.js`, `web/crossfade.css`, `web/connect.js` and `deploy_crossfade.py` in `/home/user/piterfy-stack/discover/connectserver/`, then run the script. It backs up all replaced files, versions the loaders, validates and reloads Caddy, and restores the backup on failure. It does not restart Navidrome or change Android.
+
+Browser verification on 2026-10-30 covered the 1/10 second limits, off switch, narrow and desktop layouts, and a real 10-second transition from Hollywood to workin!. Both audio elements advanced during overlap; the auxiliary deck was removed after handoff and the native player continued the incoming song beyond its already-played introduction. Fifteen crossfade tests, eight Connect tests and twelve lyrics assertions passed. Live Android/browser transfer during overlap remains unverified.
+
 ## Checks
 
 ```
@@ -34,6 +44,8 @@ node connect/web/lyrics-core.test.cjs
 node --check connect/web/lyrics.js
 node --check connect/web/connect.js
 node --check connect/web/miniplayer.js
+node --test connect/web/crossfade-core.test.cjs
+node --check connect/web/crossfade.js
 ./gradlew testTempusDebugUnitTest testDegoogledDebugUnitTest lintTempusRelease lintDegoogledRelease assembleTempusRelease assembleDegoogledRelease
 ```
 

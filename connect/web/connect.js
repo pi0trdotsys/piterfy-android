@@ -10,6 +10,7 @@
   let store, state, enabled = false, busy = false, applying = false, lastOk = 0, applied = '', stopped = '', message = '';
   let identity = '', timer, modal, button, generation = 0;
   const audio = () => document.querySelector('audio.music-player-audio, .react-jinke-music-player-main audio');
+  const pauseLocal = () => { window.PiterfyCrossfade?.cancel(); audio()?.pause(); };
   const local = () => state?.owner === id;
   const safe = value => typeof value === 'string' ? value.slice(0, 512) : '';
   const errors = { session_changed: 'Kolejka się zmieniła. Spróbuj ponownie.', transfer_pending: 'Trwa przenoszenie odtwarzania.',
@@ -67,18 +68,19 @@
     state = next;
     lastOk = performance.now();
     if (next.pending?.from === id) {
-      audio()?.pause();
+      pauseLocal();
       stopped = next.pending.id;
       applied = next.version;
       return;
     }
     stopped = '';
     if (!local()) {
-      if (previousOwner === id || next.owner) audio()?.pause();
+      if (previousOwner === id || next.owner) pauseLocal();
       applied = next.version;
       return;
     }
     if (applied === next.version) return;
+    window.PiterfyCrossfade?.cancel();
     const current = snapshot();
     const s = findStore();
     if (!s || !current) throw Error('Uruchom odtwarzacz Piterfy, aby odbierać muzykę.');
@@ -86,7 +88,7 @@
     const token = generation;
     try {
       if (!next.items.length) {
-        audio()?.pause();
+        pauseLocal();
         s.dispatch({ type: 'PLAYER_CLEAR_QUEUE' });
       } else {
         if (!sameQueue(current.items, next.items) || current.index !== next.index) {
@@ -107,7 +109,7 @@
             if (!byId.has(x.id)) throw Error('Utwór jest niedostępny na tym koncie.');
             data['connect_' + i] = byId.get(x.id);
           });
-          audio()?.pause();
+          pauseLocal();
           s.dispatch({ type: 'PLAYER_PLAY_TRACKS', data, id: 'connect_' + next.index });
           const deadline = performance.now() + 6500;
           while (performance.now() < deadline) {
@@ -148,7 +150,7 @@
     busy = true;
     const token = generation;
     try {
-      const report = !applying ? snapshot() : null;
+      const report = !applying && !window.PiterfyCrossfade?.isHandoff() ? snapshot() : null;
       const next = await api('poll', { device: { id, name, kind: 'web', output: 'Wyjście dźwięku przeglądarki' },
         version: applied, report, stopAck: stopped });
       if (token === generation && enabled) await apply(next);
@@ -170,7 +172,7 @@
 
   function disable() {
     generation++;
-    if (local()) audio()?.pause();
+    if (local()) pauseLocal();
     enabled = false; state = null; applied = ''; stopped = ''; store = null;
     clearTimeout(timer);
     render();
@@ -274,19 +276,20 @@
     document.addEventListener('play', event => {
       if (event.target !== audio() || !enabled) return;
       if (applying || (state?.owner && !local()) || state?.pending?.from === id || (local() && performance.now() - lastOk >= 9000)) {
-        event.target.pause();
+        pauseLocal();
         if (!applying && !local()) { message = 'Wybierz „Przenieś tutaj”, aby słuchać na tym komputerze.'; render(); }
       }
     }, true);
     setInterval(() => {
       // Stop before the server is allowed to reassign an unreachable receiver.
-      if (enabled && local() && performance.now() - lastOk > 9000) { audio()?.pause(); message = 'Utracono połączenie. Odtwarzanie wstrzymane.'; render(); }
+      if (enabled && local() && performance.now() - lastOk > 9000) { pauseLocal(); message = 'Utracono połączenie. Odtwarzanie wstrzymane.'; render(); }
       if (enabled && (!localStorage.getItem('token') || identity !== (localStorage.getItem('username') || ''))) disable();
     }, 500);
-    window.addEventListener('pagehide', () => { if (enabled && local()) audio()?.pause(); });
+    window.addEventListener('pagehide', () => { if (enabled && local()) pauseLocal(); });
   }
   // A narrow same-page bridge for the lyrics view; never exposes credentials or stream URLs.
   window.PiterfyPlayback = {
+    canCrossfade() { return !enabled || (!applying && !state?.pending && (!state?.owner || (local() && performance.now() - lastOk < 9000))); },
     current() {
       if (enabled && state?.owner && !local()) {
         const song = state.items[state.index];
@@ -298,6 +301,7 @@
     },
     seek(position) {
       if (enabled && state?.owner && !local()) return command('seek', { position });
+      window.PiterfyCrossfade?.cancel();
       if (audio()) audio().currentTime = position / 1000;
     },
     control(action, value) {
@@ -306,6 +310,7 @@
       const element = audio();
       if (!element) return;
       if (action === 'volume') { element.volume = Math.max(0, Math.min(1, value)); return; }
+      window.PiterfyCrossfade?.cancel();
       if (action === 'play') return element.play();
       if (action === 'pause') { element.pause(); return; }
       document.querySelector('.music-player-panel .' + (action === 'next' ? 'next-audio' : 'prev-audio'))?.click();

@@ -452,6 +452,12 @@ In desktop Chrome/Edge, click the small window icon beside the queue to open the
 
 To keep it on all Windows virtual desktops, use **Win+Tab → right-click the window → Show this window on all desktops**, if your browser exposes that option. The help button inside the mini player also explains this limitation.
 
+### Piterfy web crossfade
+
+Click **Przejście · 5 s** on the browser player to configure **Płynne przejścia**. Crossfade is enabled by default at five seconds; choose 1–10 seconds or turn it off. The setting is saved per account in this browser. It starts the next track under the fading end of the current one, so its quiet introduction overlaps existing music. It does not detect silence or cut a fixed number of seconds from recordings.
+
+Applies to local library music, including shuffled queues and repeat-all. Podcasts, radio, repeat-one and the end of a non-repeating queue play normally. The next track is prepared near the end of the current track; if it is not buffered, normal playback takes priority. Pause, seeking, queue changes and Connect transfer cancel the overlap. This feature is web-only; it does not change Android playback.
+
 ### Piterfy lyrics
 
 Open the full Android player and select the lyrics icon. In the browser, use **♫ Tekst**. Timed lyrics highlight the current line and follow playback. Tap a line to seek, scroll to read ahead, then use **Wróć do tekstu** to resume following. The timing button adjusts synchronization in half-second steps and remembers the correction for that song.
