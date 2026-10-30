@@ -464,7 +464,7 @@ Podcast positions sync while online, periodically and when pausing. Older device
 
 Android **Settings → Piterfy · odtwarzanie i odkrywanie** now contains **Płynne przejścia** and a 1–10 second duration (default: five seconds). Crossfade applies to music playing locally on the phone. Podcasts, radio, remote receivers, repeat-one and an active sleep timer use normal transitions. Both outgoing and incoming buffers must be ready; otherwise normal playback takes priority. The web has its separate per-browser crossfade setting on the player.
 
-The desktop web player uses a full-width timeline with controls above it. Android's timeline has a larger touch target in portrait, landscape and tablet layouts. Both use dark surfaces and restrained cover-color accents.
+The desktop web player uses a full-width timeline with controls above it. On a narrow web screen, a bottom mini player provides the current track, cover and play/pause; tap its title to open the full player. Android's timeline has a larger touch target in portrait, landscape and tablet layouts. Both use dark surfaces and restrained cover-color accents.
 
 ### Piterfy web crossfade
 

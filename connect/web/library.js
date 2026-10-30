@@ -98,6 +98,42 @@
   function button(parent,text,handler,cls='pf-library-button') {
     const node=el('button',text,parent,cls);node.type='button';node.addEventListener('click',handler);return node;
   }
+  function mobileBar() {
+    let bar=document.querySelector('.pf-mobile-bar');
+    const player=findStore()?.getState().player;
+    if(!matchMedia('(max-width:809px)').matches||!player?.queue?.length){bar?.remove();return;}
+    if(!bar){
+      bar=el('div','',document.body,'pf-mobile-bar');
+      const open=button(bar,'',()=>{
+        if(window.PiterfyPlayback?.current()?.remote)document.getElementById('pf-connect-button')?.click();
+        else {bar.hidden=true;document.querySelector('.music-player-controller')?.click();}
+      },'pf-mobile-track');
+      const art=el('img','',open);art.alt='';
+      const labels=el('span','',open);el('strong','',labels);el('small','',labels);
+      button(bar,'',()=>{
+        const state=window.PiterfyPlayback?.current();
+        const playing=state?.remote?state.playing:!!audio()&&!audio().paused;
+        const action=playing?'pause':'play';
+        const result=window.PiterfyPlayback?window.PiterfyPlayback.control(action):(action==='play'?audio()?.play():audio()?.pause());
+        Promise.resolve(result).then(mobileBar).catch(()=>{});
+      },'pf-mobile-play');
+    }
+    const remote=window.PiterfyPlayback?.current();
+    const item=player.current?.song?player.current:player.queue[player.savedPlayIndex||0];
+    const song=remote?.remote?remote:item?.song;
+    if(!song)return;
+    bar.hidden=!!document.querySelector('.react-jinke-music-player-mobile');
+    const open=bar.querySelector('.pf-mobile-track');
+    open.setAttribute('aria-label','Otwórz odtwarzacz: '+(song.title||''));
+    open.querySelector('strong').textContent=song.title||'Wybierz utwór';
+    open.querySelector('small').textContent=(song.artist||'')+(remote?.remote?' · '+remote.output:'');
+    const cover=!remote?.remote&&item?.cover;
+    const art=open.querySelector('img');art.hidden=!cover;
+    if(cover&&art.getAttribute('src')!==cover)art.src=cover;
+    const playing=remote?.remote?remote.playing:!!audio()&&!audio().paused;
+    const control=bar.querySelector('.pf-mobile-play');control.textContent=playing?'❚❚':'▶';
+    control.setAttribute('aria-label',playing?'Wstrzymaj':'Odtwarzaj');
+  }
   function message(text) {const node=dialog?.querySelector('[role=status]');if(node)node.textContent=text;}
   async function vote(song,value) {
     await api({action:'feedback',id:song.id,artist:song.artist||'',vote:value,event:crypto.randomUUID()});
@@ -207,7 +243,7 @@
   }
   function mount() {
     if(account!==identity()) {generation++;account=identity();preferences={};previous=null;store=null;checkedAlbum='';applyingQueue=false;dialog?.close();}
-    if(!account||location.hash.startsWith('#/login'))return;
+    if(!account||location.hash.startsWith('#/login')){document.querySelector('.pf-mobile-bar')?.remove();return;}
     attachAudio(audio());
     const toolbar=document.querySelector('#react-admin-title')?.parentElement;
     if(toolbar&&!document.querySelector('.pf-discovery-launch'))button(toolbar,'Odkrywaj',open,'pf-library-button pf-discovery-launch');
@@ -249,6 +285,7 @@
   }
   function observe() {
     const player=findStore()?.getState().player,element=audio();if(!player||!element||!account)return;
+    mobileBar();
     const song=player.current?.song;
     if(song&&!element.paused&&!applyingQueue&&!window.PiterfyPlayback?.current()?.remote&&
       !player.queue.some(item=>item.isRadio)&&player.queue.some(item=>podcast(item.song)!==podcast(song))){
@@ -281,6 +318,6 @@
     setTimeout(()=>{if(findStore()?.getState().player.current?.song?.id!==before.id&&before.position>=3000&&before.position<Math.min(30000,before.duration*.3))api({action:'skip',...before}).catch(()=>{});},1000);
   },true);
   window.addEventListener('pagehide',()=>saveQueue());
-  const css=el('link','',document.head);css.rel='stylesheet';css.href='/piterfy-ui/library.css?v=20261030-3';
+  const css=el('link','',document.head);css.rel='stylesheet';css.href='/piterfy-ui/library.css?v=20261030-4';
   mount();setInterval(mount,2000);setInterval(observe,500);
 })();
