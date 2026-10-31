@@ -11,7 +11,7 @@ import sys
 root = Path('/home/user/piterfy-stack')
 stage = root/'discover/connectserver'
 config = json.loads(subprocess.check_output(['docker','inspect','piterfy-discover']))[0]
-allowed = ('NAVIDROME_', 'SLSKD_', 'LASTFM_')
+allowed = ('NAVIDROME_', 'SLSKD_', 'LASTFM_', 'SMTP_', 'TELEGRAM_', 'DISCOVER_MAIL_TO', 'MSMTPRC')
 env = [entry for entry in config['Config']['Env'] if entry.split('=',1)[0].startswith(allowed)]
 private = root/'.dj-runtime.env'
 private.touch(mode=0o600, exist_ok=True); os.chmod(private, 0o600)
@@ -23,7 +23,7 @@ service = {'services': {'piterfy-dj': {
     'container_name':'piterfy-dj','restart':'unless-stopped','networks':['piterfy_net'],
     'user':str(os.getuid())+':'+str(os.getgid()),
     'environment':environment,
-    'volumes':['./discover:/legacy:ro','./discover/dj-state:/state/dj','./discover/state/connect:/connect:ro'],
+    'volumes':['./discover:/legacy:ro','./discover/dj-state:/state/dj','./discover/state/connect:/connect:ro', '/home/user/.msmtprc:/config/msmtprc:ro'],
     'read_only':True,'tmpfs':['/tmp:size=64m'], 'cpus':0.75,'mem_limit':'512m','pids_limit':64,
     'security_opt':['no-new-privileges:true'],'cap_drop':['ALL']}}}
 private.write_text(json.dumps(service))

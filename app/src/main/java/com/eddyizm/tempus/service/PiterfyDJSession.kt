@@ -37,6 +37,7 @@ class PiterfyDJSession(private val player: Player) : Player.Listener {
         }
         @JvmStatic fun cancelNarration(){instance?.let{it.finishVoice(it.player.currentMediaItem?.mediaId.orEmpty())}}
         @JvmStatic fun stopNarration(){instance?.stopVoice()}
+        @JvmStatic fun visualActive():Boolean=instance?.let{it.player.isPlaying||it.speaking||it.waitingForIntro}==true
         @JvmStatic fun isNarrating(player:Player):Boolean=instance?.let{it.player===player&&(it.speaking||it.waitingForIntro)}==true
         @JvmStatic fun holdQueue(songs:List<Child>,index:Int):Boolean=instance?.let{it.local()&&it.introduction(songs.getOrNull(index)?.id)!=null}==true
         @JvmStatic fun startCurrentIntroduction():Boolean=instance?.let{it.waitingForIntro||it.speaking||it.beginIntroduction()}==true
@@ -61,6 +62,36 @@ class PiterfyDJSession(private val player: Player) : Player.Listener {
     private var speaking = false
     private var waitingForIntro = false
     private var generation = 0
+    private var observedBlock:JSONObject?=null
+    private var observedSession=""
+    private var observedMode="dj"
+    private var heardBlock=false
+    private fun completeObserved(){
+        val block=observedBlock;observedBlock=null
+        if(block!=null&&heardBlock)request(JSONObject().put("action","complete").put("mode",observedMode).put("session",observedSession).put("block",block.optString("id"))){}
+        heardBlock=false
+    }
+    private fun observeBlock(){
+        if(!local())return
+        val id=player.currentMediaItem?.mediaId
+        var match:JSONObject?=null;var session="";var mode="dj"
+        for(kind in listOf("dj","discover")){
+            val state=states.optJSONObject(kind)?:continue
+            if(!state.optBoolean("active"))continue
+            val blocks=state.optJSONArray("blocks")?:continue
+            for(i in 0 until blocks.length()){
+                val b=blocks.getJSONObject(i);val tracks=b.optJSONArray("tracks")?:continue
+                if((0 until tracks.length()).any{tracks.getJSONObject(it).optString("id")==id}){match=b;session=state.optString("id");mode=kind}
+            }
+        }
+        if(observedBlock!=null&&(match?.optString("id")!=observedBlock?.optString("id")||session!=observedSession))completeObserved()
+        if(match!=null){
+            observedBlock=match;observedSession=session;observedMode=mode
+            if(player.isPlaying&&player.currentPosition>10000)heardBlock=true
+            val tracks=match.getJSONArray("tracks")
+            if(tracks.optJSONObject(tracks.length()-1)?.optString("id")==id&&player.playbackState==Player.STATE_ENDED)completeObserved()
+        }
+    }
     private val audioManager=App.getContext().getSystemService(android.content.Context.AUDIO_SERVICE) as android.media.AudioManager
     private var focus:android.media.AudioFocusRequest?=null
     private val focusListener=android.media.AudioManager.OnAudioFocusChangeListener{change->if(change<0)stopVoice()}
@@ -86,12 +117,13 @@ class PiterfyDJSession(private val player: Player) : Player.Listener {
     private val tick=object:Runnable {
         override fun run(){
             if(closed)return
-            if(account!=PiterfyLibrary.account()){stopVoice();states=JSONObject();announcements.clear();account=PiterfyLibrary.account();generation++}
+            if(account!=PiterfyLibrary.account()){observedBlock=null;heardBlock=false;stopVoice();states=JSONObject();announcements.clear();account=PiterfyLibrary.account();generation++}
             if(!local())stopVoice()
             if((speaking||waitingForIntro)&&(states.optJSONObject("dj")?.optBoolean("voice")!=true||states.optJSONObject("dj")?.optBoolean("active")!=true))finishVoice(player.currentMediaItem?.mediaId.orEmpty())
             val now=android.os.SystemClock.elapsedRealtime()
             if(!busy&&now-lastPoll>8000){busy=true;lastPoll=now;request(JSONObject().put("action","list")){states=it;busy=false}}
             val id=player.currentMediaItem?.mediaId
+            observeBlock()
             if(local()&&id!=null)for(mode in listOf("dj","discover")){
                 val state=states.optJSONObject(mode)?:continue
                 if(!state.optBoolean("active"))continue

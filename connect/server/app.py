@@ -51,6 +51,7 @@ class Handler(BaseHTTPRequestHandler):
     do_POST = handle
 
     def do_GET(self):
+        if self.route()=="/piterfy-api/connect/dj-feedback":return handle(self)
         if self.route() == "/health":
             self.send(200, '{"ok":true,"protocol":1}')
         else:

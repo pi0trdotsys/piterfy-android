@@ -21,6 +21,7 @@ import java.util.function.Consumer
 object PiterfyDJDialog {
     @JvmStatic fun show(context:Context, play:Consumer<List<Child>>, mode:String="dj"){
         val content=LinearLayout(context).apply{orientation=LinearLayout.VERTICAL;setPadding(32,16,32,16)}
+        val avatar=if(mode=="dj")PiterfyDJAvatar(context).also{content.addView(it,LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,(164*context.resources.displayMetrics.density).toInt()))}else null
         val intro=TextView(context).apply{text=if(mode=="dj")"Twoja audycja z polskimi zapowiedziami i nowymi gatunkami." else "Osobne pobieranie nowych utworów, niezależne od codziennego Odkrywaj."};content.addView(intro)
         val label=TextView(context);content.addView(label)
         val slider=SeekBar(context).apply{max=100;progress=PiterfyLibrary.cached().optInt("exploration",50)};content.addView(slider)
@@ -28,17 +29,24 @@ object PiterfyDJDialog {
         val rows=LinearLayout(context).apply{orientation=LinearLayout.VERTICAL}
         val scroll=ScrollView(context).apply{addView(content)}
         val dialog=MaterialAlertDialogBuilder(context).setTitle(if(mode=="dj")"Piterfy DJ" else "Odkrywaj · nowe utwory").setView(scroll).setNegativeButton("Zamknij",null).create()
-        var state=JSONObject();var starting=false;var pendingStart=false;var voiceToggle:MaterialButton?=null;var initialized=false
+        var state=JSONObject();var starting=false;var pendingStart=false;var pendingNextCount=-1;var voiceToggle:MaterialButton?=null;var initialized=false
+        val summaryButtons=mutableMapOf<String,MaterialButton>()
         fun render(){
             if(!dialog.isShowing)return
             voiceToggle?.text=if(state.optBoolean("voice"))"Głos DJ-a: włączony" else "Głos DJ-a: wyłączony"
+            for((key,b) in summaryButtons)b.text=(if(key=="summaryEmail")"Podsumowania e-mail: " else "Podsumowania Telegram: ")+(if(state.optBoolean(key,true))"włączone" else "wyłączone")
             status.text=when(state.optString("status")){"queued"->"Przygotowuję blok…";"downloading"->"Szukam i pobieram nowe utwory…";"ready"->"Blok gotowy";"no_new_tracks"->"Nowe pobrania jeszcze niedostępne; możesz słuchać gotowych bloków.";"hourly_limit"->"Limit pobierania na tę godzinę wykorzystany.";else->"Uruchom sesję lub wybierz gotowy blok."}
             rows.removeAllViews();val blocks=state.optJSONArray("blocks")?:JSONArray()
             for(i in 0 until blocks.length()){
                 val block=blocks.getJSONObject(i);val songs=PiterfyDJSession.decode(block.getJSONArray("tracks"))
                 rows.addView(TextView(context).apply{text=block.optString("title")+"\n"+block.optString("text")+"\n"+songs.joinToString(" · "){it.artist+" — "+it.title};setPadding(0,28,0,4)})
                 rows.addView(MaterialButton(context).apply{text="Odtwórz blok";setOnClickListener{play.accept(songs);dialog.dismiss()}})
+                for(vote in listOf(1,-1))rows.addView(MaterialButton(context).apply{text=if(vote==1)"Blok OK" else "Nie mój klimat";setOnClickListener{
+                    isEnabled=false
+                    PiterfyLibrary.dj(JSONObject().put("action","block-feedback").put("mode",mode).put("block",block.optString("id")).put("vote",vote),{isEnabled=true;status.text="Zapisano ocenę bloku. Uwzględnię ją w kolejnych odkryciach."},{isEnabled=true;status.text=it})
+                }})
                 if(pendingStart&&i==0){pendingStart=false;play.accept(songs)}
+                if(pendingNextCount>=0&&i==pendingNextCount){pendingNextCount=-1;play.accept(songs);dialog.dismiss()}
             }
         }
         fun request(body:JSONObject){PiterfyLibrary.dj(body.put("mode",mode),{state=it;PiterfyDJSession.acceptState(it);if(!initialized){if(it.has("exploration"))slider.progress=it.optInt("exploration");initialized=true};render()},{status.text=it;starting=false})}
@@ -65,13 +73,16 @@ object PiterfyDJDialog {
             }
         }
         button("Zmień klimat"){
+            if(!state.optBoolean("active")){status.text="Najpierw uruchom sesję DJ.";return@button}
             val blocks=state.optJSONArray("blocks")?:JSONArray();val id=PiterfyDJSession.currentSong()?.id
             val index=(0 until blocks.length()).firstOrNull{i->val tracks=blocks.getJSONObject(i).getJSONArray("tracks");(0 until tracks.length()).any{tracks.getJSONObject(it).optString("id")==id}}?:-1
             if(index+1<blocks.length()){play.accept(PiterfyDJSession.decode(blocks.getJSONObject(index+1).getJSONArray("tracks")));dialog.dismiss()}
-            else request(JSONObject().put("action","next"))
+            else {pendingNextCount=blocks.length();request(JSONObject().put("action","next"))}
         }
         if(mode=="dj")voiceToggle=button("Głos DJ-a"){if(state.optBoolean("voice"))PiterfyDJSession.cancelNarration();request(JSONObject().put("action","settings").put("voice",!state.optBoolean("voice")))}
-        button("Zakończ sesję"){pendingStart=false;PiterfyDJSession.cancelNarration();request(JSONObject().put("action","stop"))}
+        if(mode=="dj")button("Pomiń zapowiedź"){PiterfyDJSession.cancelNarration()}
+        for(key in listOf("summaryEmail","summaryTelegram"))summaryButtons[key]=button(key){request(JSONObject().put("action","settings").put(key,!state.optBoolean(key,true)))}
+        button("Zakończ sesję"){pendingStart=false;pendingNextCount=-1;PiterfyDJSession.cancelNarration();request(JSONObject().put("action","stop"))}
         for(vote in listOf(1,-1))button(if(vote==1)"Więcej takich · bieżący utwór" else "Mniej takich · bieżący utwór"){
             val song=PiterfyDJSession.currentSong()
             if(song==null)status.text="Odtwórz najpierw utwór na tym telefonie."
@@ -79,6 +90,7 @@ object PiterfyDJDialog {
         }
         content.addView(rows)
         val handler=Handler(Looper.getMainLooper());val poll=object:Runnable{override fun run(){if(dialog.isShowing){request(JSONObject().put("action","get"));handler.postDelayed(this,8000)}}}
-        dialog.setOnDismissListener{handler.removeCallbacks(poll)};dialog.show();handler.post(poll)
+        val animate=object:Runnable{override fun run(){if(dialog.isShowing){avatar?.setActive(state.optBoolean("active")&&PiterfyDJSession.visualActive());handler.postDelayed(this,500)}}}
+        dialog.setOnDismissListener{handler.removeCallbacks(poll);handler.removeCallbacks(animate);avatar?.setActive(false)};dialog.show();handler.post(poll);handler.post(animate)
     }
 }

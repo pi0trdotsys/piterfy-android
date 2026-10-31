@@ -15,10 +15,12 @@ import sys
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from dj_core import Sessions
+from dj_reviews import Reviews
 from connect_core import Rejected
 
 ROOT = Path(os.environ.get('DJ_STATE_DIR', '/state/dj'))
 sessions = Sessions(ROOT)
+reviews = Reviews(sessions)
 sys.path.insert(0, '/legacy')
 spec = importlib.util.spec_from_file_location('acquisition', '/legacy/discover.py')
 music = importlib.util.module_from_spec(spec)
@@ -59,7 +61,7 @@ def cancelled(job):
 
 def voice(text):
     import hashlib
-    key = hashlib.sha256((os.environ.get('DJ_VOICE_ENGINE','multilingual')+'-andrew-v2:' + text).encode()).hexdigest()
+    key = hashlib.sha256((os.environ.get('DJ_VOICE_ENGINE','multilingual')+'-andrew-v3:' + text).encode()).hexdigest()
     folder = ROOT / 'voice'; folder.mkdir(exist_ok=True)
     target = folder / (key + '.wav')
     if not target.exists():
@@ -77,7 +79,7 @@ def voice(text):
 
 def block(songs, title, intro, spoken):
     return dict(id=uuid.uuid4().hex, title=title, text=intro, tracks=songs,
-                voiceKey=voice(intro) if spoken else None, voiceVersion=2, announced=False)
+                voiceKey=voice(intro) if spoken else None, voiceVersion=3, announced=False)
 
 
 def allowed(song):
@@ -101,7 +103,7 @@ def run_job(job):
     try: prefs = json.loads(pref_path.read_text())
     except (OSError, ValueError): prefs = {}
     feedback = prefs.get('feedback', {})
-    artist_scores = {}
+    artist_scores = reviews.preferences(job[1])
     for row in feedback.values():
         artist_scores[row['artist']] = artist_scores.get(row['artist'], 0) + row.get('vote', 0)*2 - min(5, row.get('skips', 0))*.25
     pool = [s for s in pool if feedback.get(s['id'], {}).get('vote') != -1]
@@ -112,7 +114,7 @@ def run_job(job):
               + (1 if str(s.get('genre', '')).lower() in seed_genres else 0), reverse=True)
     if pool:
         songs = pool[:5]
-        intro = 'To Piterfy DJ. Ten blok otwiera '+songs[0].get('artist','')[:65]+', utworem '+songs[0].get('title','')[:65]+'. W tle przygotowuję nowe odkrycia dopasowane do Twoich wyborów.'
+        intro = random.choice(['Hej! Dobrze Cię słyszeć. Mam dla Ciebie kolejny muzyczny kierunek. ', 'Gotowy na kolejny dobry numer? Złapmy ten klimat! ', 'Wracamy do brzmień bliskich Twojemu gustowi. Sprawdźmy, dokąd nas zabiorą! '])+songs[0].get('artist','')[:65]+', i utwór '+songs[0].get('title','')[:65]+'. Posłuchajmy!'
         sessions.finish(job, block(songs, 'Blisko Twojego gustu', intro, state.get('voice', False)), final=False)
     if cancelled(job):
         sessions.finish(job); return
@@ -179,8 +181,8 @@ def run_job(job):
         # Announce a genre only when a track actually selected through that tag was imported.
         if not any(j.get('via') == genre and nd.find_song(j['artist'],j['title']) for j in jobs): genre = ''
         title = 'Nowe odkrycia' + (' · '+genre if genre else '')
-        intro = ('Teraz nowe odkrycia. ' + ('Sprawdzimy gatunek '+genre+'. ' if genre else '') +
-                 'Zaczyna '+imported[0].get('artist','')[:65]+', utworem '+imported[0].get('title','')[:65]+'. Jeśli Ci się spodoba, wybierz więcej takich.')
+        intro = (random.choice(['Czas na świeże odkrycia! ', 'Okej, teraz ruszamy trochę dalej! ', 'Mam coś nowego do sprawdzenia! ']) + ('Zajrzymy w '+genre+'. ' if genre else '') +
+                 'Na początek '+imported[0].get('artist','')[:65]+', i '+imported[0].get('title','')[:65]+'. Daj znać po bloku, czy złapaliśmy Twój klimat. A teraz muzyka!')
         sessions.finish(job, block(imported, title, intro, state.get('voice', False)))
     else:
         sessions.finish(job, error='no_new_tracks')
@@ -193,7 +195,7 @@ def refresh_voices():
     for owner,mode,raw in rows:
         state=json.loads(raw)
         for block in state.get('blocks',[]):
-            if block.get('voiceVersion')==2 or not block.get('voiceKey'):continue
+            if block.get('voiceVersion')==3 or not block.get('voiceKey'):continue
             key=voice(block['text'])
             if not key:continue
             with sessions.db() as db:
@@ -202,7 +204,7 @@ def refresh_voices():
                 if latest.get('id')!=state.get('id'):continue
                 for current in latest.get('blocks',[]):
                     if current['id']==block['id']:
-                        current.update(voiceKey=key,voiceVersion=2)
+                        current.update(voiceKey=key,voiceVersion=3)
                 db.execute('UPDATE sessions SET data=? WHERE owner=? AND mode=?',(json.dumps(latest,ensure_ascii=False),owner,mode))
 
 
@@ -230,7 +232,19 @@ class Handler(BaseHTTPRequestHandler):
             user = body['user']; request = body['request']
             if not isinstance(user, str) or not user or len(user)>512: raise Rejected('account_required', 400)
             if not isinstance(request, dict): raise Rejected('invalid_request', 400)
-            if request.get('action') == 'list':
+            if request.get('action') == 'review-page':
+                result = {'html':reviews.page(request.get('token'),request.get('vote'))}
+            elif request.get('action') == 'complete':
+                result = reviews.complete(user,request)
+            elif request.get('action') == 'block-feedback':
+                if type(request.get('vote')) is not int or request['vote'] not in (-1,0,1):raise Rejected('invalid_vote',400)
+                state=sessions.handle(user,{'mode':request.get('mode','dj')})
+                reviews.complete(user,dict(request,session=state.get('id')),notify=False)
+                with sessions.db() as db:
+                    token=db.execute('SELECT token FROM reviews WHERE owner=? AND session=? AND block=?',(sessions.owner(user),state['id'],request.get('block'))).fetchone()[0]
+                reviews.resolve(token,request.get('vote'))
+                result={'ok':True}
+            elif request.get('action') == 'list':
                 result = {mode: sessions.handle(user, dict(mode=mode)) for mode in ('dj', 'discover')}
             elif request.get('action') == 'audio':
                 # Resolve only a clip belonging to this account, never an arbitrary file key.
@@ -247,5 +261,7 @@ class Handler(BaseHTTPRequestHandler):
 
 
 if __name__ == '__main__':
+    from dj_notify import loop
+    threading.Thread(target=loop,args=(reviews,music),daemon=True).start()
     threading.Thread(target=work, daemon=True).start()
     ThreadingHTTPServer(('0.0.0.0', 8092), Handler).serve_forever()

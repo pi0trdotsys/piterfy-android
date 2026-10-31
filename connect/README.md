@@ -54,6 +54,12 @@ For this stack, stage the DJ Python files, Dockerfile, `.dockerignore`, web `dj.
 
 Browser speech finishes before the native music queue starts; a pending queue snapshot keeps the intended DJ block visible to Connect during the introduction. Android prepares the queue paused and starts its separate MediaPlayer before allowing music to play. Focus loss, output disconnect, queue changes, account changes and Connect handoff cancel narration. DJ blocks move through the existing music queue, and speech is never stored as a music item. Use `deploy_dj.py --ui-only` for web-only updates during an active session.
 
+Completed blocks now have a durable summary outbox and reversible, account-scoped block votes. A block counts after at least ten seconds of music and a transition out of it, a session stop, or the end of its last track; merely preparing/downloading a block does not notify. The server deduplicates completions across devices. Email and Telegram can be toggled independently. Existing server-wide delivery credentials are used only for the configured Navidrome user. Other accounts can vote in the app but never send their music to that recipient. Summaries have a 30-day capability link: GET renders a confirmation form, POST records a vote; mail scanners cannot vote by following a link. Block votes are soft, bounded artist signals used by future DJ and interactive-discovery acquisition/ranking. They do not rewrite explicit per-song likes/dislikes.
+
+SMTP and Telegram do not provide an idempotency key. Each channel is durably claimed before delivery and marked sent/failed; ambiguous delivery failures are not blindly retried. Credentials stay in the mode-600 runtime compose file and read-only msmtp mount, never in APKs, session responses or source control. `dj_reviews.py` owns the outbox and feedback; `dj_notify.py` owns delivery. Animated DJ artwork respects reduced-motion settings and stops when idle or detached.
+
+`discovery/patch_mail.py` restores multipart HTML daily reports without disabling discovery or changing its schedule. Stage it with `discovery/report_formatter.py` and `deploy_discovery_mail.py`, then run the deployment only while the daily worker is idle. The script backs up both sources and restarts only the discovery daemon so its loaded sender matches disk. Daily reports keep one HTML part and one readable text alternative, rather than literal Markdown in Gmail.
+
 ## Checks
 
 ```

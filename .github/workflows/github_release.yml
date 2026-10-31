@@ -23,6 +23,7 @@ jobs:
       - name: Check Connect and browser lyrics
         run: |
           python3 -m unittest discover -s connect/server -p 'test_*.py'
+          python3 -m unittest discover -s connect/discovery -p 'test_*.py'
           node connect/web/lyrics-core.test.cjs
           node --check connect/web/lyrics.js
           node --check connect/web/connect.js

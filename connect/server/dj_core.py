@@ -22,6 +22,8 @@ class Sessions:
                 CREATE TABLE IF NOT EXISTS jobs(id TEXT PRIMARY KEY, owner TEXT, mode TEXT,
                     session TEXT, created REAL, state TEXT, data TEXT);
                 CREATE TABLE IF NOT EXISTS acquired(key TEXT PRIMARY KEY, at REAL, state TEXT, data TEXT);
+                CREATE TABLE IF NOT EXISTS block_archive(owner TEXT, session TEXT, block TEXT, data TEXT, created REAL,
+                    PRIMARY KEY(owner,session,block));
             ''')
 
     @contextmanager
@@ -61,15 +63,23 @@ class Sessions:
                 # A repeated start resumes instead of spending another download budget.
                 if not state['active']:
                     state = dict(active=True, id=uuid.uuid4().hex, mode=mode, seeds=clean, blocks=[],
+                                 summaryEmail=state.get('summaryEmail',True), summaryTelegram=state.get('summaryTelegram',True),
                                  exploration=int(number(body.get('exploration', 50), 0, 100)),
                                  voice=state.get('voice', mode == 'dj'), revision=state['revision'] + 1, updated=time.time())
                 else:
                     state['seeds'] = clean
                     state['exploration'] = int(number(body.get('exploration', state['exploration']), 0, 100))
             elif action == 'stop':
+                for block in state.get('blocks',[]):
+                    db.execute('INSERT OR REPLACE INTO block_archive VALUES(?,?,?,?,?)',(owner,state['id'],block['id'],json.dumps(dict(block=block,mode=mode,summaryEmail=state.get('summaryEmail',True),summaryTelegram=state.get('summaryTelegram',True)),ensure_ascii=False),time.time()))
+                db.execute('DELETE FROM block_archive WHERE created<?',(time.time()-30*86400,))
                 state['active'] = False
                 db.execute("UPDATE jobs SET state='cancelled' WHERE owner=? AND mode=? AND state='queued'", (owner, mode))
             elif action == 'settings':
+                for setting in ('summaryEmail','summaryTelegram'):
+                    if setting in body:
+                        if type(body[setting]) is not bool: raise Rejected('invalid_setting',400)
+                        state[setting]=body[setting]
                 if 'voice' in body:
                     if not isinstance(body['voice'], bool):
                         raise Rejected('invalid_voice', 400)

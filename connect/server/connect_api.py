@@ -3,6 +3,7 @@ import json
 import os
 import urllib.request
 import urllib.error
+import urllib.parse
 from connect_core import Broker, Rejected
 from library_core import Library
 
@@ -10,8 +11,36 @@ broker = Broker(os.environ.get("CONNECT_STATE_DIR", "/app/state/connect"))
 library = Library(os.environ.get("CONNECT_STATE_DIR", "/app/state/connect"))
 
 
+def review_page(handler):
+    """An expiring, unguessable capability. Mail scanners can GET without voting."""
+    headers={'Cache-Control':'no-store','Referrer-Policy':'no-referrer',
+             'Content-Security-Policy':"default-src 'none'; style-src 'unsafe-inline'; form-action 'self'; base-uri 'none'; frame-ancestors 'none'"}
+    try:
+        if handler.command=='POST':
+            size=int(handler.headers.get('Content-Length','0'))
+            if not 0<size<=2048:raise Rejected('body_limit',413)
+            fields=urllib.parse.parse_qs(handler.rfile.read(size).decode())
+            vote=int(fields.get('vote',[''])[0])
+        elif handler.command=='GET':
+            fields=urllib.parse.parse_qs(urllib.parse.urlsplit(handler.path).query)
+            vote=None
+        else:raise Rejected('method_not_allowed',405)
+        token=fields.get('token',[''])[0]
+        body=dict(action='review-page',token=token)
+        if vote is not None:body['vote']=vote
+        request=urllib.request.Request(os.environ.get('DJ_URL','http://piterfy-dj:8092'),
+            data=json.dumps({'user':'review-capability','request':body}).encode(),headers={'Content-Type':'application/json'})
+        with urllib.request.urlopen(request,timeout=8) as response:result=json.loads(response.read(65536))
+        handler.send(200,result['html'],'text/html; charset=utf-8',headers)
+    except (Rejected,urllib.error.HTTPError,ValueError,KeyError) as error:
+        handler.send(getattr(error,'status',getattr(error,'code',400)),'Ten link oceny wygasł lub jest nieprawidłowy.','text/plain; charset=utf-8',headers)
+    except OSError:
+        handler.send(503,'Ocena jest chwilowo niedostępna. Spróbuj ponownie.','text/plain; charset=utf-8',headers)
+
+
 def handle(handler):
     path = handler.route()
+    if path=='/piterfy-api/connect/dj-feedback':return review_page(handler)
     headers = {"Cache-Control": "no-store"}
     if path not in ("/piterfy-api/connect/poll", "/piterfy-api/connect/command", "/piterfy-api/connect/library", "/piterfy-api/connect/dj"):
         return handler.send(404)
@@ -28,7 +57,8 @@ def handle(handler):
         if not isinstance(body, dict):
             raise Rejected("invalid_body", 400)
         if path.endswith('/dj'):
-            if body.get('action') in ('claim', 'audio'):
+            if body.get('action') == 'review-page':raise Rejected('unknown_action',400)
+            if body.get('action') in ('claim', 'audio', 'complete'):
                 with broker.lock:
                     account = broker._account(user)
                     broker._expire(account)

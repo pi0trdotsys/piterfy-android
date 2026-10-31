@@ -22,6 +22,24 @@ class Handler:
 
 
 class DJApiTest(unittest.TestCase):
+    def test_public_review_operation_cannot_be_called_as_account_action(self):
+        with patch('urllib.request.urlopen') as send:
+            handler=Handler({'action':'review-page','token':'x'*43,'vote':1})
+            connect_api.handle(handler)
+            send.assert_not_called()
+        self.assertEqual(400,handler.code)
+
+    def test_review_get_ignores_vote_in_link(self):
+        handler=Handler({})
+        handler.command='GET';handler.path='/piterfy-api/connect/dj-feedback?token='+('x'*43)+'&vote=-1'
+        response=unittest.mock.MagicMock()
+        response.__enter__.return_value.read.return_value=b'{"html":"<p>Confirm</p>"}'
+        with patch('urllib.request.urlopen',return_value=response) as send:
+            connect_api.review_page(handler)
+            forwarded=json.loads(send.call_args.args[0].data)['request']
+        self.assertNotIn('vote',forwarded)
+        self.assertEqual(200,handler.code)
+
     def test_client_cannot_select_another_account(self):
         handler = Handler({'action': 'get', 'user': 'victim'})
         response = unittest.mock.MagicMock()
