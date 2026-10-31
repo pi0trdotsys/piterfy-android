@@ -32,15 +32,22 @@ class PiterfyDJSession(private val player: Player) : Player.Listener {
         @JvmStatic fun awaitReady(state:JSONObject){acceptState(state);awaitingSession=state.optString("id");awaitingAccount=PiterfyLibrary.account()}
         @JvmStatic fun cancelAwait(){awaitingSession=""}
         private fun contextPrefs()=App.getContext().getSharedPreferences("piterfy_dj_context",0)
-        @JvmStatic fun arm(state:JSONObject){acceptState(state);contextPrefs().edit().putString(PiterfyLibrary.account(),state.optString("id")).remove("discovery:"+PiterfyLibrary.account()).apply()}
+        @JvmStatic fun arm(state:JSONObject){
+            acceptState(state)
+            val ids=JSONArray();val blocks=state.optJSONArray("blocks")?:JSONArray()
+            for(i in 0 until blocks.length()){val tracks=blocks.getJSONObject(i).optJSONArray("tracks")?:continue;for(j in 0 until tracks.length())ids.put(tracks.getJSONObject(j).optString("id"))}
+            contextPrefs().edit().putString(PiterfyLibrary.account(),state.optString("id")).putString("mode:"+PiterfyLibrary.account(),state.optString("mode")).putString("ids:"+PiterfyLibrary.account(),ids.toString()).remove("discovery:"+PiterfyLibrary.account()).apply()
+        }
         @JvmStatic fun markDiscovery(songs:List<Child>){disarm();contextPrefs().edit().putString("discovery:"+PiterfyLibrary.account(),JSONArray(songs.map{it.id}).toString()).apply()}
-        @JvmStatic fun disarm(){contextPrefs().edit().remove(PiterfyLibrary.account()).remove("discovery:"+PiterfyLibrary.account()).apply()}
+        @JvmStatic fun disarm(){contextPrefs().edit().remove(PiterfyLibrary.account()).remove("discovery:"+PiterfyLibrary.account()).remove("mode:"+PiterfyLibrary.account()).remove("ids:"+PiterfyLibrary.account()).apply()}
         @JvmStatic fun pauseForPreparation(){cancelAwait();instance?.let{it.stopVoice();it.player.pause()};disarm()}
         private fun armed(state:JSONObject)=contextPrefs().getString(PiterfyLibrary.account(),"")==state.optString("id")
         @JvmStatic fun sourceLabel(id:String?):String{
             if(id==null)return ""
             val manual=runCatching{JSONArray(contextPrefs().getString("discovery:"+PiterfyLibrary.account(),"[]"))}.getOrDefault(JSONArray())
             if((0 until manual.length()).any{manual.optString(it)==id})return "Odkrywaj"
+            val ids=runCatching{JSONArray(contextPrefs().getString("ids:"+PiterfyLibrary.account(),"[]"))}.getOrDefault(JSONArray())
+            if((0 until ids.length()).any{ids.optString(it)==id})return if(contextPrefs().getString("mode:"+PiterfyLibrary.account(),"")=="dj")"DJ" else "Odkrywaj"
             val all=instance?.states?:pendingState?:return ""
             for(mode in listOf("dj","discover")){
                 val s=all.optJSONObject(mode)?:continue
@@ -189,6 +196,10 @@ class PiterfyDJSession(private val player: Player) : Player.Listener {
     }
     private fun play(block:JSONObject){
         if(busy)return
+        for(mode in listOf("dj","discover")){
+            val s=states.optJSONObject(mode)?:continue;val blocks=s.optJSONArray("blocks")?:continue
+            if((0 until blocks.length()).any{blocks.getJSONObject(it).optString("id")==block.optString("id")}){arm(s);break}
+        }
         busy=true;val guard=generation;val expected=player.currentMediaItem?.mediaId
         val songs=decode(block.getJSONArray("tracks"))
         io.execute{

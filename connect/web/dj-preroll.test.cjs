@@ -1,6 +1,12 @@
 const {test}=require('node:test');
 const assert=require('node:assert/strict');
-const {beforeMusic,readyBlock}=require('./dj.js');
+const {beforeMusic,readyBlock,incomingId}=require('./dj.js');
+
+test('incoming song is identified before Navidrome publishes its play event',()=>{
+  assert.equal(incomingId('/rest/getTranscodeStream?mediaId=next-song&u=private&t=private'),'next-song');
+  assert.equal(incomingId('/rest/stream?id=other-song'),'other-song');
+  assert.equal(incomingId('blob:example'),'');
+});
 
 test('autoplay requires the whole prepared block and no failed files',()=>{
   const state={active:true,progress:{complete:false,failed:0},blocks:[{id:'preview',ready:false}]};

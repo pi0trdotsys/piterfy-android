@@ -87,6 +87,7 @@ public class MappingUtil {
 
             Bundle bundle = new Bundle();
             bundle.putString("id", effective.getId());
+            bundle.putString("piterfySource", com.eddyizm.tempus.service.PiterfyDJSession.sourceLabel(effective.getId()));
             bundle.putString("parentId", effective.getParentId());
             bundle.putBoolean("isDir", effective.isDir());
             

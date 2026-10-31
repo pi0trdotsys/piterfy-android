@@ -16,6 +16,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from dj_core import Sessions
 from dj_reviews import Reviews
+from dj_scripts import compose
 from connect_core import Rejected
 
 ROOT = Path(os.environ.get('DJ_STATE_DIR', '/state/dj'))
@@ -77,20 +78,15 @@ def voice(text):
     return key
 
 
-def block(songs, title, intro, spoken,job=None):
-    announcements=[]
-    first=voice(intro) if spoken else None
-    for index,song in enumerate(songs[1:],1):
-        previous=songs[index-1]
-        lead='Zostańmy przy tym wykonawcy. ' if previous.get('artist')==song.get('artist') else 'Teraz inna muzyczna perspektywa. '
-        genre=song.get('genre','')
-        if genre and genre!=previous.get('genre'):
-            lead='Mała zmiana klimatu: '+genre[:45]+'. '
-        text=lead+song.get('artist','')[:65]+', i utwór '+song.get('title','')[:65]+'. Sprawdźmy, czy trafi w Twój gust!'
-        announcements.append(dict(track=song['id'],text=text,voiceKey=voice(text) if spoken else None,announced=False))
+def block(songs, title, intro, spoken,job=None,history=()):
+    plan=compose(songs,title,history)
+    announcements=plan['announcements']
+    first=voice(plan['text']) if spoken else None
+    for index,announcement in enumerate(announcements,1):
+        announcement['voiceKey']=voice(announcement['text']) if spoken else None
         if job:sessions.progress(job,'voice',90+round(index/max(1,len(songs)-1)*9),index+1,len(songs))
-    return dict(id=uuid.uuid4().hex, title=title, text=intro, tracks=songs,announcements=announcements,
-                voiceKey=first, voiceVersion=4, announced=False,ready=True)
+    return dict(id=uuid.uuid4().hex, title=title, text=plan['text'],openingVariant=plan['openingVariant'],tracks=songs,announcements=announcements,
+                voiceKey=first, voiceVersion=5, announced=False,ready=True)
 
 
 def wait_downloads(sl,jobs,job):
@@ -208,14 +204,14 @@ def run_job(job):
         title = 'Nowe odkrycia' + (' · '+genre if genre else '')
         intro = (random.choice(['Czas na świeże odkrycia! ', 'Okej, teraz ruszamy trochę dalej! ', 'Mam coś nowego do sprawdzenia! ']) + ('Zajrzymy w '+genre+'. ' if genre else '') +
                  'Na początek '+imported[0].get('artist','')[:65]+', i '+imported[0].get('title','')[:65]+'. Daj znać po bloku, czy złapaliśmy Twój klimat. A teraz muzyka!')
-        songs=imported
+        songs=imported+pool[:max(0,5-len(imported))]
     else:
         songs=pool[:5];title='Z Twojej biblioteki'
         intro='Gotowy na kolejny dobry numer? Złapmy ten klimat! '+(songs[0].get('artist','')[:65]+', i utwór '+songs[0].get('title','')[:65]+'. Posłuchajmy!' if songs else '')
     failed=max(0,len(jobs)-len(imported))
     if songs:
         sessions.progress(job,'voice',90,0,len(songs),failed)
-        ready=block(songs,title,intro,state.get('voice',False),job)
+        ready=block(songs,title,intro,state.get('voice',False),job,state['blocks'][-4:])
         sessions.finish(job,ready)
         sessions.progress(job,'ready',100,len(imported),len(jobs),failed,complete=True)
     else:
@@ -224,22 +220,35 @@ def run_job(job):
 
 
 def refresh_voices():
-    """Upgrade cached introductions without changing claims or overwriting a newer session."""
+    """Refresh only two recent blocks; preserve every claim, including concurrent claims."""
     with sessions.db() as db:
         rows=list(db.execute('SELECT owner,mode,data FROM sessions'))
     for owner,mode,raw in rows:
         state=json.loads(raw)
-        for block in state.get('blocks',[]):
-            if block.get('voiceVersion') in (3,4) or not block.get('voiceKey'):continue
-            key=voice(block['text'])
-            if not key:continue
+        if not state.get('active') or not state.get('voice'):continue
+        for old in state.get('blocks',[])[-2:]:
+            if old.get('voiceVersion')==5 or not old.get('tracks'):continue
+            plan=compose(old['tracks'],old.get('title',''),state.get('blocks',[])[-5:])
+            opening=None if old.get('announced') else voice(plan['text'])
+            previous={a['track']:a for a in old.get('announcements',[])}
+            clips=[]
+            for announcement in plan['announcements']:
+                if previous.get(announcement['track'],{}).get('announced'):continue
+                key=voice(announcement['text'])
+                if key:clips.append(dict(announcement,voiceKey=key))
             with sessions.db() as db:
                 db.execute('BEGIN IMMEDIATE')
                 latest=json.loads(db.execute('SELECT data FROM sessions WHERE owner=? AND mode=?',(owner,mode)).fetchone()[0])
                 if latest.get('id')!=state.get('id'):continue
                 for current in latest.get('blocks',[]):
-                    if current['id']==block['id']:
-                        current.update(voiceKey=key,voiceVersion=3)
+                    if current['id']!=old['id']:continue
+                    if opening and not current.get('announced'):
+                        current.update(text=plan['text'],openingVariant=plan['openingVariant'],voiceKey=opening)
+                    existing={a['track']:a for a in current.get('announcements',[])}
+                    for clip in clips:
+                        if not existing.get(clip['track'],{}).get('announced'):existing[clip['track']]=clip
+                    current.update(announcements=list(existing.values()),voiceVersion=5)
+                latest['revision']+=1
                 db.execute('UPDATE sessions SET data=? WHERE owner=? AND mode=?',(json.dumps(latest,ensure_ascii=False),owner,mode))
 
 

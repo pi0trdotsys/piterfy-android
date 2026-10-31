@@ -54,6 +54,16 @@ class DJTest(unittest.TestCase):
         self.assertEqual('hourly_limit', self.start()['status'])
         self.assertIsNone(self.s.take())
 
+    def test_download_budget_still_allows_explicit_start_of_a_prepared_block(self):
+        self.start();self.s.finish(self.s.take(),dict(id='cached',text='Ready',tracks=[dict(id='song')]))
+        for _ in range(7):
+            self.s.handle('a',dict(action='refill'));self.s.finish(self.s.take())
+        state=self.start()
+        self.assertEqual('hourly_limit',state['status'])
+        self.assertTrue(state['progress']['complete'])
+        self.assertTrue(state['progress']['cached'])
+        self.assertIsNone(self.s.take())
+
     def test_invalid_seed_and_voice(self):
         for body in [dict(action='start', seeds=[]), dict(action='settings', voice='yes'), dict(mode='daily')]:
             with self.assertRaises(Rejected): self.s.handle('a', body)

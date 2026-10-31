@@ -50,9 +50,24 @@
         android:paddingStart="8dp"
         android:paddingEnd="8dp"
         app:layout_constraintEnd_toStartOf="@+id/placeholder_left_view"
-        app:layout_constraintStart_toEndOf="@+id/player_header_media_cover_image"
+        app:layout_constraintStart_toEndOf="@+id/player_header_mode_label"
         app:layout_constraintTop_toBottomOf="@+id/player_header_media_title_label"
         app:layout_constraintBottom_toBottomOf="@+id/player_header_media_cover_image"/>
+
+    <TextView
+        android:id="@+id/player_header_mode_label"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:background="@drawable/piterfy_mode_badge"
+        android:textColor="#10241A"
+        android:textStyle="bold"
+        android:textSize="9sp"
+        android:maxLines="1"
+        android:visibility="gone"
+        app:layout_constraintStart_toEndOf="@id/player_header_media_cover_image"
+        app:layout_constraintTop_toTopOf="@id/player_header_media_artist_label"
+        app:layout_constraintBottom_toBottomOf="@id/player_header_media_artist_label" />
 
     <androidx.appcompat.widget.AppCompatImageButton
         android:id="@+id/player_header_remote_button"

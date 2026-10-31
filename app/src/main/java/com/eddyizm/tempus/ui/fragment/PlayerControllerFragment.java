@@ -420,6 +420,14 @@ public class PlayerControllerFragment extends Fragment {
     }
 
     private void setMetadata(MediaMetadata mediaMetadata) {
+        String mode = mediaMetadata.extras != null ? mediaMetadata.extras.getString("piterfySource", "") : "";
+        if (mode.isEmpty()) mode = com.eddyizm.tempus.service.PiterfyDJSession.sourceLabel(mediaMetadata.extras != null ? mediaMetadata.extras.getString("id") : null);
+        TextView badge = bind.getRoot().findViewById(R.id.piterfy_playback_mode);
+        if (badge != null) {
+            badge.setText(mode.equals("DJ") ? "PITERFY DJ" : mode.toUpperCase(java.util.Locale.ROOT));
+            badge.setContentDescription("Tryb odtwarzania: " + mode);
+            badge.setVisibility(mode.isEmpty() ? View.GONE : View.VISIBLE);
+        }
         if (bind == null || (com.eddyizm.tempus.lan.LanRemoteSession.isActive() && !renderingRemote)) return;
         tintModeButtons(Preferences.isShuffleModeEnabled(), Preferences.getRepeatMode());
         String type = mediaMetadata.extras != null ? mediaMetadata.extras.getString("type") : null;
@@ -474,7 +482,7 @@ public class PlayerControllerFragment extends Fragment {
                                         + String.valueOf(mediaMetadata.title)
                                 : String.valueOf(mediaMetadata.title));
         setTextIfChanged(playerArtistNameLabel,
-                com.eddyizm.tempus.service.PiterfyDJSession.sourcePrefix(mediaMetadata.extras != null ? mediaMetadata.extras.getString("id") : null) + (mediaMetadata.artist != null
+                (mediaMetadata.artist != null
                         ? String.valueOf(mediaMetadata.artist)
                         : ""));
 

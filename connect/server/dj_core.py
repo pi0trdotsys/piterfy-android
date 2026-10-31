@@ -111,6 +111,8 @@ class Sessions:
                     state['progress'] = dict(percent=0,stage='queued',completed=0,total=0,complete=False)
                 elif not busy:
                     state['status'] = 'hourly_limit'
+                    cached=any(b.get('ready',True) for b in state['blocks'])
+                    state['progress']=dict(stage='ready' if cached else 'hourly_limit',percent=100 if cached else 0,completed=0,total=0,failed=0,complete=cached,cached=cached)
             if action != 'get':
                 state['revision'] += 1
                 db.execute('INSERT OR REPLACE INTO sessions VALUES(?,?,?)', (owner, mode, json.dumps(state, ensure_ascii=False)))

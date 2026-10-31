@@ -317,7 +317,7 @@
       if (action === 'volume') { element.volume = Math.max(0, Math.min(1, value)); return; }
       window.PiterfyCrossfade?.cancel();
       if (action === 'play') return element.play();
-      if (action === 'pause') { element.pause(); return; }
+      if (action === 'pause') { window.PiterfyDJ?.pauseNarration?.(); element.pause(); return; }
       document.querySelector('.music-player-panel .' + (action === 'next' ? 'next-audio' : 'prev-audio'))?.click();
     }
   };

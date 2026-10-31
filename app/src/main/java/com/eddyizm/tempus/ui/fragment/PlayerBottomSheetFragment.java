@@ -222,7 +222,11 @@ public class PlayerBottomSheetFragment extends Fragment {
     }
 
     private void setMetadata(MediaMetadata mediaMetadata) {
-        String djPrefix = com.eddyizm.tempus.service.PiterfyDJSession.sourcePrefix(mediaMetadata.extras != null ? mediaMetadata.extras.getString("id") : null);
+        String mode = mediaMetadata.extras != null ? mediaMetadata.extras.getString("piterfySource", "") : "";
+        if (mode.isEmpty()) mode = com.eddyizm.tempus.service.PiterfyDJSession.sourceLabel(mediaMetadata.extras != null ? mediaMetadata.extras.getString("id") : null);
+        bind.playerHeaderLayout.playerHeaderModeLabel.setText(mode.toUpperCase(java.util.Locale.ROOT));
+        bind.playerHeaderLayout.playerHeaderModeLabel.setContentDescription("Tryb odtwarzania: " + mode);
+        bind.playerHeaderLayout.playerHeaderModeLabel.setVisibility(mode.isEmpty() ? View.GONE : View.VISIBLE);
         if (com.eddyizm.tempus.lan.LanRemoteSession.isActive() || bind == null) return;
         if (mediaMetadata.extras != null) {
             // Library podcasts still use getSong/getAlbum, rather than Subsonic podcast endpoints.
@@ -267,7 +271,7 @@ public class PlayerBottomSheetFragment extends Fragment {
                 // Default (music, podcast, etc.)
                 bind.playerHeaderLayout.playerHeaderMediaTitleLabel.setText(mediaMetadata.extras.getString("title"));
                 bind.playerHeaderLayout.playerHeaderMediaArtistLabel.setText(
-                        djPrefix + (mediaMetadata.artist != null
+                        (mediaMetadata.artist != null
                                 ? mediaMetadata.artist
                                 : "")
                 );

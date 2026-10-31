@@ -2,6 +2,10 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical">
+    <TextView android:id="@+id/piterfy_playback_mode" android:layout_width="wrap_content" android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal" android:layout_marginTop="4dp" android:layout_marginBottom="4dp"
+        android:background="@drawable/piterfy_mode_badge" android:textColor="#10241A" android:textSize="12sp"
+        android:textStyle="bold" android:visibility="gone" />
     <com.google.android.material.button.MaterialButton
         android:id="@+id/player_remote_toggle"
         style="@style/Widget.Material3.Button.TextButton"
