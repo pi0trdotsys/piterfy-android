@@ -474,9 +474,9 @@ public class PlayerControllerFragment extends Fragment {
                                         + String.valueOf(mediaMetadata.title)
                                 : String.valueOf(mediaMetadata.title));
         setTextIfChanged(playerArtistNameLabel,
-                mediaMetadata.artist != null
+                com.eddyizm.tempus.service.PiterfyDJSession.sourcePrefix(mediaMetadata.extras != null ? mediaMetadata.extras.getString("id") : null) + (mediaMetadata.artist != null
                         ? String.valueOf(mediaMetadata.artist)
-                        : "");
+                        : ""));
 
         playerMediaTitleLabel.setSelected(true);
         playerArtistNameLabel.setSelected(true);

@@ -1,6 +1,15 @@
 const {test}=require('node:test');
 const assert=require('node:assert/strict');
-const {beforeMusic}=require('./dj.js');
+const {beforeMusic,readyBlock}=require('./dj.js');
+
+test('autoplay requires the whole prepared block and no failed files',()=>{
+  const state={active:true,progress:{complete:false,failed:0},blocks:[{id:'preview',ready:false}]};
+  assert.equal(readyBlock(state),null);
+  state.blocks.push({id:'ready',ready:true});assert.equal(readyBlock(state),null);
+  state.progress.complete=true;assert.equal(readyBlock(state).id,'ready');
+  state.progress.failed=1;assert.equal(readyBlock(state),null);
+  state.progress.failed=0;state.active=false;assert.equal(readyBlock(state),null);
+});
 test('music waits for the entire spoken introduction',async()=>{
   const events=[];let finish;
   const pending=beforeMusic(()=>{events.push('voice');return new Promise(resolve=>{finish=resolve;});},()=>events.push('music'),()=>true);

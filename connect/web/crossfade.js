@@ -37,7 +37,7 @@
     return { ...s?.player, account,
       allowed: !!account && !!localStorage.getItem('token') && !location.hash.startsWith('#/login') &&
         !!nativeAudio()?.playByIndex && context?.state === 'running' &&
-        window.PiterfyPlayback?.canCrossfade?.() !== false };
+        window.PiterfyPlayback?.canCrossfade?.() !== false && window.PiterfyDJ?.canCrossfade?.() !== false };
   }
   function unlock() {
     if (!config.enabled) return;

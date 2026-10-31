@@ -294,7 +294,7 @@
   // A narrow same-page bridge for the lyrics view; never exposes credentials or stream URLs.
   window.PiterfyPlayback = {
     deviceId() { return id; },
-    canCrossfade() { return !enabled || (!applying && !state?.pending && (!state?.owner || (local() && performance.now() - lastOk < 9000))); },
+    canCrossfade() { return window.PiterfyDJ?.canCrossfade?.()!==false&&(!enabled || (!applying && !state?.pending && (!state?.owner || (local() && performance.now() - lastOk < 9000)))); },
     current() {
       if (enabled && state?.owner && !local()) {
         const song = state.items[state.index];

@@ -68,7 +68,7 @@ public final class PiterfyDiscoveryDialog {
                                 for(Child song:playlist.subList(0,Math.min(6,playlist.size())))seeds.put(new JSONObject().put("id",song.getId()).put("artist",song.getArtist()).put("title",song.getTitle()).put("genre",song.getGenre()==null?"":song.getGenre()));
                                 if(seeds.length()>0)PiterfyLibrary.dj(new JSONObject().put("action","start").put("mode","discover").put("seeds",seeds).put("exploration",exploration.getProgress()),null,null);
                             }catch(JSONException ignored){}
-                            if(play!=null&&!playlist.isEmpty()){MaterialButton all=new MaterialButton(context);all.setText("Odtwórz propozycje");all.setOnClickListener(b->{play.accept(playlist);dialog.dismiss();});results.addView(all);}
+                            if(play!=null&&!playlist.isEmpty()){MaterialButton all=new MaterialButton(context);all.setText("Odtwórz propozycje");all.setOnClickListener(b->{com.eddyizm.tempus.service.PiterfyDJSession.markDiscovery(playlist);play.accept(playlist);dialog.dismiss();});results.addView(all);}
                             for(Child song:playlist){
                                 TextView title=new TextView(context); title.setText(song.getTitle()+"\n"+song.getArtist());title.setTextSize(15);title.setPadding(0,padding,0,0);results.addView(title);
                                 LinearLayout controls=new LinearLayout(context);results.addView(controls);

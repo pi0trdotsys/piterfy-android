@@ -77,9 +77,33 @@ def voice(text):
     return key
 
 
-def block(songs, title, intro, spoken):
-    return dict(id=uuid.uuid4().hex, title=title, text=intro, tracks=songs,
-                voiceKey=voice(intro) if spoken else None, voiceVersion=3, announced=False)
+def block(songs, title, intro, spoken,job=None):
+    announcements=[]
+    first=voice(intro) if spoken else None
+    for index,song in enumerate(songs[1:],1):
+        previous=songs[index-1]
+        lead='Zostańmy przy tym wykonawcy. ' if previous.get('artist')==song.get('artist') else 'Teraz inna muzyczna perspektywa. '
+        genre=song.get('genre','')
+        if genre and genre!=previous.get('genre'):
+            lead='Mała zmiana klimatu: '+genre[:45]+'. '
+        text=lead+song.get('artist','')[:65]+', i utwór '+song.get('title','')[:65]+'. Sprawdźmy, czy trafi w Twój gust!'
+        announcements.append(dict(track=song['id'],text=text,voiceKey=voice(text) if spoken else None,announced=False))
+        if job:sessions.progress(job,'voice',90+round(index/max(1,len(songs)-1)*9),index+1,len(songs))
+    return dict(id=uuid.uuid4().hex, title=title, text=intro, tracks=songs,announcements=announcements,
+                voiceKey=first, voiceVersion=4, announced=False,ready=True)
+
+
+def wait_downloads(sl,jobs,job):
+    done=threading.Event()
+    def monitor():
+        while not done.is_set():
+            completed=sum(j['status']=='done' for j in jobs)
+            failed=sum(j['status'] not in ('done','pending') for j in jobs)
+            sessions.progress(job,'downloading',35+round(35*(completed+failed)/max(1,len(jobs))),completed,len(jobs),failed)
+            done.wait(3)
+    thread=threading.Thread(target=monitor,daemon=True);thread.start()
+    try:music.wait_for_downloads(sl,jobs)
+    finally:done.set();thread.join(timeout=1)
 
 
 def allowed(song):
@@ -91,6 +115,7 @@ def run_job(job):
     if cancelled(job):
         sessions.finish(job); return
     nd = music.Navidrome()
+    sessions.progress(job,'matching',5)
     seeds = state['seeds']
     heard = {t['id'] for b in state['blocks'] for t in b['tracks']}
     random_songs = music.as_list(nd.call('getRandomSongs', size=120).get('randomSongs', {}).get('song'))
@@ -112,10 +137,6 @@ def run_job(job):
     pool.sort(key=lambda s: artist_scores.get(music.norm(s.get('artist', '')), 0) - feedback.get(s['id'], {}).get('skips', 0)
               + (2 if music.norm(s.get('artist', '')) in seed_artists_known else 0)
               + (1 if str(s.get('genre', '')).lower() in seed_genres else 0), reverse=True)
-    if pool:
-        songs = pool[:5]
-        intro = random.choice(['Hej! Dobrze Cię słyszeć. Mam dla Ciebie kolejny muzyczny kierunek. ', 'Gotowy na kolejny dobry numer? Złapmy ten klimat! ', 'Wracamy do brzmień bliskich Twojemu gustowi. Sprawdźmy, dokąd nas zabiorą! '])+songs[0].get('artist','')[:65]+', i utwór '+songs[0].get('title','')[:65]+'. Posłuchajmy!'
-        sessions.finish(job, block(songs, 'Blisko Twojego gustu', intro, state.get('voice', False)), final=False)
     if cancelled(job):
         sessions.finish(job); return
     seed_tracks = [dict(artist=s['artist'], title=s['title'], weight=1) for s in seeds if s['artist'] and s['title']][:3]
@@ -135,6 +156,7 @@ def run_job(job):
             take = max(1, round(5 * state['exploration']/100))
             candidates = extras[:take] + candidates
     candidates = [c for c in candidates if artist_scores.get(music.norm(c['artist']), 0) > -2]
+    sessions.progress(job,'searching',15)
     # Global cooldown and one worker prevent duplicate interactive searches and downloads.
     jobs = []
     sl = InteractiveSlskd()
@@ -147,7 +169,7 @@ def run_job(job):
             if old and time.time()-old[0] < 2*86400: continue
             db.execute('INSERT OR REPLACE INTO acquired VALUES(?,?,?,?)', (candidate['key'], time.time(), 'searching', '{}'))
         if len([j for j in jobs if j['status'] == 'pending']) >= 2:
-            music.wait_for_downloads(sl, jobs)
+            wait_downloads(sl,jobs,job)
         # Share capacity with the daily downloader, not merely this worker's batch.
         transfers = sl.downloads()
         active = [t for t in transfers.values() if not any(end in t.get('state','') for end in ('Completed','Succeeded','Cancelled','Errored','Failed'))]
@@ -155,10 +177,11 @@ def run_job(job):
         try: queued = music.search_and_queue(sl, candidate)
         except (OSError,RuntimeError,ValueError): break
         jobs.append(queued)
+        sessions.progress(job,'searching',15+min(20,len(jobs)*4),len(jobs),5)
         with sessions.db() as db:
             db.execute('UPDATE acquired SET state=?,data=? WHERE key=?',
                        (queued['status'],json.dumps({'artist':candidate['artist'],'title':candidate['title'],'owner':job[1]}),candidate['key']))
-    if jobs: music.wait_for_downloads(sl, jobs)
+    if jobs: wait_downloads(sl,jobs,job)
     # Import is owned by the existing beets service. Only indexed tracks can enter a queue.
     deadline = time.time()+300
     imported = []
@@ -170,6 +193,7 @@ def run_job(job):
             if identifier:
                 song = nd.call('getSong', id=identifier).get('song', {})
                 if allowed(song): imported.append(song)
+        sessions.progress(job,'importing',70+round(20*len(imported)/max(1,len(jobs))),len(imported),len(jobs))
         if len(imported) >= len([j for j in jobs if j['status'] in ('done', 'pending')]): break
         # Fast incremental scan after beets moves files; do not wait for the daily daemon.
         if time.time()-last_scan >= 90:
@@ -177,15 +201,26 @@ def run_job(job):
             if not nd.call('getScanStatus').get('scanStatus',{}).get('scanning'):
                 nd.call('startScan')
         time.sleep(15)
+    if cancelled(job):sessions.finish(job);return
     if imported:
         # Announce a genre only when a track actually selected through that tag was imported.
         if not any(j.get('via') == genre and nd.find_song(j['artist'],j['title']) for j in jobs): genre = ''
         title = 'Nowe odkrycia' + (' · '+genre if genre else '')
         intro = (random.choice(['Czas na świeże odkrycia! ', 'Okej, teraz ruszamy trochę dalej! ', 'Mam coś nowego do sprawdzenia! ']) + ('Zajrzymy w '+genre+'. ' if genre else '') +
                  'Na początek '+imported[0].get('artist','')[:65]+', i '+imported[0].get('title','')[:65]+'. Daj znać po bloku, czy złapaliśmy Twój klimat. A teraz muzyka!')
-        sessions.finish(job, block(imported, title, intro, state.get('voice', False)))
+        songs=imported
     else:
-        sessions.finish(job, error='no_new_tracks')
+        songs=pool[:5];title='Z Twojej biblioteki'
+        intro='Gotowy na kolejny dobry numer? Złapmy ten klimat! '+(songs[0].get('artist','')[:65]+', i utwór '+songs[0].get('title','')[:65]+'. Posłuchajmy!' if songs else '')
+    failed=max(0,len(jobs)-len(imported))
+    if songs:
+        sessions.progress(job,'voice',90,0,len(songs),failed)
+        ready=block(songs,title,intro,state.get('voice',False),job)
+        sessions.finish(job,ready)
+        sessions.progress(job,'ready',100,len(imported),len(jobs),failed,complete=True)
+    else:
+        sessions.finish(job,error='no_new_tracks')
+        sessions.progress(job,'unavailable',100,0,len(jobs),failed,complete=True)
 
 
 def refresh_voices():
@@ -195,7 +230,7 @@ def refresh_voices():
     for owner,mode,raw in rows:
         state=json.loads(raw)
         for block in state.get('blocks',[]):
-            if block.get('voiceVersion')==3 or not block.get('voiceKey'):continue
+            if block.get('voiceVersion') in (3,4) or not block.get('voiceKey'):continue
             key=voice(block['text'])
             if not key:continue
             with sessions.db() as db:
@@ -250,7 +285,7 @@ class Handler(BaseHTTPRequestHandler):
                 # Resolve only a clip belonging to this account, never an arbitrary file key.
                 state = sessions.handle(user, dict(mode=request.get('mode', 'dj')))
                 key = request.get('key')
-                if not key or not any(b.get('voiceKey') == key for b in state['blocks']): raise Rejected('clip_missing', 404)
+                if not key or not any(b.get('voiceKey') == key or any(a.get('voiceKey')==key for a in b.get('announcements',[])) for b in state['blocks']): raise Rejected('clip_missing', 404)
                 result = {'audio': base64.b64encode((ROOT/'voice'/(key+'.wav')).read_bytes()).decode()}
             else: result = sessions.handle(user, request)
             code = 200

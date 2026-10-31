@@ -178,7 +178,7 @@
         const similar=current?.artistId?(await subsonic('getSimilarSongs2',{id:current.artistId,count:40}).catch(()=>({}))).similarSongs2?.song||[]:[];
         const songs=(await rankSongs([...similar,...random])).slice(0,20);if(token!==generation||!dialog.open)return;
         window.PiterfyDJ?.prepare('discover',songs.slice(0,5)).catch(()=>{});
-        if(songs.length)button(results,'Odtwórz propozycje',()=>play(songs).then(()=>dialog.close()).catch(e=>message(e.message)));
+        if(songs.length)button(results,'Odtwórz propozycje',()=>{window.PiterfyDJ?.markDiscovery(songs);return play(songs).then(()=>dialog.close()).catch(e=>message(e.message));});
         for(const song of songs){
           const row=el('article','',results,'pf-library-song');el('strong',song.title,row);el('span',song.artist,row,'pf-library-muted');el('small',song.piterfyReason,row,'pf-library-muted');
           const controls=el('div','',row,'pf-library-actions');

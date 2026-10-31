@@ -62,6 +62,10 @@ SMTP and Telegram do not provide an idempotency key. Each channel is durably cla
 
 ## Checks
 
+The DJ preparation pipeline no longer publishes an early library fallback. It finishes acquisition/import and generates the full block's individual voice clips before publishing a playable block. Account/session-scoped preparation progress reports stage, percentage, completed/total counters and failures. A fresh explicit Start intent is required for automatic playback; no UI polling or background preparation arms it. Missing files require a separate explicit selection of the ready subset. Android retains a start intent when its dialog closes, cancels it on a manual queue replacement, and starts only when the server reports complete preparation without missing files. A source marker distinguishes DJ and interactive discovery from ordinary queues.
+
+Each subsequent song has its own durable announcement claim and metadata-based script. Android intercepts Media3 automatic/next transitions before allowing the new track to play; the browser intercepts the existing music element's play request while preserving the native queue. Crossfade is disabled for voiced DJ sessions so incoming music cannot overlap narration. Voice-off sessions keep the normal crossfade behavior. Old cached blocks retain their former block-level introductions; fresh blocks include per-song clips.
+
 ```
 python -m unittest discover -s connect/server -p test_connect.py
 python -m unittest discover -s connect/server -p 'test_*.py'

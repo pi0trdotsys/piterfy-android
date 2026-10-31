@@ -79,6 +79,7 @@ class PiterfyCrossfade(private val context: Context, private val primary: ExoPla
             primary.playbackSuppressionReason != Player.PLAYBACK_SUPPRESSION_REASON_NONE ||
             primary.repeatMode == Player.REPEAT_MODE_ONE || !music(primary.currentMediaItem)) { cancel(); return }
         val next = primary.nextMediaItemIndex
+        if(next!=C.INDEX_UNSET&&PiterfyDJSession.needsIntroduction(primary.getMediaItemAt(next).mediaId)){cancel();return}
         val secondary = auxiliary
         if (secondary == null) {
             if (!primary.isPlaying || primary.duration <= 0 || primary.duration == C.TIME_UNSET ||

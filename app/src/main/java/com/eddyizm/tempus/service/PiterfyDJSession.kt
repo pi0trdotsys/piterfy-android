@@ -27,6 +27,34 @@ class PiterfyDJSession(private val player: Player) : Player.Listener {
         private var instance:PiterfyDJSession?=null
         private var pendingState:JSONObject?=null
         private var pendingAccount=""
+        private var awaitingSession=""
+        private var awaitingAccount=""
+        @JvmStatic fun awaitReady(state:JSONObject){acceptState(state);awaitingSession=state.optString("id");awaitingAccount=PiterfyLibrary.account()}
+        @JvmStatic fun cancelAwait(){awaitingSession=""}
+        private fun contextPrefs()=App.getContext().getSharedPreferences("piterfy_dj_context",0)
+        @JvmStatic fun arm(state:JSONObject){acceptState(state);contextPrefs().edit().putString(PiterfyLibrary.account(),state.optString("id")).remove("discovery:"+PiterfyLibrary.account()).apply()}
+        @JvmStatic fun markDiscovery(songs:List<Child>){disarm();contextPrefs().edit().putString("discovery:"+PiterfyLibrary.account(),JSONArray(songs.map{it.id}).toString()).apply()}
+        @JvmStatic fun disarm(){contextPrefs().edit().remove(PiterfyLibrary.account()).remove("discovery:"+PiterfyLibrary.account()).apply()}
+        @JvmStatic fun pauseForPreparation(){cancelAwait();instance?.let{it.stopVoice();it.player.pause()};disarm()}
+        private fun armed(state:JSONObject)=contextPrefs().getString(PiterfyLibrary.account(),"")==state.optString("id")
+        @JvmStatic fun sourceLabel(id:String?):String{
+            if(id==null)return ""
+            val manual=runCatching{JSONArray(contextPrefs().getString("discovery:"+PiterfyLibrary.account(),"[]"))}.getOrDefault(JSONArray())
+            if((0 until manual.length()).any{manual.optString(it)==id})return "Odkrywaj"
+            val all=instance?.states?:pendingState?:return ""
+            for(mode in listOf("dj","discover")){
+                val s=all.optJSONObject(mode)?:continue
+                if(!s.optBoolean("active")||!armed(s))continue
+                val blocks=s.optJSONArray("blocks")?:continue
+                for(i in 0 until blocks.length()){
+                    val tracks=blocks.getJSONObject(i).optJSONArray("tracks")?:continue
+                    if((0 until tracks.length()).any{tracks.getJSONObject(it).optString("id")==id})return if(mode=="dj")"DJ" else "Odkrywaj"
+                }
+            }
+            return ""
+        }
+        @JvmStatic fun needsIntroduction(id:String?):Boolean=instance?.introduction(id)!=null
+        @JvmStatic fun sourcePrefix(id:String?):String=sourceLabel(id).let{if(it.isEmpty())"" else "$it · "}
         @JvmStatic fun acceptState(state:JSONObject){
             val account=PiterfyLibrary.account()
             if(pendingAccount!=account)pendingState=JSONObject()
@@ -77,7 +105,7 @@ class PiterfyDJSession(private val player: Player) : Player.Listener {
         var match:JSONObject?=null;var session="";var mode="dj"
         for(kind in listOf("dj","discover")){
             val state=states.optJSONObject(kind)?:continue
-            if(!state.optBoolean("active"))continue
+            if(!state.optBoolean("active")||!armed(state))continue
             val blocks=state.optJSONArray("blocks")?:continue
             for(i in 0 until blocks.length()){
                 val b=blocks.getJSONObject(i);val tracks=b.optJSONArray("tracks")?:continue
@@ -124,15 +152,27 @@ class PiterfyDJSession(private val player: Player) : Player.Listener {
             if(!busy&&now-lastPoll>8000){busy=true;lastPoll=now;request(JSONObject().put("action","list")){states=it;busy=false}}
             val id=player.currentMediaItem?.mediaId
             observeBlock()
+            if(local()&&awaitingSession.isNotEmpty()&&awaitingAccount==account&&!busy){
+                for(mode in listOf("dj","discover")){
+                    val s=states.optJSONObject(mode)?:continue
+                    if(s.optString("id")!=awaitingSession)continue
+                    val progress=s.optJSONObject("progress")?:continue
+                    if(progress.optBoolean("complete")){
+                        cancelAwait()
+                        val blocks=s.optJSONArray("blocks")
+                        if(s.optBoolean("active")&&progress.optInt("failed")==0&&blocks!=null&&blocks.length()>0){arm(s);play(blocks.getJSONObject(blocks.length()-1))}
+                    }
+                }
+            }
             if(local()&&id!=null)for(mode in listOf("dj","discover")){
                 val state=states.optJSONObject(mode)?:continue
-                if(!state.optBoolean("active"))continue
+                if(!state.optBoolean("active")||!armed(state))continue
                 val blocks=state.optJSONArray("blocks")?:continue
                 for(index in 0 until blocks.length()){
                     val block=blocks.getJSONObject(index);val tracks=block.getJSONArray("tracks")
                     if((0 until tracks.length()).none{tracks.getJSONObject(it).optString("id")==id})continue
                     // Introductions are started explicitly before play(), never by interrupting music.
-                    if(tracks.getJSONObject(tracks.length()-1).optString("id")==id&&player.playbackState==Player.STATE_ENDED&&index+1<blocks.length())
+                    if(tracks.getJSONObject(tracks.length()-1).optString("id")==id&&player.playbackState==Player.STATE_ENDED&&index+1<blocks.length()&&blocks.getJSONObject(index+1).optBoolean("ready",true))
                         play(blocks.getJSONObject(index+1))
                     if(player.isPlaying&&index>=blocks.length()-2&&now-lastRefill>90000&&state.optString("status") !in listOf("queued","downloading")){
                         lastRefill=now;request(JSONObject().put("action","refill").put("mode",mode)){states.put(mode,it)}
@@ -166,11 +206,17 @@ class PiterfyDJSession(private val player: Player) : Player.Listener {
         if(id==null)return null
         for(mode in listOf("dj","discover")){
             val state=states.optJSONObject(mode)?:continue
-            if(!state.optBoolean("active")||!state.optBoolean("voice"))continue
+            if(!state.optBoolean("active")||!state.optBoolean("voice")||!armed(state))continue
             val blocks=state.optJSONArray("blocks")?:continue
             for(i in 0 until blocks.length()){
                 val block=blocks.getJSONObject(i);val tracks=block.optJSONArray("tracks")?:continue
+                if(!block.optBoolean("ready",true))continue
                 if(tracks.optJSONObject(0)?.optString("id")==id&&!block.isNull("voiceKey")&&!block.optBoolean("announced"))return state to block
+                val clips=block.optJSONArray("announcements")?:continue
+                for(j in 0 until clips.length()){
+                    val clip=clips.getJSONObject(j)
+                    if(clip.optString("track")==id&&!clip.isNull("voiceKey")&&!clip.optBoolean("announced"))return state to JSONObject(clip.toString()).put("id",block.optString("id")).put("track",id)
+                }
             }
         }
         return null
@@ -179,13 +225,13 @@ class PiterfyDJSession(private val player: Player) : Player.Listener {
         if(closed||!local()||player.playWhenReady||player.currentPosition>1500)return false
         val id=player.currentMediaItem?.mediaId?:return false
         val (state,block)=introduction(id)?:return false
-        if(!announcements.shouldStart(block.optString("id"),id,id,true,0,true,false))return false
+        if(!announcements.shouldStart(block.optString("id")+":"+id,id,id,true,0,true,false))return false
         stopVoice();waitingForIntro=true;player.pause();speak(state,block,id);return true
     }
     private fun speak(state:JSONObject,block:JSONObject,id:String){
         android.util.Log.d("PiterfyDJ","Claiming introduction for playable block")
         val guard=generation
-        request(JSONObject().put("action","claim").put("mode",state.getString("mode")).put("block",block.getString("id")),failed={if(guard==generation)finishVoice(id)}){claim->
+        request(JSONObject().put("action","claim").put("mode",state.getString("mode")).put("block",block.getString("id")).put("track",id),failed={if(guard==generation)finishVoice(id)}){claim->
             if(closed||guard!=generation||!local())return@request
             if(!claim.optBoolean("speak")){
                 android.util.Log.d("PiterfyDJ","Introduction already claimed, cancelled, or receiver changed")
@@ -219,7 +265,15 @@ class PiterfyDJSession(private val player: Player) : Player.Listener {
         focus=null
     }
     override fun onPlayWhenReadyChanged(playWhenReady:Boolean,reason:Int){if((speaking||waitingForIntro)&&playWhenReady)stopVoice()}
-    override fun onMediaItemTransition(item:androidx.media3.common.MediaItem?,reason:Int){generation++;stopVoice()}
+    override fun onMediaItemTransition(item:androidx.media3.common.MediaItem?,reason:Int){
+        stopVoice()
+        if(reason==Player.MEDIA_ITEM_TRANSITION_REASON_PLAYLIST_CHANGED)cancelAwait()
+        val id=item?.mediaId
+        if((reason==Player.MEDIA_ITEM_TRANSITION_REASON_AUTO||reason==Player.MEDIA_ITEM_TRANSITION_REASON_SEEK)&&player.playWhenReady&&local()&&introduction(id)!=null){
+            PiterfyCrossfade.cancelActive();player.pause()
+            main.post{if(!closed&&local()&&player.currentMediaItem?.mediaId==id&&!player.playWhenReady){if(!beginIntroduction())player.play()}}
+        }
+    }
     override fun onPositionDiscontinuity(old:Player.PositionInfo,next:Player.PositionInfo,reason:Int){if(reason==Player.DISCONTINUITY_REASON_SEEK)stopVoice()}
     fun close(){closed=true;generation++;stopVoice();main.removeCallbacks(tick);player.removeListener(this);io.shutdown();runCatching{App.getContext().unregisterReceiver(noisy)};if(instance===this)instance=null}
 }

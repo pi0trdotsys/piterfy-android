@@ -91,10 +91,15 @@ class Sessions:
                 if not block:
                     raise Rejected('block_missing', 404)
                 # Claim is durable before delivery: transfers never replay a spoken introduction.
-                result = state['active'] and not block.get('announced', False) and state.get('voice', False)
-                block['announced'] = True
+                clip=block
+                track=body.get('track')
+                if track and track!=block.get('tracks',[{}])[0].get('id'):
+                    clip=next((a for a in block.get('announcements',[]) if a['track']==track),None)
+                    if clip is None:raise Rejected('announcement_missing',404)
+                result = state['active'] and block.get('ready',True) and not clip.get('announced', False) and state.get('voice', False)
+                if result:clip['announced'] = True
                 db.execute('INSERT OR REPLACE INTO sessions VALUES(?,?,?)', (owner, mode, json.dumps(state)))
-                return {'speak': result, 'text': block['text'] if result else '', 'voiceKey': block.get('voiceKey') if result else None}
+                return {'speak': result, 'text': clip['text'] if result else '', 'voiceKey': clip.get('voiceKey') if result else None}
             elif action not in ('get', 'refill', 'next'):
                 raise Rejected('unknown_action', 400)
             if action in ('start', 'refill', 'next') and state['active']:
@@ -103,12 +108,24 @@ class Sessions:
                 if not busy and recent < 8:
                     db.execute('INSERT INTO jobs VALUES(?,?,?,?,?,?,?)', (uuid.uuid4().hex, owner, mode, state['id'], time.time(), 'queued', '{}'))
                     state['status'] = 'queued'
+                    state['progress'] = dict(percent=0,stage='queued',completed=0,total=0,complete=False)
                 elif not busy:
                     state['status'] = 'hourly_limit'
             if action != 'get':
                 state['revision'] += 1
                 db.execute('INSERT OR REPLACE INTO sessions VALUES(?,?,?)', (owner, mode, json.dumps(state, ensure_ascii=False)))
             return state
+
+    def progress(self,job,stage,percent,completed=0,total=0,failed=0,complete=False):
+        with self.db() as db:
+            db.execute('BEGIN IMMEDIATE')
+            state=self.state_for(job)
+            if state.get('id')!=job[3] or not state.get('active'):return
+            row=db.execute('SELECT state FROM jobs WHERE id=?',(job[0],)).fetchone()
+            if row and row[0] not in ('queued','running') and not complete:return
+            state['progress']=dict(stage=stage,percent=percent,completed=completed,total=total,failed=failed,complete=complete)
+            state['revision']+=1
+            db.execute('UPDATE sessions SET data=? WHERE owner=? AND mode=?',(json.dumps(state,ensure_ascii=False),job[1],job[2]))
 
     def take(self):
         with self.db() as db:
@@ -132,7 +149,10 @@ class Sessions:
             if state.get('id') != job[3] or not state['active']:
                 return
             if block:
+                block['ready']=final
                 state['blocks'] = (state['blocks'] + [block])[-30:]
             state['status'] = error or ('ready' if final else 'downloading')
+            if error:
+                state['progress']=dict(stage='unavailable',percent=100,complete=True,failed=1,completed=0,total=0)
             state['revision'] += 1
             db.execute('UPDATE sessions SET data=? WHERE owner=? AND mode=?', (json.dumps(state, ensure_ascii=False), job[1], job[2]))

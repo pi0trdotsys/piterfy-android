@@ -68,3 +68,26 @@ class DJTest(unittest.TestCase):
         self.start();job=self.s.take();self.s.finish(job,dict(id='block',text='Introduction'))
         self.s.handle('a',dict(action='stop'))
         self.assertFalse(self.s.handle('a',dict(action='claim',block='block'))['speak'])
+
+    def test_per_track_announcements_claim_independently_and_only_once(self):
+        self.start();job=self.s.take()
+        self.s.finish(job,dict(id='b',text='Intro',voiceKey='first',tracks=[dict(id='one'),dict(id='two')],announcements=[dict(track='two',text='Next',voiceKey='next')]))
+        first=self.s.handle('a',dict(action='claim',block='b',track='one'))
+        second=self.s.handle('a',dict(action='claim',block='b',track='two'))
+        self.assertTrue(first['speak']);self.assertTrue(second['speak'])
+        self.assertEqual('next',second['voiceKey'])
+        self.assertFalse(self.s.handle('a',dict(action='claim',block='b',track='two'))['speak'])
+        with self.assertRaises(Rejected):self.s.handle('a',dict(action='claim',block='b',track='not-in-block'))
+
+    def test_preparation_progress_is_not_playable_until_complete(self):
+        state=self.start();self.assertFalse(state['progress']['complete'])
+        job=self.s.take();self.s.progress(job,'downloading',50,2,5)
+        self.assertEqual(2,self.s.handle('a',{})['progress']['completed'])
+        self.s.finish(job,dict(id='b',text='Hello',tracks=[dict(id='one')]),final=False)
+        self.assertFalse(self.s.handle('a',{})['blocks'][0]['ready'])
+        self.assertFalse(self.s.handle('a',dict(action='claim',block='b'))['speak'])
+        self.s.finish(job,dict(id='ready',text='Ready',tracks=[dict(id='two')]))
+        self.s.progress(job,'ready',100,5,5,complete=True)
+        self.s.progress(job,'downloading',60,3,5)
+        self.assertTrue(self.s.handle('a',{})['progress']['complete'])
+        self.assertEqual(100,self.s.handle('a',{})['progress']['percent'])
