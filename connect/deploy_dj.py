@@ -6,6 +6,7 @@ import subprocess
 import datetime
 import shutil
 import re
+import sys
 
 root = Path('/home/user/piterfy-stack')
 stage = root/'discover/connectserver'
@@ -16,7 +17,7 @@ private = root/'.dj-runtime.env'
 private.touch(mode=0o600, exist_ok=True); os.chmod(private, 0o600)
 # JSON strings in env files need raw parsing; use a private compose JSON file instead.
 environment = dict(entry.split('=',1) for entry in env)
-environment.update(CONNECT_STATE_DIR='/connect', DJ_STATE_DIR='/state/dj')
+environment.update(CONNECT_STATE_DIR='/connect', DJ_STATE_DIR='/state/dj',DJ_VOICE_ENGINE=os.environ.get('DJ_VOICE_ENGINE','multilingual'))
 service = {'services': {'piterfy-dj': {
     'build': {'context':'./discover/connectserver','dockerfile':'Dockerfile.dj'},
     'container_name':'piterfy-dj','restart':'unless-stopped','networks':['piterfy_net'],
@@ -28,8 +29,9 @@ service = {'services': {'piterfy-dj': {
 private.write_text(json.dumps(service))
 (root/'discover/dj-state').mkdir(parents=True, exist_ok=True)
 command=['docker','compose','-f','docker-compose.yml','-f','docker-compose.override.yml','-f',private.name]
-subprocess.run(command+['up','-d','--no-deps','--build','piterfy-dj'],cwd=root,check=True)
-print('DJ worker built and started; no existing music service restarted.')
+if '--ui-only' not in sys.argv:
+    subprocess.run(command+['up','-d','--no-deps','--build','piterfy-dj'],cwd=root,check=True)
+    print('DJ worker built and started; no existing music service restarted.')
 subprocess.run(['docker','exec','piterfy-connect','python','-c',
     'import urllib.request,json; r=urllib.request.Request("http://piterfy-dj:8092",data=json.dumps({"user":"health","request":{"action":"list"}}).encode()); assert "dj" in json.load(urllib.request.urlopen(r,timeout=8))'],check=True)
 if (stage/'dj.js').exists():

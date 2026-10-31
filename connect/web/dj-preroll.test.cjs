@@ -1,0 +1,19 @@
+const {test}=require('node:test');
+const assert=require('node:assert/strict');
+const {beforeMusic}=require('./dj.js');
+test('music waits for the entire spoken introduction',async()=>{
+  const events=[];let finish;
+  const pending=beforeMusic(()=>{events.push('voice');return new Promise(resolve=>{finish=resolve;});},()=>events.push('music'),()=>true);
+  await Promise.resolve();assert.deepEqual(events,['voice']);
+  finish();await pending;assert.deepEqual(events,['voice','music']);
+});
+test('a transfer or cancellation prevents a late music start',async()=>{
+  let finish,valid=true,played=false;
+  const pending=beforeMusic(()=>new Promise(resolve=>{finish=resolve;}),()=>{played=true;},()=>valid);
+  valid=false;finish();await pending;assert.equal(played,false);
+});
+test('unavailable speech falls back to music exactly once',async()=>{
+  let played=0;
+  await beforeMusic(()=>Promise.reject(Error('unavailable')),()=>{played++;},()=>true);
+  assert.equal(played,1);
+});

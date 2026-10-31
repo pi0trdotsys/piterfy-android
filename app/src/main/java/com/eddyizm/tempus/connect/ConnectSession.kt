@@ -299,6 +299,7 @@ object ConnectSession {
                 main.post {
                     if (guard == generation && identity() == auth.account && enabled && local() && snapshot?.optString("version") == version && SystemClock.elapsedRealtime() - lastOk < 9000) {
                         val live = player?.invoke() ?: return@post
+                        if(com.eddyizm.tempus.service.PiterfyDJSession.holdQueue(songs,s.optInt("index")))live.pause()
                         if (media.isEmpty()) live.clearMediaItems()
                         else { live.setMediaItems(media, s.optInt("index"), s.optLong("position")); live.prepare() }
                         configure(live, s, true)
@@ -327,6 +328,7 @@ object ConnectSession {
         p.shuffleModeEnabled = s.optBoolean("shuffle")
         p.playbackParameters = PlaybackParameters(s.optDouble("speed", 1.0).toFloat())
         p.volume = s.optDouble("volume", 1.0).toFloat()
+        if(s.optBoolean("playing")&&!p.playWhenReady&&s.optLong("position")<1500)com.eddyizm.tempus.service.PiterfyDJSession.startCurrentIntroduction()
         p.playWhenReady = s.optBoolean("playing") && p.mediaItemCount > 0 && !com.eddyizm.tempus.service.PiterfyDJSession.isNarrating(p)
     }
 

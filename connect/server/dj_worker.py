@@ -59,7 +59,7 @@ def cancelled(job):
 
 def voice(text):
     import hashlib
-    key = hashlib.sha256(('pl-darkman-v1:' + text).encode()).hexdigest()
+    key = hashlib.sha256((os.environ.get('DJ_VOICE_ENGINE','multilingual')+'-andrew-v2:' + text).encode()).hexdigest()
     folder = ROOT / 'voice'; folder.mkdir(exist_ok=True)
     target = folder / (key + '.wav')
     if not target.exists():
@@ -77,7 +77,7 @@ def voice(text):
 
 def block(songs, title, intro, spoken):
     return dict(id=uuid.uuid4().hex, title=title, text=intro, tracks=songs,
-                voiceKey=voice(intro) if spoken else None, announced=False)
+                voiceKey=voice(intro) if spoken else None, voiceVersion=2, announced=False)
 
 
 def allowed(song):
@@ -186,11 +186,32 @@ def run_job(job):
         sessions.finish(job, error='no_new_tracks')
 
 
+def refresh_voices():
+    """Upgrade cached introductions without changing claims or overwriting a newer session."""
+    with sessions.db() as db:
+        rows=list(db.execute('SELECT owner,mode,data FROM sessions'))
+    for owner,mode,raw in rows:
+        state=json.loads(raw)
+        for block in state.get('blocks',[]):
+            if block.get('voiceVersion')==2 or not block.get('voiceKey'):continue
+            key=voice(block['text'])
+            if not key:continue
+            with sessions.db() as db:
+                db.execute('BEGIN IMMEDIATE')
+                latest=json.loads(db.execute('SELECT data FROM sessions WHERE owner=? AND mode=?',(owner,mode)).fetchone()[0])
+                if latest.get('id')!=state.get('id'):continue
+                for current in latest.get('blocks',[]):
+                    if current['id']==block['id']:
+                        current.update(voiceKey=key,voiceVersion=2)
+                db.execute('UPDATE sessions SET data=? WHERE owner=? AND mode=?',(json.dumps(latest,ensure_ascii=False),owner,mode))
+
+
 def work():
     # Interrupted jobs are not retried blindly: acquisition records retain their cooldown.
     with sessions.db() as db:
         interrupted=list(db.execute("SELECT id,owner,mode,session FROM jobs WHERE state='running'"))
     for job in interrupted:sessions.finish(job,error='interrupted')
+    refresh_voices()
     while True:
         job = sessions.take()
         if not job: time.sleep(2); continue

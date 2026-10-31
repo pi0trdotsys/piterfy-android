@@ -307,6 +307,8 @@ public class MediaManager {
                                 if (LanRemoteSession.isActive()) return;
                                 justStarted.set(true);
                                 com.eddyizm.tempus.util.PiterfyQueues.save(browser);
+                                final boolean djIntro = PiterfyDJSession.holdQueue(media, startIndex);
+                                if (djIntro) browser.pause();
                                 browser.setMediaItems(items, startIndex, startPositionMs);
                                 browser.prepare();
 
@@ -316,8 +318,8 @@ public class MediaManager {
                                         int itemCount = browser.getMediaItemCount();
                                         if (itemCount > 0 && startIndex >= 0 && startIndex < itemCount) {
                                             if (LanRemoteSession.isActive()) { browser.removeListener(this); return; }
-                                            browser.seekTo(startIndex, startPositionMs);
-                                            browser.play();
+                                            if (!djIntro) browser.seekTo(startIndex, startPositionMs);
+                                            if (!PiterfyDJSession.startCurrentIntroduction()) browser.play();
                                             browser.removeListener(this);
                                         } else {
                                             Log.d(TAG, "Cannot start playback: itemCount=" + itemCount + ", startIndex=" + startIndex);

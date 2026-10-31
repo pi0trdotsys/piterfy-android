@@ -48,11 +48,11 @@ Run `deploy_library.py` after staging `server/connect_api.py` as `library-connec
 
 `server/dj_core.py` stores independent account-scoped DJ/discovery sessions and acquisition jobs in SQLite WAL. `server/dj_worker.py` imports only the existing acquisition adapters from the stack's `/legacy/discover.py`; it never invokes the daily daemon, mail, cleanup, or playlist scheduling. New music must be imported/indexed before entering a block. A single worker and durable cooldown records bound concurrent interactive acquisition. The account/hour budget applies across stop/start cycles.
 
-Build the separate worker with `server/Dockerfile.dj`. It includes Piper 1.8.0 and the Polish `pl_PL-darkman-medium` model. Speech is synthesized in a time-limited subprocess and cached locally. Check the bundled model license when redistributing the image; the model is not packaged in Android APKs. The worker port is private to the Docker network. `/piterfy-api/connect/dj` validates Navidrome authentication and derives the account server-side. Voice claims/audio require the current Connect receiver, with durable at-most-once claims.
+Build the separate worker with `server/Dockerfile.dj`. The default Andrew multilingual voice uses edge-tts 7.3.1 and Microsoft's speech service. Announcement text (including artist/title metadata) is sent for synthesis, converted to PCM WAV with FFmpeg, and cached on this server. Set `DJ_VOICE_ENGINE=local` when deploying to use the included Piper 1.8.0 Polish model instead. Synthesis runs in a time-limited subprocess. Cached introductions are upgraded in the background while preserving their claims. Check the bundled model license when redistributing the image; the model is not packaged in Android APKs. The worker port is private to the Docker network. `/piterfy-api/connect/dj` validates Navidrome authentication and derives the account server-side. Voice claims/audio require the current Connect receiver, with durable at-most-once claims.
 
 For this stack, stage the DJ Python files, Dockerfile, `.dockerignore`, web `dj.js`/`connect.js`/`library.js`, `connect_api.py` as `library-connect_api.py`, and `deploy_dj.py` in `discover/connectserver`. Run `deploy_dj.py`. It derives only the existing music-provider credentials into a private mode-600 compose JSON file, builds the limited worker, checks it internally, backs up UI assets, and invokes the library deployment. It does not restart Navidrome, beets or the daily discovery daemon. Worker source updates require a cached image rebuild. Connect API changes restart only Connect.
 
-Browser speech uses a separate audio clip and the native music queue remains authoritative. Android uses a separate MediaPlayer with transient audio focus; focus loss, output disconnect, queue changes, account changes and Connect handoff cancel narration. DJ blocks move through the existing music queue, and speech is never stored as a music item.
+Browser speech finishes before the native music queue starts; a pending queue snapshot keeps the intended DJ block visible to Connect during the introduction. Android prepares the queue paused and starts its separate MediaPlayer before allowing music to play. Focus loss, output disconnect, queue changes, account changes and Connect handoff cancel narration. DJ blocks move through the existing music queue, and speech is never stored as a music item. Use `deploy_dj.py --ui-only` for web-only updates during an active session.
 
 ## Checks
 
@@ -67,6 +67,7 @@ node --test connect/web/crossfade-core.test.cjs
 node --check connect/web/crossfade.js
 node --check connect/web/library.js
 node --check connect/web/dj.js
+node --test connect/web/dj-preroll.test.cjs
 ./gradlew testTempusDebugUnitTest testDegoogledDebugUnitTest lintTempusRelease lintDegoogledRelease assembleTempusRelease assembleDegoogledRelease
 ```
 

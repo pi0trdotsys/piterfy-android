@@ -1,8 +1,11 @@
 /* DJ controls and narration reuse the native music queue; speech is never a music item. */
 (() => {
   'use strict';
+  async function beforeMusic(voice,music,valid){try{await voice();}catch(_){}if(valid())await music();}
+  if(typeof module==='object'&&module.exports){module.exports={beforeMusic};return;}
   if(window.PiterfyDJ)return;
   let dialog,mode='dj',states={},account=localStorage.getItem('username')||'',busy=false,clip=null,clipUrl='',narrating=false,lastRefill=0,wantStart='',speechGeneration=0;
+  let pendingPlayback=null,skipIntro=null,settleIntro=null;
   const element=()=>document.querySelector('audio.music-player-audio');
   const current=()=>window.PiterfyPlayback?.current();
   const messages={queued:'Przygotowuję następny blok…',downloading:'Szukam i pobieram nowe utwory…',
@@ -18,7 +21,7 @@
   }
   function button(parent,label,handler){const b=document.createElement('button');b.className='pf-library-button';b.textContent=label;b.type='button';b.onclick=()=>Promise.resolve(handler()).catch(e=>status(e.message));parent.append(b);return b;}
   function status(text){const s=dialog?.querySelector('[role=status]');if(s)s.textContent=text;}
-  function stopVoice(){speechGeneration++;if(clip){clip.pause();clip.removeAttribute('src');clip.load();clip=null;}if(clipUrl)URL.revokeObjectURL(clipUrl);clipUrl='';narrating=false;}
+  function stopVoice(){speechGeneration++;settleIntro?.();settleIntro=null;if(clip){clip.pause();clip.removeAttribute('src');clip.load();clip=null;}if(clipUrl)URL.revokeObjectURL(clipUrl);clipUrl='';narrating=false;pendingPlayback=null;skipIntro=null;}
   async function prepare(kind,seeds){
     const valid=seeds.filter(s=>s.artist&&!/podcast/i.test(s.genre||'')).slice(0,6);
     if(!valid.length)throw Error('Wybierz najpierw muzykę, od której zaczniemy.');
@@ -26,35 +29,37 @@
       exploration:dialog?.open&&mode===kind?Number(dialog.querySelector('input[type=range]').value):window.PiterfyLibrary.exploration()});
     states[kind]=state;return state;
   }
-  async function speak(state,block){
-    const player=element(),song=current();
-    if(!player||song?.remote||!state.active||!state.voice||!block.voiceKey||!block.tracks.some(t=>t.id===song?.id))return;
-    const wasPlaying=!player.paused;
-    if(!wasPlaying)return;
-    const identity=song.id,guard=speechGeneration;
-    const claimed=await request({action:'claim',mode:state.mode,block:block.id});
-    if(guard!==speechGeneration||!claimed.speak||current()?.id!==identity||current()?.remote)return;
-    const data=await request({action:'audio',mode:state.mode,key:claimed.voiceKey});
-    if(guard!==speechGeneration||current()?.id!==identity||current()?.remote||player.paused)return;
-    window.PiterfyCrossfade?.cancel();narrating=true;player.pause();
-    const bytes=Uint8Array.from(atob(data.audio),c=>c.charCodeAt(0));
-    clipUrl=URL.createObjectURL(new Blob([bytes],{type:'audio/wav'}));clip=new Audio(clipUrl);
-    clip.volume=Math.min(1,song.volume??.8);
-    const finish=()=>{const resume=narrating&&current()?.id===identity&&!current()?.remote;stopVoice();if(resume)player.play().catch(()=>{});};
-    clip.onended=finish;clip.onerror=finish;
-    try{await clip.play();}catch(_){finish();}
-  }
   async function playBlock(state,block){
     if(current()?.remote)throw Error('Najpierw wybierz „Przenieś tutaj” w Connect.');
-    stopVoice();await window.PiterfyLibrary.play(block.tracks);
-    // Native loading is asynchronous; narration is claimed only by the actual receiver.
-    const expected=block.tracks[0]?.id;let attempts=0;
-    const wait=setInterval(()=>{if(++attempts>80){clearInterval(wait);return;}
-      if(current()?.id===expected&&element()?.readyState>=2&&!element().paused){clearInterval(wait);speak(state,block).catch(()=>{});}},100);
+    stopVoice();window.PiterfyCrossfade?.cancel();element()?.pause();
+    if(!state.active||!state.voice||!block.voiceKey||block.announced)return window.PiterfyLibrary.play(block.tracks);
+    const volume=element()?.volume??1,guard=speechGeneration;
+    // Connect sees the intended queue during the introduction, although no music has started.
+    pendingPlayback={items:block.tracks.map(s=>({id:s.id,title:s.title||'',artist:s.artist||'',album:s.album||'',albumId:s.albumId||'',artistId:s.artistId||'',cover:s.coverArt||s.id,suffix:s.suffix||'',duration:Number(s.duration)||0,bitrate:Number(s.bitRate)||0})),index:0,position:0,playing:true,volume,repeat:0,shuffle:false,speed:1};
+    const startMusic=async()=>{
+      if(guard!==speechGeneration)return;
+      if(current()?.remote){stopVoice();return;}
+      stopVoice();await window.PiterfyLibrary.play(block.tracks);render();
+    };
+    skipIntro=startMusic;render();
+    const voice=async()=>{
+      const claimed=await request({action:'claim',mode:state.mode,block:block.id});
+      if(guard!==speechGeneration)return;
+      if(!claimed.speak)return;
+      const data=await request({action:'audio',mode:state.mode,key:claimed.voiceKey});
+      if(guard!==speechGeneration||current()?.remote)return;
+      const bytes=Uint8Array.from(atob(data.audio),c=>c.charCodeAt(0));
+      clipUrl=URL.createObjectURL(new Blob([bytes],{type:'audio/wav'}));clip=new Audio(clipUrl);clip.volume=volume;
+      await new Promise((resolve,reject)=>{
+        settleIntro=resolve;clip.onended=resolve;clip.onerror=reject;
+        narrating=true;render();clip.play().catch(reject);
+      });
+    };
+    await beforeMusic(voice,startMusic,()=>guard===speechGeneration&&!current()?.remote);
   }
   function render(){
     if(!dialog?.open)return;const state=states[mode];
-    status(state?.active?(messages[state.status]||'Sesja gotowa'):'Uruchom sesję. Nowe utwory pobiorę niezależnie od codziennego Odkrywaj.');
+    status(pendingPlayback?(narrating?'DJ zapowiada następny blok…':'Przygotowuję zapowiedź…'):state?.active?(messages[state.status]||'Sesja gotowa'):'Uruchom sesję. Nowe utwory pobiorę niezależnie od codziennego Odkrywaj.');
     const voiceButton=dialog.querySelector('[data-dj-voice]');if(voiceButton){voiceButton.textContent=state?.voice?'Głos DJ-a: włączony':'Głos DJ-a: wyłączony';voiceButton.setAttribute('aria-pressed',String(!!state?.voice));}
     const rows=dialog.querySelector('.pf-dj-blocks');rows.replaceChildren();
     for(const block of state?.blocks||[]){const section=document.createElement('section');section.className='pf-library-song';
@@ -77,7 +82,8 @@
       if(blocks[index+1])await playBlock(state,blocks[index+1]);
       else{states[mode]=await request({action:'next',mode});render();status('Przygotowuję inny klimat. Gotowy blok pojawi się poniżej.');}
     });
-    if(mode==='dj')button(actions,'Głos DJ-a',async()=>{const state=states[mode];states[mode]=await request({action:'settings',mode,voice:!state?.voice});if(!states[mode].voice){const resume=narrating;stopVoice();if(resume&&!current()?.remote)element()?.play().catch(()=>{});}render();}).dataset.djVoice='true';
+    if(mode==='dj')button(actions,'Głos DJ-a',async()=>{const state=states[mode];states[mode]=await request({action:'settings',mode,voice:!state?.voice});if(!states[mode].voice)await skipIntro?.();render();}).dataset.djVoice='true';
+    button(actions,'Pomiń zapowiedź',()=>skipIntro?.());
     const track=current();
     if(track&&(states[mode]?.blocks||[]).some(b=>b.tracks.some(t=>t.id===track.id))){
       const feedback=document.createElement('div');feedback.className='pf-library-actions';dialog.append(feedback);
@@ -87,7 +93,7 @@
         if(!r.ok)throw Error('Nie udało się zapisać reakcji.');status('Zapisano reakcję na: '+song.title);
       });
     }
-    button(actions,'Zakończ sesję',async()=>{wantStart='';const resume=narrating;stopVoice();if(resume&&!current()?.remote)element()?.play().catch(()=>{});states[mode]=await request({action:'stop',mode});render();});
+    button(actions,'Zakończ sesję',async()=>{wantStart='';if(skipIntro)await skipIntro();else stopVoice();states[mode]=await request({action:'stop',mode});render();});
     const info=document.createElement('p');info.setAttribute('role','status');dialog.append(info);const rows=document.createElement('div');rows.className='pf-dj-blocks';dialog.append(rows);dialog.showModal();
     try{states[mode]=await request({action:'get',mode});slider.value=states[mode].exploration??window.PiterfyLibrary.exploration();render();}catch(e){status(e.message);}
   }
@@ -96,12 +102,13 @@
     const identity=localStorage.getItem('username')||'';
     if(identity!==account){stopVoice();states={};wantStart='';account=identity;}
     if(!identity||busy)return;busy=true;
-    try{states=await request({action:'list'});if(narrating&&!states.dj?.voice){const id=current()?.id;const p=element();stopVoice();if(id&&!current()?.remote)p?.play().catch(()=>{});}render();}
+    try{states=await request({action:'list'});if(pendingPlayback&&!states.dj?.voice)await skipIntro?.();render();}
     catch(_){}finally{busy=false;}
   }
   setInterval(poll,8000);
   setInterval(()=>{
     const song=current();if(song?.remote){stopVoice();return;}
+    if(pendingPlayback){if(element()&&!element().paused)stopVoice();return;}
     for(const state of Object.values(states))if(state.active&&state.id===wantStart&&state.blocks?.length){wantStart='';playBlock(state,state.blocks[0]).catch(()=>{});return;}
     if(!song)return;
     if(narrating&&element()&&!element().paused)stopVoice();
@@ -109,7 +116,6 @@
       const blocks=state.blocks||[], index=blocks.findIndex(b=>b.tracks.some(t=>t.id===song.id));
       if(index<0)continue;
       const block=blocks[index];
-      if(song.id!==lastTrack&&block.tracks[0]?.id===song.id&&song.position<1500&&!narrating)speak(state,block).catch(()=>{});
       const last=block.tracks.at(-1)?.id===song.id;
       if(last&&element()?.ended&&blocks[index+1])playBlock(state,blocks[index+1]).catch(()=>{});
       if(song.playing&&!narrating&&index>=blocks.length-2&&Date.now()-lastRefill>90000&&!['queued','downloading'].includes(state.status)){
@@ -117,6 +123,6 @@
     }lastTrack=song.id;
   },1000);
   window.addEventListener('pagehide',stopVoice);
-  window.PiterfyDJ={open,prepare,isNarrating:()=>narrating,cancelNarration:stopVoice};
+  window.PiterfyDJ={open,prepare,isNarrating:()=>narrating||!!pendingPlayback,pendingPlayback:()=>pendingPlayback,cancelNarration:stopVoice};
   setInterval(()=>{const header=document.querySelector('.pf-discovery-launch')?.parentElement;if(header&&!header.querySelector('[data-dj-launch]'))button(header,'DJ',()=>open('dj')).dataset.djLaunch='true';},1500);
 })();

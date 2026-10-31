@@ -37,6 +37,8 @@
   }
 
   function snapshot() {
+    const intro=window.PiterfyDJ?.pendingPlayback?.();
+    if(intro)return intro;
     const player = findStore()?.getState().player;
     const element = audio();
     if (!player || !element || player.queue.some(x => x.isRadio)) return null;
