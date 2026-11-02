@@ -29,7 +29,7 @@ class PiterfyDJSession(private val player: Player) : Player.Listener {
         private var pendingAccount=""
         private var awaitingSession=""
         private var awaitingAccount=""
-        @JvmStatic fun awaitReady(state:JSONObject){acceptState(state);awaitingSession=state.optString("id");awaitingAccount=PiterfyLibrary.account()}
+        @JvmStatic fun awaitReady(state:JSONObject){acceptState(state);awaitingSession=state.optString("id");awaitingAccount=PiterfyLibrary.account();android.util.Log.d("PiterfyDJ","Explicit start accepted; service present="+(instance!=null));instance?.startReady()}
         @JvmStatic fun cancelAwait(){awaitingSession=""}
         private fun contextPrefs()=App.getContext().getSharedPreferences("piterfy_dj_context",0)
         @JvmStatic fun arm(state:JSONObject){
@@ -151,6 +151,19 @@ class PiterfyDJSession(private val player: Player) : Player.Listener {
         body.put("device",ConnectSession.deviceId())
         PiterfyLibrary.dj(body, {if(!closed)done(it)}, {busy=false;android.util.Log.w("PiterfyDJ","DJ request unavailable: "+body.optString("action"));if(!closed)failed()})
     }
+    private fun startReady(){
+        if(closed||busy||!local()||awaitingSession.isEmpty()||awaitingAccount!=account)return
+        for(mode in listOf("dj","discover")){
+            val state=states.optJSONObject(mode)?:continue
+            if(state.optString("id")!=awaitingSession)continue
+            if(!state.optBoolean("active")){cancelAwait();return}
+            val blocks=state.optJSONArray("blocks")?:continue
+            val ready=(0 until blocks.length()).map{blocks.getJSONObject(it)}.firstOrNull{it.optString("id")==state.optString("startBlock")&&it.optBoolean("ready",true)}?:continue
+            cancelAwait();arm(state)
+            android.util.Log.d("PiterfyDJ","Starting explicitly requested ready block")
+            play(ready);return
+        }
+    }
     private val tick=object:Runnable {
         override fun run(){
             if(closed)return
@@ -159,22 +172,12 @@ class PiterfyDJSession(private val player: Player) : Player.Listener {
             if((speaking||waitingForIntro)&&(states.optJSONObject("dj")?.optBoolean("voice")!=true||states.optJSONObject("dj")?.optBoolean("active")!=true))finishVoice(player.currentMediaItem?.mediaId.orEmpty())
             val now=android.os.SystemClock.elapsedRealtime()
             if(warmedAccount!=account){warmedAccount=account;for(mode in listOf("dj","discover"))request(JSONObject().put("action","warm").put("mode",mode)){states.put(mode,it)}}
-            if(!busy&&now-lastPoll>(if(awaitingSession.isNotEmpty())1000 else 8000)){busy=true;lastPoll=now;request(JSONObject().put("action","list")){states=it;busy=false}}
+            // Consume an explicit ready start before another poll can mark the service busy.
+            startReady()
+            if(!busy&&now-lastPoll>(if(awaitingSession.isNotEmpty())1000 else 8000)){busy=true;lastPoll=now;request(JSONObject().put("action","list")){states=it;busy=false;startReady()}}
             val id=player.currentMediaItem?.mediaId
             preload.update(states,id,local())
             observeBlock()
-            if(local()&&awaitingSession.isNotEmpty()&&awaitingAccount==account&&!busy){
-                for(mode in listOf("dj","discover")){
-                    val s=states.optJSONObject(mode)?:continue
-                    if(s.optString("id")!=awaitingSession)continue
-                    val blocks=s.optJSONArray("blocks")?:continue
-                    val ready=(0 until blocks.length()).map{blocks.getJSONObject(it)}.firstOrNull{it.optString("id")==s.optString("startBlock")&&it.optBoolean("ready",true)}
-                    if(ready!=null){
-                        cancelAwait()
-                        if(s.optBoolean("active")){arm(s);play(ready)}
-                    }
-                }
-            }
             if(local()&&id!=null)for(mode in listOf("dj","discover")){
                 val state=states.optJSONObject(mode)?:continue
                 if(!state.optBoolean("active")||!armed(state))continue
