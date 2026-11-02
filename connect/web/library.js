@@ -291,7 +291,7 @@
       for(const node of document.querySelectorAll(selector)){
         if(node.matches('button,input,a'))continue;
         node.setAttribute('role','button');node.setAttribute('aria-label',label);node.tabIndex=0;
-        if(!node.dataset.pfKeyboard){node.dataset.pfKeyboard='true';node.addEventListener('keydown',event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();node.click();}});}
+        if(!node.dataset.pfKeyboard){node.dataset.pfKeyboard='true';node.addEventListener('keydown',event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();event.stopPropagation();if(!event.repeat)node.click();}});node.addEventListener('keyup',event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();event.stopPropagation();}});}
       }
     }
     attachAudio(audio());
