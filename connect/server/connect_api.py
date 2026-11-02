@@ -58,7 +58,7 @@ def handle(handler):
             raise Rejected("invalid_body", 400)
         if path.endswith('/dj'):
             if body.get('action') == 'review-page':raise Rejected('unknown_action',400)
-            if body.get('action') in ('claim', 'audio', 'complete'):
+            if body.get('action') in ('claim', 'audio', 'complete', 'select'):
                 with broker.lock:
                     account = broker._account(user)
                     broker._expire(account)

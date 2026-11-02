@@ -14,7 +14,7 @@ import uuid
 import sys
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from dj_core import Sessions
+from dj_buffer import BufferedSessions as Sessions
 from dj_reviews import Reviews
 from dj_scripts import compose
 from connect_core import Rejected
@@ -56,11 +56,16 @@ class InteractiveSlskd(music.Slskd):
 
 
 def cancelled(job):
-    state = sessions.state_for(job)
-    return not state.get('active') or state.get('id') != job[3]
+    return not sessions.valid(job)
 
+
+voice_lock=threading.Lock()
 
 def voice(text):
+    with voice_lock:
+        return generate_voice(text)
+
+def generate_voice(text):
     import hashlib
     key = hashlib.sha256((os.environ.get('DJ_VOICE_ENGINE','multilingual')+'-andrew-v3:' + text).encode()).hexdigest()
     folder = ROOT / 'voice'; folder.mkdir(exist_ok=True)
@@ -115,6 +120,7 @@ def run_job(job):
     seeds = state['seeds']
     heard = {t['id'] for b in state['blocks'] for t in b['tracks']}
     random_songs = music.as_list(nd.call('getRandomSongs', size=120).get('randomSongs', {}).get('song'))
+    if not seeds:seeds=[dict(id=s['id'],artist=s.get('artist',''),title=s.get('title',''),genre=s.get('genre','')) for s in random_songs if allowed(s)][:3]
     pool = [s for s in random_songs if allowed(s) and s['id'] not in heard]
     # Apply the exact shared artist/track preferences before selecting library fallback.
     from library_core import Library
@@ -204,11 +210,14 @@ def run_job(job):
         title = 'Nowe odkrycia' + (' · '+genre if genre else '')
         intro = (random.choice(['Czas na świeże odkrycia! ', 'Okej, teraz ruszamy trochę dalej! ', 'Mam coś nowego do sprawdzenia! ']) + ('Zajrzymy w '+genre+'. ' if genre else '') +
                  'Na początek '+imported[0].get('artist','')[:65]+', i '+imported[0].get('title','')[:65]+'. Daj znać po bloku, czy złapaliśmy Twój klimat. A teraz muzyka!')
-        songs=imported+pool[:max(0,5-len(imported))]
+        songs=imported
     else:
-        songs=pool[:5];title='Z Twojej biblioteki'
+        songs=[];title='Z Twojej biblioteki'
         intro='Gotowy na kolejny dobry numer? Złapmy ten klimat! '+(songs[0].get('artist','')[:65]+', i utwór '+songs[0].get('title','')[:65]+'. Posłuchajmy!' if songs else '')
     failed=max(0,len(jobs)-len(imported))
+    latest=sessions.state_for(job)
+    reserved={t['id'] for b in latest.get('blocks',[]) for t in b.get('tracks',[])}
+    songs=[s for s in songs if s['id'] not in reserved]
     if songs:
         sessions.progress(job,'voice',90,0,len(songs),failed)
         ready=block(songs,title,intro,state.get('voice',False),job,state['blocks'][-4:])
@@ -219,14 +228,135 @@ def run_job(job):
         sessions.progress(job,'unavailable',100,0,len(jobs),failed,complete=True)
 
 
+WELCOME='Hej! Dobrze Cię słyszeć. Muzyka już czeka, więc zaczynajmy!'
+ALTERNATIVE='Zmieńmy muzyczny kierunek. Mam już gotowy inny klimat. Posłuchajmy!'
+CONTINUE='Kolejny zestaw jest gotowy. Sprawdźmy, dokąd tym razem zaprowadzi nas muzyka!'
+library_snapshot=[]
+
+def library_block(job):
+    """No search, download, scan or speech synthesis on the fast preparation lane."""
+    state=sessions.state_for(job)
+    if cancelled(job):sessions.finish(job);return
+    pool=list(library_snapshot)
+    if not pool:
+        pool=music.as_list(music.Navidrome().call('getRandomSongs',size=160).get('randomSongs',{}).get('song'))
+    from library_core import Library
+    path=Library(os.environ.get('CONNECT_STATE_DIR','/connect')).directory/(job[1]+'.json')
+    try:prefs=json.loads(path.read_text())
+    except (OSError,ValueError):prefs={}
+    feedback=prefs.get('feedback',{})
+    scores=reviews.preferences(job[1])
+    heard={t['id'] for b in state['blocks'] for t in b.get('tracks',[])}
+    pool=[s for s in pool if allowed(s) and s['id'] not in heard and feedback.get(s['id'],{}).get('vote')!=-1]
+    seeds=state.get('seeds',[])
+    anchor=next((b for b in state.get('blocks',[]) if b['id']==state.get('currentBlock')),None)
+    if not anchor:anchor=next((b for b in state.get('blocks',[]) if not b.get('consumed') and b.get('variant')!='alternative'),None)
+    if anchor:seeds=anchor.get('tracks',[])[:5]
+    artists={music.norm(s.get('artist','')) for s in seeds}
+    genres={s.get('genre','').lower() for s in seeds if s.get('genre')}
+    alternative=json.loads(job[4]).get('variant')=='alternative'
+    random.shuffle(pool)
+    def rank(s):
+        artist=music.norm(s.get('artist',''));f=feedback.get(s['id'],{})
+        familiarity=(2 if artist in artists else 0)+(1 if s.get('genre','').lower() in genres else 0)
+        return scores.get(artist,0)+f.get('vote',0)*2-min(5,f.get('skips',0))*.5+(-familiarity if alternative else familiarity)
+    pool=[s for s in pool if scores.get(music.norm(s.get('artist','')),0)>-2]
+    pool.sort(key=rank,reverse=True)
+    if alternative and genres:
+        different=[s for s in pool if s.get('genre') and s['genre'].lower() not in genres]
+        if different:
+            genre=different[0]['genre'].lower()
+            coherent=[s for s in different if s.get('genre','').lower()==genre]
+            pool=coherent+[s for s in pool if s not in coherent]
+    songs=pool[:5]
+    if not songs:sessions.finish(job,error='no_new_tracks');return
+    # The generic greeting is generated once in the voice lane. Never wait for TTS here.
+    continuation=bool(state.get('currentBlock')) or any(not b.get('consumed') and b.get('variant')!='alternative' for b in state.get('blocks',[]))
+    phrase=ALTERNATIVE if alternative else CONTINUE if continuation else WELCOME
+    key=generic_keys.get(phrase) or welcome_key
+    if not state.get('voice'):key=None
+    ready=dict(id=uuid.uuid4().hex,title=('Inny klimat · '+str(songs[0].get('genre') or 'z biblioteki')) if alternative else 'Gotowe do słuchania · z biblioteki',
+        tracks=songs,text=phrase if generic_keys.get(phrase) else WELCOME if key else '',voiceKey=key,voiceVersion=0,announced=False,announcements=[])
+    sessions.finish(job,ready)
+
+
+welcome_key=None
+generic_keys={}
+
+def fast_work():
+    while True:
+        job=sessions.take('library')
+        if not job:time.sleep(.2);continue
+        try:library_block(job)
+        except Exception:sessions.finish(job,error='temporarily_unavailable')
+
+
+def maintenance():
+    global library_snapshot
+    refreshed=0
+    while True:
+        try:
+            if time.time()-refreshed>600:
+                library_snapshot=[s for s in music.as_list(music.Navidrome().call('getRandomSongs',size=200).get('randomSongs',{}).get('song')) if allowed(s)]
+                refreshed=time.time()
+            # Feedback from mail, Telegram and either app invalidates stale reserves too.
+            from library_core import Library
+            import hashlib
+            with sessions.db() as db:owners=list(db.execute('SELECT owner,mode,data FROM sessions'))
+            for owner,mode,raw in owners:
+                state=json.loads(raw)
+                path=Library(os.environ.get('CONNECT_STATE_DIR','/connect')).directory/(owner+'.json')
+                try:feedback=json.loads(path.read_text()).get('feedback',{})
+                except (OSError,ValueError):feedback={}
+                stamp=hashlib.sha256(json.dumps([feedback,reviews.preferences(owner)],sort_keys=True).encode()).hexdigest()
+                if state.get('tasteStamp')!=stamp:
+                    with sessions.db() as db:
+                        db.execute('BEGIN IMMEDIATE')
+                        latest=json.loads(db.execute('SELECT data FROM sessions WHERE owner=? AND mode=?',(owner,mode)).fetchone()[0])
+                        if latest.get('tasteStamp') and latest['tasteStamp']!=stamp:
+                            sessions.invalidate(db,owner,mode,latest);sessions.schedule(db,owner,mode,latest)
+                        latest['tasteStamp']=stamp;sessions.save(db,owner,mode,latest)
+            # Bounded speech cache: retain referenced clips, evict old unreferenced audio first.
+            with sessions.db() as db:states=[json.loads(r[0]) for r in db.execute('SELECT data FROM sessions')]
+            used={welcome_key,*generic_keys.values()}
+            for s in states:
+                for b in s.get('blocks',[]):
+                    if b.get('preparedAt',0)<time.time()-86400 and b.get('id')!=s.get('currentBlock'):continue
+                    used.add(b.get('voiceKey'));used.update(a.get('voiceKey') for a in b.get('announcements',[]))
+            files=sorted((p for p in (ROOT/'voice').glob('*.wav') if not p.name.endswith('.tmp.wav')),key=lambda p:p.stat().st_mtime)
+            total=sum(p.stat().st_size for p in files)
+            for p in files:
+                if p.stem not in used and (total>256*1024*1024 or p.stat().st_mtime<time.time()-7*86400):
+                    total-=p.stat().st_size;p.unlink(missing_ok=True)
+            with sessions.db() as db:
+                db.execute("DELETE FROM jobs WHERE created<? AND state NOT IN ('queued','running')",(time.time()-7*86400,))
+                db.execute('DELETE FROM acquired WHERE at<?',(time.time()-30*86400,))
+        except Exception:pass
+        time.sleep(10)
+
+
+def voice_work():
+    global welcome_key
+    while True:
+        try:
+            if not welcome_key:welcome_key=voice(WELCOME)
+            for phrase in (WELCOME,ALTERNATIVE,CONTINUE):
+                if phrase not in generic_keys:
+                    key=voice(phrase)
+                    if key:generic_keys[phrase]=key
+            refresh_voices()
+        except Exception:pass
+        time.sleep(10)
+
+
 def refresh_voices():
     """Refresh only two recent blocks; preserve every claim, including concurrent claims."""
     with sessions.db() as db:
         rows=list(db.execute('SELECT owner,mode,data FROM sessions'))
     for owner,mode,raw in rows:
         state=json.loads(raw)
-        if not state.get('active') or not state.get('voice'):continue
-        for old in state.get('blocks',[])[-2:]:
+        if state.get('warmUntil',0)<time.time() or not state.get('voice'):continue
+        for old in state.get('blocks',[])[-4:]:
             if old.get('voiceVersion')==5 or not old.get('tracks'):continue
             plan=compose(old['tracks'],old.get('title',''),state.get('blocks',[])[-5:])
             opening=None if old.get('announced') else voice(plan['text'])
@@ -239,7 +369,7 @@ def refresh_voices():
             with sessions.db() as db:
                 db.execute('BEGIN IMMEDIATE')
                 latest=json.loads(db.execute('SELECT data FROM sessions WHERE owner=? AND mode=?',(owner,mode)).fetchone()[0])
-                if latest.get('id')!=state.get('id'):continue
+                if latest.get('id')!=state.get('id') or latest.get('bufferEpoch',0)!=state.get('bufferEpoch',0):continue
                 for current in latest.get('blocks',[]):
                     if current['id']!=old['id']:continue
                     if opening and not current.get('announced'):
@@ -257,7 +387,6 @@ def work():
     with sessions.db() as db:
         interrupted=list(db.execute("SELECT id,owner,mode,session FROM jobs WHERE state='running'"))
     for job in interrupted:sessions.finish(job,error='interrupted')
-    refresh_voices()
     while True:
         job = sessions.take()
         if not job: time.sleep(2); continue
@@ -287,6 +416,7 @@ class Handler(BaseHTTPRequestHandler):
                 with sessions.db() as db:
                     token=db.execute('SELECT token FROM reviews WHERE owner=? AND session=? AND block=?',(sessions.owner(user),state['id'],request.get('block'))).fetchone()[0]
                 reviews.resolve(token,request.get('vote'))
+                sessions.handle(user,dict(action='invalidate',mode=request.get('mode','dj')))
                 result={'ok':True}
             elif request.get('action') == 'list':
                 result = {mode: sessions.handle(user, dict(mode=mode)) for mode in ('dj', 'discover')}
@@ -307,5 +437,8 @@ class Handler(BaseHTTPRequestHandler):
 if __name__ == '__main__':
     from dj_notify import loop
     threading.Thread(target=loop,args=(reviews,music),daemon=True).start()
+    threading.Thread(target=maintenance,daemon=True).start()
+    threading.Thread(target=voice_work,daemon=True).start()
+    threading.Thread(target=fast_work,daemon=True).start()
     threading.Thread(target=work, daemon=True).start()
     ThreadingHTTPServer(('0.0.0.0', 8092), Handler).serve_forever()

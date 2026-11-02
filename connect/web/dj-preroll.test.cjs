@@ -1,6 +1,12 @@
 const {test}=require('node:test');
 const assert=require('node:assert/strict');
-const {beforeMusic,readyBlock,incomingId}=require('./dj.js');
+const {beforeMusic,readyBlock,nextBlock,incomingId}=require('./dj.js');
+
+test('ready reserve starts despite unfinished or failed background downloads',()=>{
+  const state={buffered:true,active:true,startBlock:'next',currentBlock:'playing',progress:{complete:false,failed:2},buffer:{alternatives:['alt']},blocks:[{id:'playing',ready:true},{id:'next',ready:true},{id:'alt',ready:true}]};
+  assert.equal(readyBlock(state).id,'next');assert.equal(nextBlock(state,true).id,'alt');
+  state.active=false;assert.equal(readyBlock(state),null);
+});
 
 test('incoming song is identified before Navidrome publishes its play event',()=>{
   assert.equal(incomingId('/rest/getTranscodeStream?mediaId=next-song&u=private&t=private'),'next-song');

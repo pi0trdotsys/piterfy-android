@@ -4,6 +4,27 @@
   if (window.PiterfyLibrary) return;
   let store, dialog, account = '', preferences = {}, previous, lastSave = 0, generation = 0;
   let applyingQueue = false, seekGuard = 0, saving = false, checkedAlbum = '', coverSource = '';
+  const preparedRecords=new Map();let preparedIdentity='';
+  let prefixJob=null,prefixId='',prefixOwner='';
+  async function prefetchNextAudio(){
+    const owner=identity(),player=findStore()?.getState().player;
+    if(prefixOwner!==owner||window.PiterfyPlayback?.current()?.remote||navigator.connection?.saveData){prefixJob?.abort();prefixJob=null;prefixId='';prefixOwner=owner;return;}
+    const queue=player?.queue||[],index=queue.findIndex(t=>t.uuid===player.current?.uuid),track=queue[index+1];
+    if(!track||track.isRadio||podcast(track.song)||track.uuid===prefixId||prefixJob||!audio()||audio().paused)return;
+    prefixId=track.uuid;const controller=new AbortController();prefixJob=controller;
+    const timer=setTimeout(()=>controller.abort(),7000);
+    try{
+      const raw=typeof track.musicSrc==='function'?await track.musicSrc():track.musicSrc;
+      const url=new URL(raw,location.href);
+      if(owner!==identity()||url.origin!==location.origin||!/^\/rest\/(stream|getTranscodeStream)(\.view)?$/.test(url.pathname))return;
+      const response=await fetch(url,{headers:{Range:'bytes=0-524287'},signal:controller.signal,cache:'default'});
+      if(!response.ok)return;
+      const reader=response.body.getReader();let bytes=0;
+      while(bytes<524288){const chunk=await reader.read();if(chunk.done)break;bytes+=chunk.value.byteLength;}
+      await reader.cancel();
+    }catch(_){}finally{clearTimeout(timer);if(prefixJob===controller)prefixJob=null;}
+  }
+  setInterval(prefetchNextAudio,4000);
   const audio = () => document.querySelector('audio.music-player-audio');
   const podcast = song => /(^|[;,/])\s*podcasts?\s*($|[;,/])/i.test(song?.genre || '') || /(^|\/)Podcasty\//i.test(song?.path || '');
   const identity = () => localStorage.getItem('username') || '';
@@ -47,17 +68,22 @@
     const byId=new Map(unique.map(s=>[s.id,s]));
     return ranked.items.map(row=>({...byId.get(row.id),piterfyReason:row.reason}));
   }
-  window.PiterfyLibrary={rankSongs, play, exploration:()=>preferences.exploration??50, candidates:()=>subsonic('getRandomSongs',{size:100}).then(r=>r.randomSongs?.song||[])};
+  window.PiterfyLibrary={rankSongs, play, prefetch:records, exploration:()=>preferences.exploration??50, candidates:()=>subsonic('getRandomSongs',{size:100}).then(r=>r.randomSongs?.song||[])};
   const djScript=document.createElement('script');djScript.src='/piterfy-ui/dj.js?v='+encodeURIComponent(new URL(document.currentScript?.src||location.href).searchParams.get('v')||Date.now());document.head.append(djScript);
   async function records(songs) {
+    const owner=identity();if(preparedIdentity!==owner){preparedRecords.clear();preparedIdentity=owner;}
+    const missing=songs.filter(s=>!preparedRecords.has(s.id)||Date.now()-preparedRecords.get(s.id).at>600000);
     const byId=new Map();
-    for(let offset=0;offset<songs.length;offset+=40){
-      const response=await fetch('/api/song?'+songs.slice(offset,offset+40).map(s=>'id='+encodeURIComponent(s.id)).join('&'),{
+    for(let offset=0;offset<missing.length;offset+=40){
+      const response=await fetch('/api/song?'+missing.slice(offset,offset+40).map(s=>'id='+encodeURIComponent(s.id)).join('&'),{
         headers:{'X-ND-Authorization':'Bearer '+localStorage.getItem('token')},signal:AbortSignal.timeout(12000)});
       if(!response.ok)throw Error('Nie można przygotować kolejki.');
       for(const song of await response.json())byId.set(song.id,song);
     }
-    return songs.map(s=>byId.get(s.id)).filter(Boolean);
+    if(owner!==identity())return [];
+    for(const [id,song] of byId)preparedRecords.set(id,{song,at:Date.now()});
+    while(preparedRecords.size>120)preparedRecords.delete(preparedRecords.keys().next().value);
+    return songs.map(s=>preparedRecords.get(s.id)?.song).filter(Boolean);
   }
   function saveQueue(player=findStore()?.getState().player) {
     const element=audio();if(!player?.current?.song || !element || player.current.isRadio || applyingQueue)return;
