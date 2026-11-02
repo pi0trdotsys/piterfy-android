@@ -318,6 +318,10 @@
       window.PiterfyCrossfade?.cancel();
       if (action === 'play') return element.play();
       if (action === 'pause') { window.PiterfyDJ?.pauseNarration?.(); element.pause(); return; }
+      // The native mobile overlay unmounts its buttons when closed. Use the
+      // player's public audio-instance API so shuffle/repeat keep native semantics.
+      const method=action==='next'?'playNext':'playPrev';
+      if(typeof element[method]==='function')return element[method]();
       const control=action==='next'?'next-audio':'prev-audio';
       document.querySelector('.music-player-panel .'+control+', .react-jinke-music-player-mobile .'+control)?.click();
     }
