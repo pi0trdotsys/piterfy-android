@@ -93,10 +93,10 @@
 
     <View
         android:id="@+id/placeholder_right_view"
-        android:layout_width="28dp"
-        android:layout_height="28dp"
-        android:layout_marginStart="12dp"
-        android:layout_marginEnd="12dp"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_marginStart="8dp"
+        android:layout_marginEnd="8dp"
         app:layout_constraintBottom_toTopOf="@+id/player_header_seek_bar"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
@@ -129,11 +129,11 @@
 
     <ToggleButton
         android:id="@+id/player_header_button"
-        android:layout_width="28dp"
-        android:layout_height="28dp"
-        android:layout_marginStart="12dp"
-        android:layout_marginEnd="12dp"
-        android:background="@drawable/button_play_pause_selector"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_marginStart="8dp"
+        android:layout_marginEnd="8dp"
+        android:background="@drawable/piterfy_mini_play_touch"
         android:checked="false"
         android:foreground="?android:attr/selectableItemBackgroundBorderless"
         android:text=""
@@ -141,19 +141,21 @@
         android:textOn=""
         app:layout_constraintBottom_toTopOf="@+id/player_header_seek_bar"
         app:layout_constraintEnd_toStartOf="@+id/placeholder_right_view"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toTopOf="parent"
+        android:contentDescription="@string/piterfy_ux_play_pause" />
 
     <ImageButton
         android:id="@+id/player_header_next_media_button"
-        android:layout_width="28dp"
-        android:layout_height="28dp"
-        android:layout_marginStart="12dp"
-        android:layout_marginEnd="12dp"
-        android:background="@drawable/ic_skip_next"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_marginStart="8dp"
+        android:layout_marginEnd="8dp"
+        android:background="@drawable/piterfy_mini_next_touch"
         android:foreground="?android:attr/selectableItemBackgroundBorderless"
         app:layout_constraintBottom_toTopOf="@+id/player_header_seek_bar"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toTopOf="parent"
+        android:contentDescription="@string/piterfy_ux_next" />
 
     <ImageButton
         android:id="@+id/player_header_fast_forward_media_button"

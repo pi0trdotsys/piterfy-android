@@ -318,7 +318,8 @@
       window.PiterfyCrossfade?.cancel();
       if (action === 'play') return element.play();
       if (action === 'pause') { window.PiterfyDJ?.pauseNarration?.(); element.pause(); return; }
-      document.querySelector('.music-player-panel .' + (action === 'next' ? 'next-audio' : 'prev-audio'))?.click();
+      const control=action==='next'?'next-audio':'prev-audio';
+      document.querySelector('.music-player-panel .'+control+', .react-jinke-music-player-mobile .'+control)?.click();
     }
   };
   boot();

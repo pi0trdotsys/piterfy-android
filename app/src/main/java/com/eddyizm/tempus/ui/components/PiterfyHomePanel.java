@@ -56,8 +56,8 @@ import retrofit2.Response;
  */
 @androidx.media3.common.util.UnstableApi
 public final class PiterfyHomePanel extends LinearLayout implements DefaultLifecycleObserver {
-    private static final int TILE_COLOR = 0xFF2A2A2A;
-    private static final int GREEN = 0xFF1ED760;
+    private static final int TILE_COLOR = 0xFF202922;
+    private static final int GREEN = 0xFFA4EDC2;
 
     private final Fragment host;
     private final Consumer<List<Child>> play;
@@ -82,18 +82,28 @@ public final class PiterfyHomePanel extends LinearLayout implements DefaultLifec
         setPadding(dp(12), dp(4), dp(12), dp(16));
         host.getViewLifecycleOwner().getLifecycle().addObserver(this);
 
+        MaterialButton dj = new MaterialButton(getContext());
+        dj.setText("Piterfy DJ · Twoja audycja"); dj.setAllCaps(false);
+        dj.setTypeface(bold); dj.setTextSize(15); dj.setMinHeight(dp(52));
+        dj.setCornerRadius(dp(24)); dj.setTextColor(Color.BLACK);
+        dj.setBackgroundTintList(android.content.res.ColorStateList.valueOf(GREEN));
+        dj.setOnClickListener(v -> com.eddyizm.tempus.ui.dialog.PiterfyDJDialog.show(getContext(), play, "dj"));
+        addView(dj, new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT));
+        LinearLayout shortcuts = new LinearLayout(getContext());
+        shortcuts.setOrientation(HORIZONTAL);
+        addView(shortcuts);
+        MaterialButton discovery = new MaterialButton(getContext());
+        discovery.setText("Odkrywaj"); discovery.setAllCaps(false); discovery.setTypeface(bold);
+        discovery.setMinHeight(dp(48)); discovery.setCornerRadius(dp(24));
+        discovery.setTextColor(Color.WHITE);
+        discovery.setBackgroundTintList(android.content.res.ColorStateList.valueOf(TILE_COLOR));
+        discovery.setOnClickListener(v -> com.eddyizm.tempus.ui.dialog.PiterfyDiscoveryDialog.show(getContext(), play));
+        LayoutParams discoveryParams = new LayoutParams(0, LayoutParams.WRAP_CONTENT, 1);
+        discoveryParams.rightMargin = dp(8);
+        shortcuts.addView(discovery, discoveryParams);
         MaterialButton taste = new MaterialButton(getContext());
-        taste.setText(R.string.piterfy_taste);
-        taste.setAllCaps(false);
-        taste.setTypeface(bold);
-        taste.setTextSize(13);
-        taste.setTextColor(Color.WHITE);
-        taste.setCornerRadius(dp(18));
-        taste.setMinHeight(0);
-        taste.setMinimumHeight(0);
-        taste.setInsetTop(0);
-        taste.setInsetBottom(0);
-        taste.setPadding(dp(16), dp(8), dp(16), dp(8));
+        taste.setText(R.string.piterfy_taste); taste.setAllCaps(false); taste.setTypeface(bold);
+        taste.setMinHeight(dp(48)); taste.setCornerRadius(dp(24)); taste.setTextColor(Color.WHITE);
         taste.setBackgroundTintList(android.content.res.ColorStateList.valueOf(TILE_COLOR));
         taste.setOnClickListener(v -> {
             String base = Preferences.getServer();
@@ -101,23 +111,10 @@ public final class PiterfyHomePanel extends LinearLayout implements DefaultLifec
             Uri uri = Uri.parse(base);
             if (!"https".equalsIgnoreCase(uri.getScheme()) && !"http".equalsIgnoreCase(uri.getScheme())) return;
             Uri target = uri.buildUpon().encodedPath("/gust/").clearQuery().fragment(null).build();
-            try {
-                host.startActivity(new Intent(Intent.ACTION_VIEW, target));
-            } catch (ActivityNotFoundException ignored) {
-            }
+            try { host.startActivity(new Intent(Intent.ACTION_VIEW, target)); }
+            catch (ActivityNotFoundException ignored) { }
         });
-        LayoutParams tasteParams = new LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);
-        tasteParams.leftMargin = dp(4);
-        tasteParams.bottomMargin = dp(12);
-        addView(taste, tasteParams);
-        MaterialButton discoverySettings = new MaterialButton(getContext());
-        discoverySettings.setText("Odkrywaj · dopasuj swój gust"); discoverySettings.setAllCaps(false);
-        discoverySettings.setOnClickListener(v -> com.eddyizm.tempus.ui.dialog.PiterfyDiscoveryDialog.show(getContext(), play));
-        addView(discoverySettings);
-        MaterialButton dj = new MaterialButton(getContext());
-        dj.setText("Piterfy DJ · Twoja audycja"); dj.setAllCaps(false);
-        dj.setOnClickListener(v -> com.eddyizm.tempus.ui.dialog.PiterfyDJDialog.show(getContext(), play, "dj"));
-        addView(dj);
+        shortcuts.addView(taste, new LayoutParams(0, LayoutParams.WRAP_CONTENT, 1));
 
         tiles = new LinearLayout(getContext());
         tiles.setOrientation(VERTICAL);

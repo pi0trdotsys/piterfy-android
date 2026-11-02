@@ -15,7 +15,8 @@ caddy = root / 'Caddyfile'
 main = ui / 'piterfy.js'
 targets = [(stage / 'connect_api.py', stage / 'library-connect_api.py'),
            (stage / 'library_core.py', stage / 'library-core-staged.py'),
-           (ui / 'library.js', stage / 'library.js'), (ui / 'library.css', stage / 'library.css')]
+           (ui / 'library.js', stage / 'library.js'), (ui / 'library.css', stage / 'library.css'),
+           (ui / 'experience.css', stage / 'experience.css')]
 for _, source in targets:
     assert source.is_file(), 'Missing staged asset: ' + source.name
 existed = {target: target.exists() for target, _ in targets}

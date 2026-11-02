@@ -153,6 +153,8 @@
         const result=window.PiterfyPlayback?window.PiterfyPlayback.control(action):(action==='play'?audio()?.play():audio()?.pause());
         Promise.resolve(result).then(mobileBar).catch(()=>{});
       },'pf-mobile-play');
+      const next=button(bar,'',()=>window.PiterfyPlayback?.control('next'),'pf-mobile-next');next.setAttribute('aria-label','Następny utwór');next.title='Następny utwór';
+      const icon=document.createElementNS('http://www.w3.org/2000/svg','svg');icon.setAttribute('viewBox','0 0 24 24');icon.setAttribute('aria-hidden','true');const path=document.createElementNS(icon.namespaceURI,'path');path.setAttribute('d','M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z');path.setAttribute('fill','currentColor');icon.append(path);next.append(icon);
     }
     const remote=window.PiterfyPlayback?.current();
     const item=player.current?.song?player.current:player.queue[player.savedPlayIndex||0];
@@ -283,6 +285,15 @@
   function mount() {
     if(account!==identity()) {generation++;account=identity();preferences={};previous=null;store=null;checkedAlbum='';applyingQueue=false;dialog?.close();}
     if(!account||location.hash.startsWith('#/login')){document.querySelector('.pf-mobile-bar')?.remove();return;}
+    const categories=document.querySelector('.pf-home .pf-chips');
+    if(categories){categories.setAttribute('role','navigation');categories.setAttribute('aria-label','Biblioteka Piterfy');for(const link of categories.querySelectorAll('a')){if(link.hash===(location.hash||'#/start'))link.setAttribute('aria-current','page');else link.removeAttribute('aria-current');}}
+    for(const [selector,label] of [['.react-jinke-music-player-mobile-header-right','Zamknij odtwarzacz'],['.react-jinke-music-player-mobile .prev-audio','Poprzedni utwór'],['.react-jinke-music-player-mobile .next-audio','Następny utwór'],['.react-jinke-music-player-mobile .play-btn',audio()?.paused?'Odtwórz':'Wstrzymaj'],['.music-player-panel .play-btn',audio()?.paused?'Odtwórz':'Wstrzymaj']]){
+      for(const node of document.querySelectorAll(selector)){
+        if(node.matches('button,input,a'))continue;
+        node.setAttribute('role','button');node.setAttribute('aria-label',label);node.tabIndex=0;
+        if(!node.dataset.pfKeyboard){node.dataset.pfKeyboard='true';node.addEventListener('keydown',event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();node.click();}});}
+      }
+    }
     attachAudio(audio());
     const toolbar=document.querySelector('#react-admin-title')?.parentElement;
     if(toolbar&&!document.querySelector('.pf-discovery-launch'))button(toolbar,'Odkrywaj',open,'pf-library-button pf-discovery-launch');
@@ -358,5 +369,6 @@
   },true);
   window.addEventListener('pagehide',()=>saveQueue());
   const css=el('link','',document.head);css.rel='stylesheet';css.href='/piterfy-ui/library.css?v='+encodeURIComponent(new URL(document.currentScript?.src||location.href).searchParams.get('v')||Date.now());
+  const experience=el('link','',document.head);experience.rel='stylesheet';experience.href=css.href.replace('/library.css?','/experience.css?');
   mount();setInterval(mount,2000);setInterval(observe,500);
 })();

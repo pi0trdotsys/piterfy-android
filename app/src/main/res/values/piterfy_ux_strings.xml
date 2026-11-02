@@ -1,0 +1,9 @@
+<resources>
+    <string name="piterfy_ux_favorite">Dodaj lub usuń z ulubionych</string>
+    <string name="piterfy_ux_options">Więcej opcji utworu</string>
+    <string name="piterfy_ux_sleep">Wyłącznik czasowy</string>
+    <string name="piterfy_ux_lyrics">Tekst utworu</string>
+    <string name="piterfy_ux_queue">Kolejka odtwarzania</string>
+    <string name="piterfy_ux_play_pause">Odtwórz lub wstrzymaj</string>
+    <string name="piterfy_ux_next">Następny utwór</string>
+</resources>

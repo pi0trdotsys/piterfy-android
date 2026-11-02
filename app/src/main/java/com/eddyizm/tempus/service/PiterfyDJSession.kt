@@ -73,6 +73,18 @@ class PiterfyDJSession(private val player: Player) : Player.Listener {
         @JvmStatic fun cancelNarration(){instance?.let{it.finishVoice(it.player.currentMediaItem?.mediaId.orEmpty())}}
         @JvmStatic fun stopNarration(){instance?.stopVoice()}
         @JvmStatic fun visualActive():Boolean=instance?.let{it.player.isPlaying||it.speaking||it.waitingForIntro}==true
+        @JvmStatic fun hasPlayback(mode:String):Boolean {
+            val state=instance?.states?.optJSONObject(mode)?:return false
+            return state.optBoolean("active")&&armed(state)&&sourceLabel(currentSong()?.id)==if(mode=="dj")"DJ" else "Odkrywaj"
+        }
+        @JvmStatic fun narratingInMode(mode:String):Boolean=hasPlayback(mode)&&instance?.let{it.speaking||it.waitingForIntro}==true
+        @JvmStatic fun toggleFromDialog(mode:String):Boolean {
+            val session=instance?:return false
+            if(!session.local()||!hasPlayback(mode))return false
+            if(session.player.playWhenReady||session.speaking||session.waitingForIntro){session.stopVoice();session.player.pause()}
+            else session.player.play()
+            return true
+        }
         @JvmStatic fun isNarrating(player:Player):Boolean=instance?.let{it.player===player&&(it.speaking||it.waitingForIntro)}==true
         @JvmStatic fun holdQueue(songs:List<Child>,index:Int):Boolean=instance?.let{it.local()&&it.introduction(songs.getOrNull(index)?.id)!=null}==true
         @JvmStatic fun startCurrentIntroduction():Boolean=instance?.let{it.waitingForIntro||it.speaking||it.beginIntroduction()}==true

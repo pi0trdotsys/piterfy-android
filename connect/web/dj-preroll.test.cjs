@@ -1,6 +1,14 @@
 const {test}=require('node:test');
 const assert=require('node:assert/strict');
-const {beforeMusic,readyBlock,nextBlock,incomingId}=require('./dj.js');
+const {beforeMusic,readyBlock,nextBlock,blockGroups,incomingId}=require('./dj.js');
+
+test('current block remains visible even after migration marked it consumed',()=>{
+  const state={currentBlock:'playing',startBlock:'new',blocks:[{id:'old',consumed:true},{id:'playing',consumed:true},{id:'alt',variant:'alternative'},{id:'new'}]};
+  const groups=blockGroups(state);
+  assert.deepEqual(groups.current.map(b=>b.id),['playing']);
+  assert.deepEqual(groups.ready.map(b=>b.id),['new','alt']);
+  assert.deepEqual(groups.history.map(b=>b.id),['old']);
+});
 
 test('ready reserve starts despite unfinished or failed background downloads',()=>{
   const state={buffered:true,active:true,startBlock:'next',currentBlock:'playing',progress:{complete:false,failed:2},buffer:{alternatives:['alt']},blocks:[{id:'playing',ready:true},{id:'next',ready:true},{id:'alt',ready:true}]};

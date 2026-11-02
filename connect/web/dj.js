@@ -4,8 +4,9 @@
   async function beforeMusic(voice,music,valid){try{await voice();}catch(_){}if(valid())await music();}
   function readyBlock(state){if(!state?.active)return null;if(state.buffered)return(state.blocks||[]).find(b=>b.id===state.startBlock&&b.ready!==false)||null;return state.progress?.complete&&!state.progress.failed?(state.blocks||[]).filter(b=>b.ready!==false).at(-1)||null:null;}
   function nextBlock(state,alternative=false){if(!state?.active)return null;if(alternative){const id=state?.buffer?.alternatives?.[0];const b=state?.blocks?.find(b=>b.id===id&&b.ready!==false);if(b)return b;}return readyBlock(state);}
+  function blockGroups(state){const all=state?.blocks||[],current=all.filter(b=>b.id===state.currentBlock),ready=all.filter(b=>!b.consumed&&b.id!==state.currentBlock&&b.ready!==false).sort((a,b)=>(a.id===state.startBlock?-2:a.variant==='alternative'?1:0)-(b.id===state.startBlock?-2:b.variant==='alternative'?1:0));return{current,ready,history:all.filter(b=>!current.includes(b)&&!ready.includes(b)).slice().reverse()};}
   function incomingId(src){try{const u=new URL(src,'https://piterfy.invalid');return u.searchParams.get('mediaId')||u.searchParams.get('id')||'';}catch(_){return '';}}
-  if(typeof module==='object'&&module.exports){module.exports={beforeMusic,readyBlock,nextBlock,incomingId};return;}
+  if(typeof module==='object'&&module.exports){module.exports={beforeMusic,readyBlock,nextBlock,blockGroups,incomingId};return;}
   if(window.PiterfyDJ)return;
   let dialog,mode='dj',states={},account=localStorage.getItem('username')||'',busy=false,clip=null,clipUrl='',narrating=false,lastRefill=0,wantStart='',speechGeneration=0;
   let pendingPlayback=null,skipIntro=null,settleIntro=null;
@@ -62,7 +63,8 @@
     return result;
   }
   function button(parent,label,handler){const b=document.createElement('button');b.className='pf-library-button';b.textContent=label;b.type='button';b.onclick=async()=>{if(b.disabled)return;b.disabled=true;try{await handler();}catch(e){status(e.message);}finally{b.disabled=b.dataset.djSkip?!skipIntro:false;}};parent.append(b);return b;}
-  function status(text){const s=dialog?.querySelector('[role=status]');if(s)s.textContent=text;}
+  function status(text){const s=dialog?.querySelector('[role=status]');if(s&&s.textContent!==text)s.textContent=text;}
+  function transportLabel(){const s=selected();return s?.state.mode===mode&&(pendingPlayback||current()?.playing)?'Wstrzymaj':'Uruchom';}
   function stopVoice(){speechGeneration++;settleIntro?.();settleIntro=null;if(clip){clip.pause();clip.removeAttribute('src');clip.load();clip=null;}if(clipUrl)URL.revokeObjectURL(clipUrl);clipUrl='';narrating=false;pendingPlayback=null;skipIntro=null;}
   async function prepare(kind,seeds){
     const valid=seeds.filter(s=>s.artist&&!/podcast/i.test(s.genre||'')).slice(0,6);
@@ -105,11 +107,12 @@
   }
   function render(){
     if(!dialog?.open)return;const state=states[mode];
+    const launch=dialog.querySelector('[data-dj-start]');if(launch)launch.textContent=transportLabel();
     status(pendingPlayback?(narrating?'DJ zapowiada kolejny utwór…':'Przygotowuję zapowiedź…'):state?.active?(messages[state.status]||'Sesja gotowa'):'Uruchom sesję. Nowe utwory pobiorę niezależnie od codziennego Odkrywaj.');
     if(state?.buffer&&!pendingPlayback)status(`Gotowe bloki: ${state.buffer.ready}/2 · inne klimaty: ${state.buffer.alternatives.length}. ${state.buffer.ready?'Możesz uruchomić odsłuch.':'Przygotowuję muzykę z biblioteki…'}`);
     const voiceButton=dialog.querySelector('[data-dj-voice]');if(voiceButton){voiceButton.textContent=state?.voice?'Głos DJ-a: włączony':'Głos DJ-a: wyłączony';voiceButton.setAttribute('aria-pressed',String(!!state?.voice));}
     dialog.querySelector('.pf-dj-avatar')?.classList.toggle('is-active',!!pendingPlayback||!!current()?.playing&&!!state?.active);
-    const skip=dialog.querySelector('[data-dj-skip]');if(skip)skip.disabled=!skipIntro;
+    const skip=dialog.querySelector('[data-dj-skip]');if(skip){skip.disabled=!skipIntro;skip.hidden=!skipIntro;}
     const progress=dialog.querySelector('.pf-dj-progress');
     if(progress){const p=state?.progress||{},value=Math.max(0,Math.min(100,p.percent||0)),unknown=['queued','matching','searching'].includes(p.stage)||!p.stage;
       progress.classList.toggle('is-indeterminate',unknown);progress.setAttribute('aria-valuenow',String(value));progress.querySelector('i').style.width=value+'%';
@@ -120,26 +123,48 @@
       if(state?.buffer?.ready){const count=state.buffer.ready;progress.classList.remove('is-indeterminate');progress.setAttribute('aria-valuenow',String(Math.min(100,count*50)));progress.querySelector('i').style.width=Math.min(100,count*50)+'%';progress.querySelector('span').textContent=`Zapas gotowych bloków · ${count}/2`;progress.setAttribute('aria-valuetext',progress.querySelector('span').textContent);}
       if(p.complete&&p.failed&&!state?.buffer?.ready)status('Nowe pliki jeszcze niedostępne. Przygotowuję blok z biblioteki.');}
     for(const key of ['summaryEmail','summaryTelegram']){const b=dialog.querySelector(`[data-dj-setting="${key}"]`);if(b){b.textContent=(key==='summaryEmail'?'Podsumowania e-mail: ':'Podsumowania Telegram: ')+(state?.[key]===false?'wyłączone':'włączone');b.setAttribute('aria-pressed',String(state?.[key]!==false));}}
-    const rows=dialog.querySelector('.pf-dj-blocks');rows.replaceChildren();
-    for(const block of state?.blocks||[]){const section=document.createElement('section');section.className='pf-library-song';
-      const title=document.createElement('strong');title.textContent=block.title;section.append(title);
-      const text=document.createElement('p');text.textContent=block.text;section.append(text);
-      const list=document.createElement('p');list.className='pf-library-muted';list.textContent=block.tracks.map(t=>t.artist+' — '+t.title).join(' · ');section.append(list);
-      button(section,'Odtwórz gotowy blok',()=>playBlock(state,block)).disabled=block.ready===false;
-      const votes=document.createElement('div');votes.className='pf-library-actions';section.append(votes);
-      for(const [label,vote] of [['Blok OK',1],['Nie mój klimat',-1]])button(votes,label,async()=>{await request({action:'block-feedback',mode:state.mode,block:block.id,vote});status('Zapisano ocenę bloku. Uwzględnię ją w kolejnych odkryciach.');});
-      rows.append(section);}
+    const rows=dialog.querySelector('.pf-dj-blocks'),signature=JSON.stringify([state?.currentBlock,state?.startBlock,state?.blocks]);
+    if(rows.dataset.signature===signature||rows.contains(document.activeElement))return;
+    const expanded=new Set([...rows.querySelectorAll('details[open]')].map(e=>e.dataset.key));rows.replaceChildren();rows.dataset.signature=signature;
+    const groups=blockGroups(state);
+    function card(block,parent,label){
+      const section=document.createElement('section');section.className='pf-library-song pf-dj-card';parent.append(section);
+      const eyebrow=document.createElement('small');eyebrow.className='pf-dj-eyebrow';eyebrow.textContent=label+' · '+block.tracks.length+' utworów';section.append(eyebrow);
+      const title=document.createElement('h3');title.textContent=block.title;section.append(title);
+      const artists=document.createElement('p');artists.className='pf-library-muted';artists.textContent=[...new Set(block.tracks.map(t=>t.artist))].slice(0,3).join(' · ');section.append(artists);
+      const tracks=document.createElement('details');tracks.dataset.key=block.id;tracks.open=expanded.has(block.id);const summary=document.createElement('summary');summary.textContent='Zobacz utwory';tracks.append(summary);section.append(tracks);
+      const list=document.createElement('ol');list.className='pf-dj-tracklist';tracks.append(list);
+      for(const t of block.tracks){const item=document.createElement('li'),name=document.createElement('strong'),artist=document.createElement('span');name.textContent=t.title;artist.textContent=t.artist;item.append(name,artist);list.append(item);}
+      if(block.text){const text=document.createElement('p');text.className='pf-library-muted';text.textContent=block.text;tracks.append(text);}
+      const actions=document.createElement('div');actions.className='pf-library-actions';section.append(actions);
+      button(actions,'Odtwórz gotowy blok',()=>playBlock(state,block)).disabled=block.ready===false;
+      if(label!=='Gotowy blok'&&label!=='Inny klimat')for(const [text,vote] of [['Blok OK',1],['Nie mój klimat',-1]])button(actions,text,async()=>{await request({action:'block-feedback',mode:state.mode,block:block.id,vote});status('Zapisano ocenę bloku.');});
+    }
+    for(const b of groups.current)card(b,rows,'Bieżący blok');
+    for(const b of groups.ready)card(b,rows,b.variant==='alternative'?'Inny klimat':'Gotowy blok');
+    if(groups.history.length){const history=document.createElement('details');history.className='pf-dj-history';history.dataset.key='history';history.open=expanded.has('history');const summary=document.createElement('summary');summary.textContent=`Historia bloków (${groups.history.length})`;history.append(summary);rows.append(history);for(const b of groups.history)card(b,history,'Poprzedni blok');}
+    if(!state?.blocks?.length){const empty=document.createElement('p');empty.className='pf-library-muted';empty.textContent='Przygotowuję Twoje propozycje. Możesz już kliknąć Uruchom — odsłuch ruszy, gdy blok będzie gotowy.';rows.append(empty);}
   }
   async function open(kind='dj'){
-    mode=kind;dialog?.close();dialog?.remove();dialog=document.createElement('dialog');dialog.className='pf-library-dialog pf-dj-dialog';document.body.append(dialog);
-    const head=document.createElement('header');head.className='pf-library-heading';const h=document.createElement('h2');h.textContent=kind==='dj'?'Piterfy DJ':'Odkrywaj · nowe utwory';head.append(h);button(head,'Zamknij',()=>dialog.close());dialog.append(head);
+    mode=kind;dialog?.close();dialog?.remove();dialog=document.createElement('dialog');dialog.className='pf-library-dialog pf-dj-dialog';dialog.setAttribute('aria-labelledby','pf-dj-heading');document.body.append(dialog);
+    const head=document.createElement('header');head.className='pf-library-heading';const h=document.createElement('h2');h.id='pf-dj-heading';h.textContent=kind==='dj'?'Piterfy DJ':'Odkrywaj';head.append(h);button(head,'Zamknij',()=>dialog.close());dialog.append(head);
     if(kind==='dj'){const avatar=document.createElement('div');avatar.className='pf-dj-avatar';avatar.setAttribute('aria-hidden','true');const core=document.createElement('div');core.className='pf-dj-orb';for(let i=0;i<5;i++)core.append(document.createElement('i'));avatar.append(core);dialog.append(avatar);}
-    const intro=document.createElement('p');intro.textContent=kind==='dj'?'Twoja audycja: znajome brzmienia, nowe gatunki i polskie zapowiedzi.':'Osobna sesja wyszukiwania i pobierania muzyki spoza biblioteki.';dialog.append(intro);
+    const intro=document.createElement('p');intro.className='pf-dj-intro';intro.textContent=kind==='dj'?'Znajome brzmienia. Nowe kierunki. Twój DJ.':'Nowa muzyka, gotowa do słuchania.';dialog.append(intro);
+    const settings=document.createElement('details');settings.className='pf-dj-settings';const settingsTitle=document.createElement('summary');settingsTitle.textContent='Ustawienia audycji';settings.append(settingsTitle);
     const progress=document.createElement('div');progress.className='pf-dj-progress';progress.setAttribute('role','progressbar');progress.setAttribute('aria-label','Przygotowanie całego bloku');progress.setAttribute('aria-valuemin','0');progress.setAttribute('aria-valuemax','100');progress.append(document.createElement('i'),document.createElement('span'));dialog.append(progress);
-    const label=document.createElement('label');label.textContent='Eksperymentowanie';const slider=document.createElement('input');slider.type='range';slider.min=0;slider.max=100;slider.step=5;slider.value=states[kind]?.exploration??window.PiterfyLibrary.exploration();slider.setAttribute('aria-label','Eksperymentowanie DJ-a');label.append(slider);dialog.append(label);
+    const label=document.createElement('label');label.textContent='Eksperymentowanie';const slider=document.createElement('input');slider.type='range';slider.min=0;slider.max=100;slider.step=5;slider.value=states[kind]?.exploration??window.PiterfyLibrary.exploration();slider.setAttribute('aria-label','Eksperymentowanie DJ-a');label.append(slider);settings.append(label);const hint=document.createElement('p');hint.className='pf-library-muted';hint.textContent='Znajome brzmienia ← → Odważne odkrycia';settings.append(hint);
     slider.onchange=()=>request({action:'settings',mode:kind,exploration:Number(slider.value)}).then(s=>{states[kind]=s;render();}).catch(e=>status(e.message));
-    const actions=document.createElement('div');actions.className='pf-library-actions';dialog.append(actions);
-    button(actions,'Uruchom',async()=>{stopVoice();element()?.pause();disarm();status('Uruchamiam gotowy blok…');const state=await request({action:'start',mode:kind,exploration:Number(slider.value)});states[kind]=state;const block=readyBlock(state);if(block){wantStart='';await playBlock(state,block);}else wantStart=state.id;render();});
+    const actions=document.createElement('div');actions.className='pf-library-actions pf-dj-transport';dialog.append(actions);
+    const primary=button(actions,'Uruchom',async()=>{
+      if(pausedDJ?.state.mode===kind){const p=pausedDJ;pausedDJ=null;await queueMusic(p.block,p.index);render();return;}
+      const chosen=selected();
+      if(chosen?.state.mode===kind){
+        if(pendingPlayback){pauseNarration();render();return;}
+        if(current()?.playing){window.PiterfyPlayback.control('pause');render();return;}
+        await window.PiterfyPlayback.control('play');render();return;
+      }
+      stopVoice();element()?.pause();disarm();status('Uruchamiam gotowy blok…');const state=await request({action:'start',mode:kind,exploration:Number(slider.value)});states[kind]=state;const block=readyBlock(state);if(block){wantStart='';playBlock(state,block).catch(e=>status(e.message));}else wantStart=state.id;render();
+    });primary.dataset.djStart='true';primary.classList.add('pf-button-primary');
     button(actions,'Zmień klimat',async()=>{
       const state=states[kind],song=current(),blocks=state?.blocks||[];
       if(!state?.active)throw Error('Najpierw uruchom sesję DJ.');
@@ -149,7 +174,7 @@
       if(alternative)await playBlock(state,alternative);
       else{nextWanted={mode:kind,session:state.id,seen:blocks.map(b=>b.id)};states[kind]=await request({action:'next',mode:kind});render();status('Przygotowuję inny klimat. Przejdę do niego, gdy będzie gotowy.');}
     });
-    if(kind==='dj')button(actions,'Głos DJ-a',async()=>{const state=states[kind];states[kind]=await request({action:'settings',mode:kind,voice:!state?.voice});if(!states[kind].voice)await skipIntro?.();render();}).dataset.djVoice='true';
+    if(kind==='dj')button(settings,'Głos DJ-a: włączony',async()=>{const state=states[kind];states[kind]=await request({action:'settings',mode:kind,voice:!state?.voice});if(!states[kind].voice)await skipIntro?.();render();}).dataset.djVoice='true';
     button(actions,'Pomiń zapowiedź',()=>skipIntro?.()).dataset.djSkip='true';
     {
       const feedback=document.createElement('div');feedback.className='pf-library-actions';dialog.append(feedback);
@@ -159,9 +184,10 @@
         if(!r.ok)throw Error('Nie udało się zapisać reakcji.');states[kind]=await request({action:'invalidate',mode:kind});status('Zapisano reakcję na: '+song.title);
       });
     }
-    for(const key of ['summaryEmail','summaryTelegram'])button(actions,key,async()=>{states[kind]=await request({action:'settings',mode:kind,[key]:states[kind]?.[key]===false});render();}).dataset.djSetting=key;
-    button(actions,'Zakończ sesję',async()=>{wantStart='';nextWanted=null;disarm();if(skipIntro)await skipIntro();else stopVoice();states[kind]=await request({action:'stop',mode:kind});render();});
-    const info=document.createElement('p');info.setAttribute('role','status');dialog.append(info);const rows=document.createElement('div');rows.className='pf-dj-blocks';dialog.append(rows);dialog.showModal();
+    for(const key of ['summaryEmail','summaryTelegram'])button(settings,key==='summaryEmail'?'Podsumowania e-mail':'Podsumowania Telegram',async()=>{states[kind]=await request({action:'settings',mode:kind,[key]:states[kind]?.[key]===false});render();}).dataset.djSetting=key;
+    button(settings,'Zakończ sesję',async()=>{wantStart='';nextWanted=null;disarm();if(skipIntro)await skipIntro();else stopVoice();states[kind]=await request({action:'stop',mode:kind});render();}).classList.add('pf-button-subtle');
+    dialog.append(settings);
+    const info=document.createElement('p');info.setAttribute('role','status');info.setAttribute('aria-live','polite');dialog.append(info);const rows=document.createElement('div');rows.className='pf-dj-blocks';dialog.append(rows);dialog.showModal();render();
     try{states[kind]=await request({action:'warm',mode:kind});slider.value=states[kind].exploration??window.PiterfyLibrary.exploration();render();}catch(e){status(e.message);}
   }
   let lastTrack='',observed=null,nextWanted=null;
@@ -184,6 +210,7 @@
   poll();
   setInterval(()=>{
     const song=current();if(song?.remote){stopVoice();return;}
+    const launch=dialog?.querySelector('[data-dj-start]');if(launch)launch.textContent=transportLabel();
     dialog?.querySelector('.pf-dj-avatar')?.classList.toggle('is-active',!!pendingPlayback||!!song?.playing&&!!states[mode]?.active);
     observe(song);
     if(nextWanted){const s=states[nextWanted.mode],b=s?.blocks?.find(b=>!nextWanted.seen.includes(b.id)&&b.ready!==false);if(!s?.active||s.id!==nextWanted.session)nextWanted=null;else if(b){nextWanted=null;playBlock(s,b).catch(e=>status(e.message));return;}}

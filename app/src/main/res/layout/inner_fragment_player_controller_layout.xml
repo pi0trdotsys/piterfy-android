@@ -119,11 +119,11 @@
         android:layout_height="wrap_content"
         android:layout_marginStart="24dp"
         android:layout_marginTop="8dp"
-        android:layout_marginEnd="24dp"
+        android:layout_marginEnd="8dp"
         android:ellipsize="marquee"
         android:singleLine="true"
         android:text="@string/label_placeholder"
-        android:textSize="22sp"
+        android:textSize="24sp"
         app:layout_constraintEnd_toStartOf="@+id/button_favorite"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/rating_container" />
@@ -183,10 +183,10 @@
 
     <androidx.appcompat.widget.AppCompatToggleButton
         android:id="@+id/button_favorite"
-        android:layout_width="26dp"
-        android:layout_height="26dp"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
         android:layout_marginEnd="@dimen/_8sdp"
-        android:background="@drawable/button_favorite_selector"
+        android:background="@drawable/piterfy_favorite_touch"
         android:checked="false"
         android:text=""
         android:textOff=""
@@ -194,20 +194,23 @@
         app:layout_constraintBottom_toBottomOf="@+id/player_media_title_label"
         app:layout_constraintEnd_toStartOf="@id/player_overflow_button"
         app:layout_constraintTop_toTopOf="@+id/player_media_title_label"
-        app:tint="#FFFFFFFF"/>
+        app:tint="#FFFFFFFF"
+        android:contentDescription="@string/piterfy_ux_favorite" />
 
     <ImageButton
         android:id="@+id/player_overflow_button"
-        android:layout_width="@dimen/_20sdp"
-        android:layout_height="@dimen/_20sdp"
-        android:layout_marginStart="@dimen/_18sdp"
-        android:layout_marginEnd="@dimen/_12sdp"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:layout_marginStart="0dp"
+        android:layout_marginEnd="12dp"
         android:background="?attr/selectableItemBackgroundBorderless"
         android:src="@drawable/ic_more_vert"
         app:layout_constraintBottom_toBottomOf="@+id/player_media_title_label"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="@+id/player_media_title_label"
-        app:tint="#FFFFFFFF"/>
+        app:tint="#FFFFFFFF"
+        android:padding="12dp"
+        android:contentDescription="@string/piterfy_ux_options" />
 
     <TextView
         android:id="@+id/exo_position"
@@ -228,10 +231,10 @@
         android:layout_height="48dp"
         android:layout_marginStart="16dp"
         android:layout_marginEnd="16dp"
-        app:bar_height="5dp"
+        app:bar_height="6dp"
         app:buffered_color="#4DFFFFFF"
-        app:scrubber_enabled_size="12dp"
-        app:scrubber_dragged_size="16dp"
+        app:scrubber_enabled_size="16dp"
+        app:scrubber_dragged_size="22dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/player_artist_name_label"
@@ -303,8 +306,8 @@
 
     <ImageButton
         android:id="@+id/exo_shuffle"
-        android:layout_width="32dp"
-        android:layout_height="32dp"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
         android:layout_marginStart="24dp"
         android:background="?attr/selectableItemBackgroundBorderless"
         android:scaleType="fitCenter"
@@ -313,12 +316,13 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="@+id/placeholder_view_middle_left"
         app:srcCompat="@drawable/ic_shuffle"
-        app:tint="#FFFFFFFF" />
+        app:tint="#FFFFFFFF"
+        android:padding="12dp" />
 
     <ImageButton
         android:id="@+id/exo_rew"
-        android:layout_width="42dp"
-        android:layout_height="42dp"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
         android:background="?attr/selectableItemBackgroundBorderless"
         android:scaleType="fitCenter"
         android:src="@drawable/ic_replay"
@@ -326,7 +330,8 @@
         app:layout_constraintEnd_toStartOf="@+id/player_play_pause_placeholder_view"
         app:layout_constraintStart_toEndOf="@id/placeholder_view_left"
         app:layout_constraintTop_toTopOf="@+id/player_play_pause_placeholder_view"
-        app:tint="#FFFFFFFF" />
+        app:tint="#FFFFFFFF"
+        android:padding="12dp" />
 
     <ImageButton
         android:id="@+id/exo_prev"
@@ -339,7 +344,8 @@
         app:layout_constraintStart_toEndOf="@id/placeholder_view_left"
         app:layout_constraintTop_toTopOf="@+id/player_play_pause_placeholder_view"
         app:srcCompat="@drawable/ic_skip_previous"
-        app:tint="#FFFFFFFF" />
+        app:tint="#FFFFFFFF"
+        android:padding="10dp" />
 
     <ImageButton
         android:id="@id/exo_play_pause"
@@ -368,12 +374,13 @@
         app:layout_constraintStart_toEndOf="@+id/player_play_pause_placeholder_view"
         app:layout_constraintTop_toTopOf="@+id/player_play_pause_placeholder_view"
         app:srcCompat="@drawable/ic_skip_next"
-        app:tint="#FFFFFFFF" />
+        app:tint="#FFFFFFFF"
+        android:padding="10dp" />
 
     <ImageButton
         android:id="@+id/exo_ffwd"
-        android:layout_width="42dp"
-        android:layout_height="42dp"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
         android:background="?attr/selectableItemBackgroundBorderless"
         android:scaleType="fitCenter"
         app:layout_constraintBottom_toBottomOf="@+id/player_play_pause_placeholder_view"
@@ -381,12 +388,13 @@
         app:layout_constraintStart_toEndOf="@+id/player_play_pause_placeholder_view"
         app:layout_constraintTop_toTopOf="@+id/player_play_pause_placeholder_view"
         app:srcCompat="@drawable/ic_forward"
-        app:tint="#FFFFFFFF" />
+        app:tint="#FFFFFFFF"
+        android:padding="12dp" />
 
     <ImageButton
         android:id="@+id/exo_repeat_toggle"
-        android:layout_width="32dp"
-        android:layout_height="32dp"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
         android:layout_marginEnd="24dp"
         android:background="?attr/selectableItemBackgroundBorderless"
         android:scaleType="fitCenter"
@@ -395,7 +403,8 @@
         app:layout_constraintStart_toEndOf="@+id/placeholder_view_middle_right"
         app:layout_constraintTop_toTopOf="@+id/placeholder_view_middle_right"
         app:srcCompat="@drawable/ic_repeat"
-        app:tint="#FFFFFFFF" />
+        app:tint="#FFFFFFFF"
+        android:padding="12dp" />
 
     <ToggleButton
         android:id="@+id/player_skip_silence_toggle_button"
@@ -435,12 +444,13 @@
 
             <ImageButton
                 android:id="@+id/player_sleep_timer_button"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:padding="8dp"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:padding="12dp"
                 android:background="?attr/selectableItemBackgroundBorderless"
                 app:srcCompat="@drawable/ic_timer"
-                app:tint="#FFFFFFFF" />
+                app:tint="#FFFFFFFF"
+        android:contentDescription="@string/piterfy_ux_sleep" />
 
             <TextView
                 android:id="@+id/player_sleep_timer_label"
@@ -464,7 +474,8 @@
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintBottom_toBottomOf="parent"
             app:srcCompat="@drawable/ic_lyrics"
-            app:tint="#FFFFFFFF" />
+            app:tint="#FFFFFFFF"
+        android:contentDescription="@string/piterfy_ux_lyrics" />
 
 
         <!-- Queue: last element of the horizontal spread chain -->
@@ -479,7 +490,8 @@
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintBottom_toBottomOf="parent"
             app:srcCompat="@drawable/ic_queue"
-            app:tint="#FFFFFFFF" />
+            app:tint="#FFFFFFFF"
+        android:contentDescription="@string/piterfy_ux_queue" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>
