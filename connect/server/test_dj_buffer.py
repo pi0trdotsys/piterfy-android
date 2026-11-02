@@ -1,7 +1,7 @@
 import tempfile
 import unittest
 from unittest.mock import patch
-from dj_buffer import BufferedSessions
+from dj_buffer import BufferedSessions, cached_announcements, BRIDGES
 
 
 class BufferTest(unittest.TestCase):
@@ -95,3 +95,14 @@ class BufferTest(unittest.TestCase):
             self.s.handle('a',dict(action='refill'))
         self.assertIsNone(self.s.take())
         self.assertIsNotNone(self.s.handle('a',dict(action='start'))['startBlock'])
+
+    def test_fast_fallback_keeps_independent_between_song_claims(self):
+        songs=[dict(id=str(i)) for i in range(5)]
+        clips=cached_announcements(songs,{text:'voice'+str(i) for i,text in enumerate(BRIDGES)})
+        self.s.handle('a',dict(action='start'));job=self.s.take('library')
+        self.s.finish(job,dict(id='fast',text='Ready',tracks=songs,announcements=clips))
+        first=self.s.handle('a',dict(action='claim',block='fast',track='1'))
+        second=self.s.handle('a',dict(action='claim',block='fast',track='2'))
+        self.assertTrue(first['speak']);self.assertTrue(second['speak'])
+        self.assertNotEqual(first['voiceKey'],second['voiceKey'])
+        self.assertFalse(self.s.handle('a',dict(action='claim',block='fast',track='1'))['speak'])

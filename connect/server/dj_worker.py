@@ -14,7 +14,7 @@ import uuid
 import sys
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from dj_buffer import BufferedSessions as Sessions
+from dj_buffer import BufferedSessions as Sessions, BRIDGES, cached_announcements
 from dj_reviews import Reviews
 from dj_scripts import compose
 from connect_core import Rejected
@@ -276,7 +276,8 @@ def library_block(job):
     key=generic_keys.get(phrase) or welcome_key
     if not state.get('voice'):key=None
     ready=dict(id=uuid.uuid4().hex,title=('Inny klimat · '+str(songs[0].get('genre') or 'z biblioteki')) if alternative else 'Gotowe do słuchania · z biblioteki',
-        tracks=songs,text=phrase if generic_keys.get(phrase) else WELCOME if key else '',voiceKey=key,voiceVersion=0,announced=False,announcements=[])
+        tracks=songs,text=phrase if generic_keys.get(phrase) else WELCOME if key else '',voiceKey=key,voiceVersion=0,announced=False,
+        announcements=cached_announcements(songs,generic_keys,generic_keys.get(CONTINUE),CONTINUE) if state.get('voice') else [])
     sessions.finish(job,ready)
 
 
@@ -340,7 +341,7 @@ def voice_work():
     while True:
         try:
             if not welcome_key:welcome_key=voice(WELCOME)
-            for phrase in (WELCOME,ALTERNATIVE,CONTINUE):
+            for phrase in (WELCOME,ALTERNATIVE,CONTINUE,*BRIDGES):
                 if phrase not in generic_keys:
                     key=voice(phrase)
                     if key:generic_keys[phrase]=key

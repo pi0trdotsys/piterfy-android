@@ -8,6 +8,19 @@ from library_core import number, text
 
 TTL = 24 * 3600
 IDLE = 2 * 3600
+BRIDGES = (
+    'Zostańmy jeszcze w tym klimacie. Czas na kolejny numer!',
+    'Teraz muzyka poprowadzi nas dalej. Posłuchajmy!',
+    'Gotowy na następny? Oddaję głos muzyce!',
+    'Kolejny utwór już czeka. Sprawdźmy, czy zostanie z Tobą na dłużej.',
+)
+
+
+def cached_announcements(songs, keys, fallback=None, fallback_text=''):
+    return [dict(track=song['id'],text=BRIDGES[index % len(BRIDGES)] if BRIDGES[index % len(BRIDGES)] in keys else fallback_text,
+                 variant='cached-bridge-'+str(index % len(BRIDGES)),
+                 voiceKey=keys.get(BRIDGES[index % len(BRIDGES)]) or fallback,announced=False)
+            for index,song in enumerate(songs[1:])]
 
 
 class BufferedSessions(Sessions):
