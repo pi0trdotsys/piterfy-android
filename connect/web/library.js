@@ -361,7 +361,7 @@
     if(Date.now()-lastSave>15000){lastSave=Date.now();saveQueue();if(!element.paused)saveProgress(song,element.currentTime,element.duration);}
   }
   document.addEventListener('click',event=>{
-    if(!event.target.closest?.('.next-audio, .audio-lists-panel li'))return;
+    if(!event.target.closest?.('.next-audio, .pf-mobile-next, .audio-lists-panel li')||window.PiterfyPlayback?.current()?.remote)return;
     const player=findStore()?.getState().player,song=player?.current?.song,element=audio();
     if(!song||podcast(song)||!element)return;
     const before={id:song.id,artist:song.artist||'',position:element.currentTime*1000,duration:element.duration*1000,event:crypto.randomUUID()};
