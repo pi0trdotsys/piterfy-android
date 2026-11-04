@@ -62,3 +62,5 @@ body:has(.MuiAppBar-root .pf-discovery-launch) #main-content{margin-top:48px}
 .pf-queue-dialog>[role=status]:empty{display:none}.pf-queue-row .pf-library-actions{gap:6px;margin:8px 0 0}.pf-queue-row .pf-library-button{min-width:44px;font-size:12px!important;padding:8px 10px!important}.pf-queue-row{padding:12px 0}
 
 html:has(dialog[open]){overflow:hidden}.pf-queue-row>span{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}@media(max-width:600px){main{min-width:0;max-width:100%;box-sizing:border-box;overflow-x:auto}}
+
+@media(max-width:600px){.layout{min-width:0!important;width:100%;max-width:100%}.layout>div{min-width:0;max-width:100%}}
