@@ -6,6 +6,12 @@ from dj_scripts import compose
 
 
 class ScriptTest(unittest.TestCase):
+    def test_opening_connects_to_last_heard_genre_across_sessions(self):
+        heard=[dict(openingVariant='genre:0',lastTrack=dict(artist='Previous',genre='Jazz'))]
+        plan=compose([dict(id='a',artist='New',title='Title',genre='Rock')],'Block',heard)
+        self.assertTrue(plan['openingVariant'].startswith('genre:'))
+        self.assertNotEqual('genre:0',plan['openingVariant'])
+        self.assertIn('Rock',plan['text'])
     def test_each_song_gets_its_own_metadata_based_announcement(self):
         source=ast.parse((Path(__file__).parent/'dj_worker.py').read_text(encoding='utf-8'))
         function=next(n for n in source.body if isinstance(n,ast.FunctionDef) and n.name=='block')

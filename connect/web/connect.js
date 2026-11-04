@@ -162,15 +162,16 @@
     finally { busy = false; render(); timer = setTimeout(poll, stopped ? 100 : 2000); }
   }
 
-  async function command(action, extra = {}) {
-    if (!state || busy) return;
+  async function command(action, extra = {}, strict = false) {
+    if (!state || busy) {if(strict)throw Error('Poczekaj na potwierdzenie poprzedniej operacji.');return;}
     busy = true;
     const token = generation;
     try {
       const next = await api('command', { action, ...extra, version: state.version, requestId: crypto.randomUUID() });
       message = '';
-      if (token === generation && enabled) await apply(next);
-    } catch (e) { message = e.message; }
+      if (token === generation && enabled) await apply(next);else if(strict)throw Error('Urządzenie odtwarzania się zmieniło.');
+      return next;
+    } catch (e) { message = e.message;if(strict)throw e; }
     finally { busy = false; render(); timer = setTimeout(poll, 100); }
   }
 
@@ -293,6 +294,8 @@
   }
   // A narrow same-page bridge for the lyrics view; never exposes credentials or stream URLs.
   window.PiterfyPlayback = {
+    remoteQueue(){return enabled&&state?.owner&&!local()?{items:state.items,index:state.index,version:state.version}:null;},
+    editQueue(edit,body={}){if(!enabled||!state?.owner||local())return Promise.reject(Error('Urządzenie odtwarzania się zmieniło.'));if(body.expected&&body.expected!==state.version)return Promise.reject(Error('Kolejka się zmieniła.'));const {expected,...payload}=body;return command('edit',{edit,...payload},true);},
     deviceId() { return id; },
     canCrossfade() { return window.PiterfyDJ?.canCrossfade?.()!==false&&(!enabled || (!applying && !state?.pending && (!state?.owner || (local() && performance.now() - lastOk < 9000)))); },
     current() {

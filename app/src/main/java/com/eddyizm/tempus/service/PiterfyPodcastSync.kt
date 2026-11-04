@@ -12,6 +12,7 @@ import org.json.JSONObject
 /** Podcast progress shared with the web player; optimistic revisions reject stale devices. */
 @UnstableApi
 class PiterfyPodcastSync(private val player: Player) : Player.Listener {
+    companion object { @Volatile private var activeEpisode:String?=null; @JvmStatic fun activeEpisodeId()=activeEpisode }
     private val handler=Handler(Looper.getMainLooper())
     private var closed=false
     private var seekVersion=0
@@ -32,6 +33,7 @@ class PiterfyPodcastSync(private val player: Player) : Player.Listener {
             {result->saving=false;if(result.optBoolean("conflict"))PiterfyLibrary.refresh(null)}, {saving=false})
     }
     override fun onMediaItemTransition(item:MediaItem?,reason:Int){
+        activeEpisode=if(podcast(item))item?.mediaId else null
         if(!podcast(item)||item==null)return
         val identity=PiterfyLibrary.account();val id=item.mediaId;val guard=++seekVersion
         PiterfyLibrary.refresh {state->
@@ -48,5 +50,5 @@ class PiterfyPodcastSync(private val player: Player) : Player.Listener {
         if(old.mediaItem?.mediaId!=next.mediaItem?.mediaId)save(old.mediaItem,old.positionMs)
     }
     override fun onIsPlayingChanged(playing:Boolean){if(!playing)save(player.currentMediaItem,player.currentPosition)}
-    fun close(){save(player.currentMediaItem,player.currentPosition);closed=true;handler.removeCallbacks(tick);player.removeListener(this)}
+    fun close(){save(player.currentMediaItem,player.currentPosition);activeEpisode=null;closed=true;handler.removeCallbacks(tick);player.removeListener(this)}
 }

@@ -40,7 +40,7 @@
     return null;
   }
   function sourceLabel(){const s=selected();return s?(s.state.mode==='dj'?'DJ':'Odkrywaj'):manualDiscover.includes(current()?.id)?'Odkrywaj':'';}
-  async function queueMusic(block,index){bypassPlay++;try{await window.PiterfyLibrary.play(block.tracks,index);}finally{bypassPlay--;}}
+  async function queueMusic(block,index){bypassPlay++;try{await window.PiterfyLibrary.play(block.tracks,index,0,true);}finally{bypassPlay--;}}
   function pauseNarration(){
     if(!pendingPlayback)return false;
     const chosen=selected();if(chosen)pausedDJ={...chosen,oldId:incomingId(element()?.getAttribute('src')||element()?.src||'')};
@@ -110,6 +110,7 @@
     const launch=dialog.querySelector('[data-dj-start]');if(launch)launch.textContent=transportLabel();
     status(pendingPlayback?(narrating?'DJ zapowiada kolejny utwór…':'Przygotowuję zapowiedź…'):state?.active?(messages[state.status]||'Sesja gotowa'):'Uruchom sesję. Nowe utwory pobiorę niezależnie od codziennego Odkrywaj.');
     if(state?.buffer&&!pendingPlayback)status(`Gotowe bloki: ${state.buffer.ready}/2 · inne klimaty: ${state.buffer.alternatives.length}. ${state.buffer.ready?'Możesz uruchomić odsłuch.':'Przygotowuję muzykę z biblioteki…'}`);
+    const talk=dialog.querySelector('[data-dj-talk]');if(talk&&document.activeElement!==talk)talk.value=state?.talkLevel||'radio';
     const voiceButton=dialog.querySelector('[data-dj-voice]');if(voiceButton){voiceButton.textContent=state?.voice?'Głos DJ-a: włączony':'Głos DJ-a: wyłączony';voiceButton.setAttribute('aria-pressed',String(!!state?.voice));}
     dialog.querySelector('.pf-dj-avatar')?.classList.toggle('is-active',!!pendingPlayback||!!current()?.playing&&!!state?.active);
     const skip=dialog.querySelector('[data-dj-skip]');if(skip){skip.disabled=!skipIntro;skip.hidden=!skipIntro;}
@@ -175,13 +176,20 @@
       else{nextWanted={mode:kind,session:state.id,seen:blocks.map(b=>b.id)};states[kind]=await request({action:'next',mode:kind});render();status('Przygotowuję inny klimat. Przejdę do niego, gdy będzie gotowy.');}
     });
     if(kind==='dj')button(settings,'Głos DJ-a: włączony',async()=>{const state=states[kind];states[kind]=await request({action:'settings',mode:kind,voice:!state?.voice});if(!states[kind].voice)await skipIntro?.();render();}).dataset.djVoice='true';
+    if(kind==='dj'){
+      const label=document.createElement('label');label.textContent='Ile mówi DJ';settings.append(label);
+      const level=document.createElement('select');level.setAttribute('aria-label','Ile mówi DJ');level.dataset.djTalk='true';
+      for(const [value,text] of [['sparse','Mało mówienia'],['balanced','Równowaga'],['radio','Audycja radiowa']]){const o=document.createElement('option');o.value=value;o.textContent=text;level.append(o);}
+      level.addEventListener('change',async()=>{try{states[kind]=await request({action:'settings',mode:kind,talkLevel:level.value});render();}catch(e){status(e.message);}});settings.append(level);
+    }
     button(actions,'Pomiń zapowiedź',()=>skipIntro?.()).dataset.djSkip='true';
     {
       const feedback=document.createElement('div');feedback.className='pf-library-actions';dialog.append(feedback);
       for(const [label,vote] of [['Więcej takich',1],['Mniej takich',-1]])button(feedback,label,async()=>{
         const song=current();if(!song||(states[kind]?.blocks||[]).every(b=>b.tracks.every(t=>t.id!==song.id)))throw Error('Odtwórz najpierw utwór z tej sesji.');
-        const r=await fetch('/piterfy-api/connect/library',{method:'POST',headers:{'Content-Type':'application/json','X-ND-Authorization':'Bearer '+localStorage.getItem('token')},body:JSON.stringify({action:'feedback',id:song.id,artist:song.artist||'',vote,event:crypto.randomUUID()})});
-        if(!r.ok)throw Error('Nie udało się zapisać reakcji.');states[kind]=await request({action:'invalidate',mode:kind});status('Zapisano reakcję na: '+song.title);
+        const metadata=(states[kind]?.blocks||[]).flatMap(b=>b.tracks).find(t=>t.id===song.id)||song;
+        const saved=await window.PiterfyLibrary.feedback(metadata,vote);if(!saved)return;
+        states[kind]=await request({action:'invalidate',mode:kind});status('Zapisano reakcję na: '+song.title);
       });
     }
     for(const key of ['summaryEmail','summaryTelegram'])button(settings,key==='summaryEmail'?'Podsumowania e-mail':'Podsumowania Telegram',async()=>{states[kind]=await request({action:'settings',mode:kind,[key]:states[kind]?.[key]===false});render();}).dataset.djSetting=key;
@@ -230,7 +238,7 @@
     }lastTrack=song.id;
   },1000);
   window.addEventListener('pagehide',stopVoice);
-  window.PiterfyDJ={open,prepare,sourceLabel,pauseNarration,markDiscovery:songs=>{disarm();manualDiscover=songs.map(s=>s.id);},isNarrating:()=>narrating||!!pendingPlayback,pendingPlayback:()=>pendingPlayback,cancelNarration:()=>{pausedDJ=null;stopVoice();},canCrossfade:()=>!selected()?.state.voice};
+  window.PiterfyDJ={open,prepare,sourceLabel,statuses:()=>Object.values(states).map(s=>({mode:s.mode,progress:s.progress,buffer:s.buffer})),refreshBuffer:async mode=>{states[mode]=await request({action:"warm",mode});return states[mode];},pauseNarration,markDiscovery:songs=>{disarm();manualDiscover=songs.map(s=>s.id);},isNarrating:()=>narrating||!!pendingPlayback,pendingPlayback:()=>pendingPlayback,cancelNarration:()=>{pausedDJ=null;stopVoice();},canCrossfade:()=>!selected()?.state.voice};
   document.addEventListener('click',event=>{
     if(!event.target?.closest?.('.music-player-panel .play-btn'))return;
     if(pendingPlayback){event.preventDefault();event.stopImmediatePropagation();pauseNarration();}

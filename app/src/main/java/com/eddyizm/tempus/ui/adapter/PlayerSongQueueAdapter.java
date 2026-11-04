@@ -46,6 +46,9 @@ public class PlayerSongQueueAdapter extends RecyclerView.Adapter<PlayerSongQueue
     private final Map<String, Boolean> downloadStatusCache = new ConcurrentHashMap<>();
     private String currentPlayingId;
     private boolean isPlaying;
+    public interface QueueAction { void run(String action, int index); }
+    private QueueAction queueAction;
+    public void setQueueAction(QueueAction action) { queueAction = action; }
     private List<Integer> currentPlayingPositions = Collections.emptyList();
 
     public PlayerSongQueueAdapter(ClickCallback click) {
@@ -63,8 +66,18 @@ public class PlayerSongQueueAdapter extends RecyclerView.Adapter<PlayerSongQueue
     @Override
     public void onBindViewHolder(ViewHolder holder, int position) {
         Child song = songs.get(holder.getLayoutPosition());
+        holder.item.piterfyQueueMore.setOnClickListener(view -> {
+            int index = holder.getBindingAdapterPosition();
+            if (index == RecyclerView.NO_POSITION || queueAction == null) return;
+            android.widget.PopupMenu menu = new android.widget.PopupMenu(view.getContext(), view);
+            menu.getMenu().add(0,1,0,"Zagraj następne");
+            menu.getMenu().add(0,2,1,com.eddyizm.tempus.util.PiterfyLibrary.isPinned(song.getId()) ? "Odepnij od zmiany klimatu" : "Zachowaj przy zmianie klimatu");
+            menu.getMenu().add(0,3,2,"Usuń z kolejki");
+            menu.setOnMenuItemClickListener(item -> { int current=holder.getBindingAdapterPosition(); if(current!=RecyclerView.NO_POSITION)queueAction.run(item.getItemId()==1?"next":item.getItemId()==2?"pin":"remove",current);return true; });
+            menu.show();
+        });
 
-        holder.item.queueSongTitleTextView.setText(song.getTitle());
+        holder.item.queueSongTitleTextView.setText((com.eddyizm.tempus.util.PiterfyLibrary.isPinned(song.getId()) ? "📌 " : "") + song.getTitle());
         holder.item.queueSongSubtitleTextView.setText(
                 holder.itemView.getContext().getString(
                         R.string.song_subtitle_formatter,

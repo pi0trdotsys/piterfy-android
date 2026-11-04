@@ -94,6 +94,13 @@ class PiterfyDJSession(private val player: Player) : Player.Listener {
         @JvmStatic fun decode(rows: JSONArray): List<Child> = (0 until rows.length()).mapNotNull {
             runCatching { Gson().fromJson(rows.getJSONObject(it).toString(), Child::class.java) }.getOrNull()
         }
+        @JvmStatic fun protectedTracks(rows:JSONArray):List<Child>{
+            val fresh=decode(rows);val session=instance?:return fresh
+            val ids=fresh.map{it.id}.toSet()
+            val pinned=(session.player.currentMediaItemIndex+1 until session.player.mediaItemCount).map{MappingUtil.mapToChild(session.player.getMediaItemAt(it))}
+                .filter{PiterfyLibrary.isPinned(it.id)&&it.id !in ids&&!com.eddyizm.tempus.util.PiterfyQueues.podcast(it)}.distinctBy{it.id}
+            return if(fresh.isEmpty())fresh else (fresh.take(1)+pinned+fresh.drop(1)).take(500)
+        }
     }
     private val main = Handler(Looper.getMainLooper())
     private val io = Executors.newSingleThreadExecutor()
@@ -229,7 +236,7 @@ class PiterfyDJSession(private val player: Player) : Player.Listener {
             if((0 until blocks.length()).any{blocks.getJSONObject(it).optString("id")==block.optString("id")}){arm(s);break}
         }
         busy=true;val guard=generation;val expected=player.currentMediaItem?.mediaId
-        val songs=decode(block.getJSONArray("tracks"))
+        val songs=protectedTracks(block.getJSONArray("tracks"))
         io.execute{
             val items=MappingUtil.mapMediaItems(songs)
             main.post{

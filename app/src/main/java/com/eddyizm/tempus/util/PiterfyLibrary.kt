@@ -62,10 +62,12 @@ object PiterfyLibrary {
         }
     }
     @JvmStatic fun refresh(done: Consumer<JSONObject>?) = request(JSONObject().put("action", "get"), done, null)
+    @JvmStatic fun isPinned(id:String):Boolean = cached().optJSONArray("pins")?.let { pins -> (0 until pins.length()).any { pins.optString(it)==id } }?:false
+    @JvmStatic fun pin(id:String,enabled:Boolean,done:Consumer<JSONObject>?,failed:Consumer<String>?) = request(JSONObject().put("action","pin").put("id",id).put("enabled",enabled),done,failed)
     @JvmStatic fun rankSongs(songs: List<Child>, done: Consumer<List<Child>>) {
         val music=songs.filter{!PiterfyMedia.isPodcast(it.genre)}.distinctBy{it.id}.take(1000)
         val items=JSONArray()
-        music.forEach{items.put(JSONObject().put("id",it.id).put("artist",it.artist?:"").put("familiar",(it.playCount?:0)>0))}
+        music.forEach{items.put(JSONObject().put("id",it.id).put("artist",it.artist?:"").put("genre",it.genre?:"").put("familiar",(it.playCount?:0)>0))}
         request(JSONObject().put("action","rank").put("items",items), {result->
             val rows=result.optJSONArray("items")?:JSONArray(); val byId=music.associateBy{it.id}
             done.accept((0 until rows.length()).mapNotNull{byId[rows.optJSONObject(it)?.optString("id")]})

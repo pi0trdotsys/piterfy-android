@@ -191,7 +191,7 @@ object ConnectSession {
         return token
     }
 
-    private fun request(path: String, body: JSONObject, notify: Boolean) {
+    private fun request(path: String, body: JSONObject, notify: Boolean, success:((JSONObject)->Unit)?=null) {
         if (busy || !enabled) return
         val auth = try { login() } catch (e: Exception) { error = e.message ?: "Sprawdź adres serwera."; changed(); return }
         busy = true
@@ -205,6 +205,7 @@ object ConnectSession {
                     if (guard == generation && account == auth.account && identity() == auth.account && enabled) {
                         busy = false; error = ""; lastOk = SystemClock.elapsedRealtime()
                         accept(result, auth, bearer)
+                        success?.invoke(result)
                     }
                 }
             } catch (e: Exception) {
@@ -360,6 +361,21 @@ object ConnectSession {
     }
     @JvmStatic fun edit(action: String, from: Int, to: Int) {
         send("edit", JSONObject().put("edit", action).put("from", from).put("to", to).put("index", from))
+    }
+    @JvmStatic fun removeUndoable(index:Int,done:java.util.function.Consumer<JSONObject>){
+        val state=snapshot?:return
+        if(busy){toast("Poczekaj na potwierdzenie poprzedniej operacji.");return}
+        val items=state.optJSONArray("items")?:return
+        if(index !in 0 until items.length()||index==state.optInt("index"))return
+        val song=items.getJSONObject(index);val identity=identity()
+        val body=JSONObject().put("action","edit").put("edit","remove").put("from",index).put("to",index+1)
+            .put("version",state.getString("version")).put("requestId",UUID.randomUUID().toString())
+        request("command",body,true){next->done.accept(JSONObject().put("account",identity).put("version",next.getString("version")).put("song",song).put("index",index))}
+    }
+    @JvmStatic fun restoreRemoved(token:JSONObject){
+        val state=snapshot?:return
+        if(token.optString("account")!=identity()||token.optString("version")!=state.optString("version")){toast("Kolejka się zmieniła. Nie przywrócono starego układu.");return}
+        send("edit",JSONObject().put("edit","insert").put("index",token.getInt("index")).put("items",JSONArray().put(token.getJSONObject("song"))))
     }
     @JvmStatic fun unsupported() { toast("Ta funkcja nie jest dostępna dla urządzenia Connect.") }
     private fun toast(message: String) { context?.let { Toast.makeText(it, message, Toast.LENGTH_LONG).show() } }

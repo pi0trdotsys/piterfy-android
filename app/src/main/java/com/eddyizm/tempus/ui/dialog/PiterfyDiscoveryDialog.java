@@ -56,12 +56,12 @@ public final class PiterfyDiscoveryDialog {
                     Map<String,Child> songs=new LinkedHashMap<>(); JSONArray candidates=new JSONArray();
                     try {
                         for(Child song:sr.getRandomSongs().getSongs()) if(!PiterfyMedia.isPodcast(song.getGenre())){
-                            songs.put(song.getId(),song);candidates.put(new JSONObject().put("id",song.getId()).put("artist",song.getArtist()).put("familiar",song.getPlayCount()!=null&&song.getPlayCount()>0));
+                            songs.put(song.getId(),song);candidates.put(new JSONObject().put("id",song.getId()).put("artist",song.getArtist()).put("genre",song.getGenre()==null?"":song.getGenre()).put("familiar",song.getPlayCount()!=null&&song.getPlayCount()>0));
                         }
                         PiterfyLibrary.request(new JSONObject().put("action","rank").put("items",candidates), ranked->{
                             if(!dialog.isShowing())return;
                             refresh.setEnabled(true);status.setText("Propozycje uwzględniają Twoje reakcje i wczesne pominięcia.");
-                            JSONArray rows=ranked.optJSONArray("items"); List<Child> playlist=new ArrayList<>();
+                            JSONArray rows=ranked.optJSONArray("items"); Map<String,String> reasons=new HashMap<>(); if(rows!=null)for(int i=0;i<rows.length();i++)reasons.put(rows.optJSONObject(i).optString("id"),rows.optJSONObject(i).optString("reason")); List<Child> playlist=new ArrayList<>();
                             if(rows!=null)for(int i=0;i<Math.min(20,rows.length());i++){Child song=songs.get(rows.optJSONObject(i).optString("id"));if(song!=null)playlist.add(song);}
                             try {
                                 JSONArray seeds=new JSONArray();
@@ -70,9 +70,9 @@ public final class PiterfyDiscoveryDialog {
                             }catch(JSONException ignored){}
                             if(play!=null&&!playlist.isEmpty()){MaterialButton all=new MaterialButton(context);all.setText("Odtwórz propozycje");all.setOnClickListener(b->{com.eddyizm.tempus.service.PiterfyDJSession.markDiscovery(playlist);play.accept(playlist);dialog.dismiss();});results.addView(all);}
                             for(Child song:playlist){
-                                TextView title=new TextView(context); title.setText(song.getTitle()+"\n"+song.getArtist());title.setTextSize(15);title.setPadding(0,padding,0,0);results.addView(title);
+                                TextView title=new TextView(context); title.setText(song.getTitle()+"\n"+song.getArtist());title.setTextSize(15);title.setPadding(0,padding,0,0);results.addView(title); TextView why=new TextView(context);why.setText(reasons.getOrDefault(song.getId(),""));why.setTextSize(12);results.addView(why);
                                 LinearLayout controls=new LinearLayout(context);results.addView(controls);
-                                for(int vote:new int[]{1,-1}){MaterialButton button=new MaterialButton(context,null,com.google.android.material.R.attr.borderlessButtonStyle);button.setText(vote==1?"Więcej takich":"Mniej takich");button.setOnClickListener(b->PiterfyLibrary.feedback(song.getId(),song.getArtist(),vote,ignored->{status.setText("Zapisano — uwzględnię to w kolejnych propozycjach");button.setEnabled(false);},status::setText));controls.addView(button,new LinearLayout.LayoutParams(0,-2,1));}
+                                for(int vote:new int[]{1,-1}){MaterialButton button=new MaterialButton(context,null,com.google.android.material.R.attr.borderlessButtonStyle);button.setText(vote==1?"Więcej takich":"Mniej takich");button.setOnClickListener(b->PiterfyFeedback.show(context,song,vote,ignored->{status.setText("Zapisano — uwzględnię to w kolejnych propozycjach");button.setEnabled(false);},status::setText));controls.addView(button,new LinearLayout.LayoutParams(0,-2,1));}
                             }
                             if(playlist.isEmpty())status.setText("Brak propozycji. Zmień poziom eksperymentowania i spróbuj ponownie.");
                         },message->{status.setText(message);refresh.setEnabled(true);});

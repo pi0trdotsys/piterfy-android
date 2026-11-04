@@ -63,8 +63,14 @@ def compose(songs,title,history=()):
         choices=[(key,text) for key,text in options if key not in used] or [(key,text) for key,text in options if key not in recent[-4:]] or options
         key,template=rng.choice(choices);used.add(key);recent.append(key)
         return key,template
-    opening,template=choose([('opening:'+str(i),t) for i,t in enumerate(OPENINGS)])
-    text=template.format(**fields(songs[0]))
+    first=fields(songs[0]);opening_options=[('opening:'+str(i),t) for i,t in enumerate(OPENINGS)]
+    previous=next((fields(b['lastTrack']) for b in reversed(history) if b.get('lastTrack')),None)
+    if previous and previous['genre'] and first['genre'] and previous['genre'].casefold()!=first['genre'].casefold():
+        first['previous_genre']=previous['genre'];opening_options=[('genre:'+str(i),t) for i,t in enumerate(GENRE_CHANGE)]
+    elif previous and first['artist'] and previous['artist']==first['artist']:
+        opening_options=[('same:'+str(i),t) for i,t in enumerate(SAME_ARTIST)]
+    opening,template=choose(opening_options)
+    text=template.format(**first)
     if title.startswith('Nowe odkrycia'):text='Świeże odkrycia są gotowe. '+text
     announcements=[]
     for index,song in enumerate(songs[1:],1):

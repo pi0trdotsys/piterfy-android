@@ -107,6 +107,7 @@ public class DownloadFragment extends Fragment implements ClickCallback {
         materialToolbar = bind.getRoot().findViewById(R.id.toolbar);
 
         activity.setSupportActionBar(materialToolbar);
+        materialToolbar.getMenu().add("Centrum pobierania").setOnMenuItemClickListener(item->{com.eddyizm.tempus.ui.dialog.PiterfyDownloadCenter.show(requireContext());return true;}).setShowAsAction(android.view.MenuItem.SHOW_AS_ACTION_IF_ROOM);
         navigationController.setHamburgerMenuForLandscape(activity, materialToolbar);
 
         Objects.requireNonNull(materialToolbar.getOverflowIcon()).setTint(requireContext().getResources().getColor(R.color.titleTextColor, null));

@@ -91,7 +91,7 @@ def block(songs, title, intro, spoken,job=None,history=()):
         announcement['voiceKey']=voice(announcement['text']) if spoken else None
         if job:sessions.progress(job,'voice',90+round(index/max(1,len(songs)-1)*9),index+1,len(songs))
     return dict(id=uuid.uuid4().hex, title=title, text=plan['text'],openingVariant=plan['openingVariant'],tracks=songs,announcements=announcements,
-                voiceKey=first, voiceVersion=5, announced=False,ready=True)
+                voiceKey=first, voiceVersion=6, announced=False,ready=True)
 
 
 def wait_downloads(sl,jobs,job):
@@ -123,7 +123,7 @@ def run_job(job):
     if not seeds:seeds=[dict(id=s['id'],artist=s.get('artist',''),title=s.get('title',''),genre=s.get('genre','')) for s in random_songs if allowed(s)][:3]
     pool = [s for s in random_songs if allowed(s) and s['id'] not in heard]
     # Apply the exact shared artist/track preferences before selecting library fallback.
-    from library_core import Library
+    from library_core import Library, taste_scores
     library = Library(os.environ.get('CONNECT_STATE_DIR', '/connect'))
     # The library owner was hashed once by Sessions. Read directly using that existing hash.
     pref_path = library.directory / (job[1] + '.json')
@@ -131,14 +131,14 @@ def run_job(job):
     except (OSError, ValueError): prefs = {}
     feedback = prefs.get('feedback', {})
     artist_scores = reviews.preferences(job[1])
-    for row in feedback.values():
-        artist_scores[row['artist']] = artist_scores.get(row['artist'], 0) + row.get('vote', 0)*2 - min(5, row.get('skips', 0))*.25
+    track_artists,genre_scores=taste_scores(feedback)
+    for artist,score in track_artists.items():artist_scores[artist]=artist_scores.get(artist,0)+score
     pool = [s for s in pool if feedback.get(s['id'], {}).get('vote') != -1]
     seed_artists_known = {music.norm(s['artist']) for s in seeds}
     seed_genres = {s['genre'].lower() for s in seeds if s['genre']}
     pool.sort(key=lambda s: artist_scores.get(music.norm(s.get('artist', '')), 0) - feedback.get(s['id'], {}).get('skips', 0)
               + (2 if music.norm(s.get('artist', '')) in seed_artists_known else 0)
-              + (1 if str(s.get('genre', '')).lower() in seed_genres else 0), reverse=True)
+              + (1 if str(s.get('genre', '')).lower() in seed_genres else 0)+genre_scores.get(str(s.get('genre','')).casefold(),0), reverse=True)
     if cancelled(job):
         sessions.finish(job); return
     seed_tracks = [dict(artist=s['artist'], title=s['title'], weight=1) for s in seeds if s['artist'] and s['title']][:3]
@@ -220,7 +220,7 @@ def run_job(job):
     songs=[s for s in songs if s['id'] not in reserved]
     if songs:
         sessions.progress(job,'voice',90,0,len(songs),failed)
-        ready=block(songs,title,intro,state.get('voice',False),job,state['blocks'][-4:])
+        ready=block(songs,title,intro,state.get('voice',False),job,state['blocks'][-4:]+sessions.script_history(job[1]))
         sessions.finish(job,ready)
         sessions.progress(job,'ready',100,len(imported),len(jobs),failed,complete=True)
     else:
@@ -240,12 +240,14 @@ def library_block(job):
     pool=list(library_snapshot)
     if not pool:
         pool=music.as_list(music.Navidrome().call('getRandomSongs',size=160).get('randomSongs',{}).get('song'))
-    from library_core import Library
+    from library_core import Library, taste_scores
     path=Library(os.environ.get('CONNECT_STATE_DIR','/connect')).directory/(job[1]+'.json')
     try:prefs=json.loads(path.read_text())
     except (OSError,ValueError):prefs={}
     feedback=prefs.get('feedback',{})
     scores=reviews.preferences(job[1])
+    track_artists,genre_scores=taste_scores(feedback)
+    for artist,score in track_artists.items():scores[artist]=scores.get(artist,0)+score
     heard={t['id'] for b in state['blocks'] for t in b.get('tracks',[])}
     pool=[s for s in pool if allowed(s) and s['id'] not in heard and feedback.get(s['id'],{}).get('vote')!=-1]
     seeds=state.get('seeds',[])
@@ -259,7 +261,7 @@ def library_block(job):
     def rank(s):
         artist=music.norm(s.get('artist',''));f=feedback.get(s['id'],{})
         familiarity=(2 if artist in artists else 0)+(1 if s.get('genre','').lower() in genres else 0)
-        return scores.get(artist,0)+f.get('vote',0)*2-min(5,f.get('skips',0))*.5+(-familiarity if alternative else familiarity)
+        return scores.get(artist,0)+genre_scores.get(str(s.get('genre','')).casefold(),0)+f.get('vote',0)*2-min(5,f.get('skips',0))*.5+(-familiarity if alternative else familiarity)
     pool=[s for s in pool if scores.get(music.norm(s.get('artist','')),0)>-2]
     pool.sort(key=rank,reverse=True)
     if alternative and genres:
@@ -301,7 +303,7 @@ def maintenance():
                 library_snapshot=[s for s in music.as_list(music.Navidrome().call('getRandomSongs',size=200).get('randomSongs',{}).get('song')) if allowed(s)]
                 refreshed=time.time()
             # Feedback from mail, Telegram and either app invalidates stale reserves too.
-            from library_core import Library
+            from library_core import Library, taste_scores
             import hashlib
             with sessions.db() as db:owners=list(db.execute('SELECT owner,mode,data FROM sessions'))
             for owner,mode,raw in owners:
@@ -358,8 +360,8 @@ def refresh_voices():
         state=json.loads(raw)
         if state.get('warmUntil',0)<time.time() or not state.get('voice'):continue
         for old in state.get('blocks',[])[-4:]:
-            if old.get('voiceVersion')==5 or not old.get('tracks'):continue
-            plan=compose(old['tracks'],old.get('title',''),state.get('blocks',[])[-5:])
+            if old.get('voiceVersion')==6 or not old.get('tracks'):continue
+            plan=compose(old['tracks'],old.get('title',''),state.get('blocks',[])[-5:]+sessions.script_history(owner))
             opening=None if old.get('announced') else voice(plan['text'])
             previous={a['track']:a for a in old.get('announcements',[])}
             clips=[]
@@ -378,7 +380,7 @@ def refresh_voices():
                     existing={a['track']:a for a in current.get('announcements',[])}
                     for clip in clips:
                         if not existing.get(clip['track'],{}).get('announced'):existing[clip['track']]=clip
-                    current.update(announcements=list(existing.values()),voiceVersion=5)
+                    current.update(announcements=list(existing.values()),voiceVersion=6)
                 latest['revision']+=1
                 db.execute('UPDATE sessions SET data=? WHERE owner=? AND mode=?',(json.dumps(latest,ensure_ascii=False),owner,mode))
 

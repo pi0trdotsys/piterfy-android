@@ -74,6 +74,13 @@
         app:layout_constraintTop_toBottomOf="@+id/queue_song_title_text_view"
         app:layout_constraintBottom_toBottomOf="@+id/queue_song_cover_image_view"/>
 
+    <ImageButton android:id="@+id/piterfy_queue_more"
+        android:layout_width="44dp" android:layout_height="44dp"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:src="@drawable/ic_more_vert" android:contentDescription="@string/piterfy_queue_actions"
+        app:tint="?attr/colorOnSurface"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent" app:layout_constraintBottom_toBottomOf="parent" />
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/rating_indicator_image_view"
         android:layout_width="42dp"
@@ -158,6 +165,6 @@
         android:gravity="center_vertical"
         android:src="@drawable/ic_drag_handle"
         app:layout_constraintBottom_toBottomOf="@+id/queue_song_cover_image_view"
-        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintEnd_toStartOf="@id/piterfy_queue_more"
         app:layout_constraintTop_toTopOf="@+id/queue_song_cover_image_view" />
 </androidx.constraintlayout.widget.ConstraintLayout>

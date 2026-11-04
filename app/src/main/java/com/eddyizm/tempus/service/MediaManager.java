@@ -564,6 +564,21 @@ public class MediaManager {
         }
     }
 
+    /** Undo a non-current removal only while the exact remaining timeline is unchanged. */
+    public static void restoreQueueItem(ListenableFuture<MediaBrowser> future, Child song, int at, List<String> expected, Runnable stale) {
+        if (LanRemoteSession.isActive() || future == null) { stale.run(); return; }
+        future.addListener(() -> {
+            try {
+                MediaBrowser browser = future.get();
+                List<String> actual = new ArrayList<>();
+                for (int i=0;i<browser.getMediaItemCount();i++) actual.add(browser.getMediaItemAt(i).mediaId);
+                if (LanRemoteSession.isActive() || !actual.equals(expected) || at < 0 || at > actual.size()) { stale.run(); return; }
+                browser.addMediaItem(at, MappingUtil.mapMediaItems(Collections.singletonList(song)).get(0));
+                enqueueDatabase(song, false, at);
+            } catch (Exception e) { stale.run(); }
+        }, androidx.core.content.ContextCompat.getMainExecutor(com.eddyizm.tempus.App.getContext()));
+    }
+
     public static void removeRange(ListenableFuture<MediaBrowser> mediaBrowserListenableFuture, List<Child> media, int fromItem, int toItem) {
         if (LanRemoteSession.routeEdit("remove", fromItem, toItem)) return;
         if (mediaBrowserListenableFuture != null) {

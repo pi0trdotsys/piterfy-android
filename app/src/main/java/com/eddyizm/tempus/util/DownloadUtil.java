@@ -305,6 +305,7 @@ public final class DownloadUtil {
     public static synchronized long getStreamingCacheSize(Context context) {
         return getStreamingCache(context).getCacheSpace();
     }
+    public static synchronized long getOfflineBytes(Context context) { return getDownloadCache(context).getCacheSpace(); }
 
     /**
      * Queues the tracks neither on the device nor already asked for. Reports on the main thread how

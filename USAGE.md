@@ -516,3 +516,12 @@ For additional help:
 ---
 
 *Note: This app requires a pre-existing Subsonic-compatible server with music content.*
+
+
+### Kolejka, reakcje i pobieranie Piterfy
+
+W webie otwórz **Odkrywaj → Edytuj kolejkę**; w mobilnym pasku służy do tego przycisk kolejki. Na Androidzie użyj menu przy utworze. Przypięcie zachowuje nadchodzący utwór po zmianie klimatu DJ-a. Usunięcie można cofnąć, dopóki kolejka nie uległa dalszej zmianie (lokalnie oraz w Connect; starszy protokół odbiornika LAN zachowuje dotychczasowe operacje).
+
+Przy **Mniej takich** możesz wskazać powód. **Ile mówi DJ** w ustawieniach audycji wybiera zapowiedź na początku bloku, co drugi utwór albo każdy utwór. Pamięć zapowiedzi jest oddzielna dla kont i trwa między sesjami.
+
+Na Androidzie **Pobrane → Centrum pobierania** pokazuje postęp i błędy oraz pozwala ponowić, wstrzymać lub wznowić pobieranie. Limit pamięci wewnętrznej zatrzymuje pobieranie po osiągnięciu progu; nie usuwa muzyki. Opcjonalne sprzątanie po 24 godzinach obejmuje ukończone podcasty z pobrań, których konto jest rozpoznane, z ochroną przypiętych i aktualnie odtwarzanych odcinków. Nie usuwa plików w folderach zewnętrznych. W webie panel **Pobieranie i gotowe bloki** pokazuje postęp przygotowania na serwerze; pamięć offline telefonu jest zarządzana na telefonie.

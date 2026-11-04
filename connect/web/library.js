@@ -64,11 +64,11 @@
   }
   async function rankSongs(songs) {
     const unique=[...new Map(songs.filter(s=>s?.id&&!podcast(s)).map(s=>[s.id,s])).values()].slice(0,1000);
-    const ranked=await api({action:'rank',items:unique.map(s=>({id:s.id,artist:s.artist||'',familiar:Number(s.playCount)>0}))});
+    const ranked=await api({action:'rank',items:unique.map(s=>({id:s.id,artist:s.artist||'',genre:s.genre||'',familiar:Number(s.playCount)>0}))});
     const byId=new Map(unique.map(s=>[s.id,s]));
     return ranked.items.map(row=>({...byId.get(row.id),piterfyReason:row.reason}));
   }
-  window.PiterfyLibrary={rankSongs, play, prefetch:records, exploration:()=>preferences.exploration??50, candidates:()=>subsonic('getRandomSongs',{size:100}).then(r=>r.randomSongs?.song||[])};
+  window.PiterfyLibrary={rankSongs, play, prefetch:records, queue:openQueue, downloads:openDownloads, feedback:vote, exploration:()=>preferences.exploration??50, candidates:()=>subsonic('getRandomSongs',{size:100}).then(r=>r.randomSongs?.song||[])};
   const djScript=document.createElement('script');djScript.src='/piterfy-ui/dj.js?v='+encodeURIComponent(new URL(document.currentScript?.src||location.href).searchParams.get('v')||Date.now());document.head.append(djScript);
   async function records(songs) {
     const owner=identity();if(preparedIdentity!==owner){preparedRecords.clear();preparedIdentity=owner;}
@@ -94,8 +94,14 @@
     const start=Math.max(0,index-100);
     try{localStorage.setItem(queueKey(kind),JSON.stringify({ids:queue.slice(start,start+500).map(s=>s.trackId),index:index-start,position:element.currentTime,at:Date.now()}));}catch(_){}
   }
-  async function play(songs,index=0,position=0) {
+  async function play(songs,index=0,position=0,protect=false) {
     if(window.PiterfyPlayback?.current()?.remote)throw Error('Najpierw wybierz „Przenieś tutaj” w Connect.');
+    if(protect&&songs.length){
+      const wanted=songs[index]?.id,player=findStore()?.getState().player;
+      const at=player?.queue.findIndex(t=>t.uuid===player.current?.uuid)??-1,ids=new Set(songs.map(s=>s.id));
+      const pins=(player?.queue.slice(at+1)||[]).map(t=>t.song).filter(s=>s&&!podcast(s)&&preferences.pins?.includes(s.id)&&!ids.has(s.id));
+      songs=[songs[0],...pins,...songs.slice(1)].slice(0,500);index=Math.max(0,songs.findIndex(s=>s.id===wanted));
+    }
     saveQueue();window.PiterfyCrossfade?.cancel();
     const token=generation, s=findStore();if(!s)throw Error('Odtwarzacz nie jest jeszcze gotowy.');
     const fresh=await records(songs);if(token!==generation)return;
@@ -154,6 +160,7 @@
         Promise.resolve(result).then(mobileBar).catch(()=>{});
       },'pf-mobile-play');
       const next=button(bar,'',()=>window.PiterfyPlayback?.control('next'),'pf-mobile-next');next.setAttribute('aria-label','Następny utwór');next.title='Następny utwór';
+      const queue=button(bar,'☷',openQueue,'pf-mobile-next');queue.setAttribute('aria-label','Edytuj kolejkę');
       const icon=document.createElementNS('http://www.w3.org/2000/svg','svg');icon.setAttribute('viewBox','0 0 24 24');icon.setAttribute('aria-hidden','true');const path=document.createElementNS(icon.namespaceURI,'path');path.setAttribute('d','M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z');path.setAttribute('fill','currentColor');icon.append(path);next.append(icon);
     }
     const remote=window.PiterfyPlayback?.current();
@@ -173,9 +180,96 @@
     control.setAttribute('aria-label',playing?'Wstrzymaj':'Odtwarzaj');
   }
   function message(text) {const node=dialog?.querySelector('[role=status]');if(node)node.textContent=text;}
-  async function vote(song,value) {
-    await api({action:'feedback',id:song.id,artist:song.artist||'',vote:value,event:crypto.randomUUID()});
-    message('Zapisano — kolejne propozycje uwzględnią Twoją reakcję.');
+  let queueDialog,queueUndo=null;
+  function openDownloads(){
+    const panel=el('dialog','',document.body,'pf-library-dialog');panel.setAttribute('aria-label','Pobieranie i gotowe bloki');
+    const head=el('header','',panel,'pf-library-heading');el('h2','Pobieranie i gotowe bloki',head);button(head,'Zamknij',()=>panel.close());
+    el('p','Tutaj sprawdzisz przygotowanie muzyki na serwerze. Pobrania offline telefonu znajdziesz w aplikacji: Pobrane → Centrum pobierania.',panel,'pf-library-muted');
+    const rows=el('div','',panel);const notice=el('p','',panel);notice.setAttribute('role','status');let sig='';
+    function render(){
+      if(!panel.open)return;const states=window.PiterfyDJ?.statuses?.()||[];const next=JSON.stringify(states);if(next===sig)return;sig=next;rows.replaceChildren();
+      for(const state of states){
+        const card=el('section','',rows,'pf-dj-card');el('h3',state.mode==='dj'?'Piterfy DJ':'Odkrywaj · nowe utwory',card);
+        const p=state.progress||{},labels={queued:'W kolejce',matching:'Dobieranie muzyki',searching:'Wyszukiwanie',downloading:'Pobieranie na serwer',importing:'Dodawanie do biblioteki',voice:'Przygotowanie zapowiedzi',ready:'Gotowe',unavailable:'Nie udało się przygotować',hourly_limit:'Osiągnięto godzinny limit pobierania'};
+        el('p',`Gotowe bloki: ${state.buffer?.ready||0}/2 · inne klimaty: ${state.buffer?.alternatives?.length||0}`,card);
+        const progress=el('progress','',card);progress.max=100;progress.value=Math.max(0,Math.min(100,Number(p.percent)||0));progress.setAttribute('aria-label','Postęp przygotowania '+(state.mode==='dj'?'DJ':'Odkrywaj'));
+        el('p',(labels[p.stage]||'Zapas przygotowuje się w tle')+(p.total?` · ${p.completed||0}/${p.total} plików`:''),card,'pf-library-muted');
+        if(p.failed)el('p',`Nieudane pliki: ${p.failed}. Gotowy zapas nadal możesz odtworzyć.`,card,'pf-library-muted');
+        button(card,'Otwórz '+(state.mode==='dj'?'DJ':'Odkrywaj'),()=>{panel.close();window.PiterfyDJ.open(state.mode);});
+        button(card,'Sprawdź ponownie',async()=>{try{await window.PiterfyDJ.refreshBuffer(state.mode);notice.textContent='Sprawdzono przygotowanie. Pobieranie działa w ramach limitów serwera.';render();}catch(e){notice.textContent=e.message;}});
+      }
+      if(!states.length)notice.textContent='Uruchom DJ lub Odkrywaj, aby przygotować zapas muzyki.';
+    }
+    panel.addEventListener('close',()=>{clearInterval(poll);panel.remove();},{once:true});panel.showModal();render();const poll=setInterval(render,2000);
+  }
+  function queueSnapshot(){
+    const remote=window.PiterfyPlayback?.remoteQueue?.();
+    if(remote)return {...remote,remote:true,keys:remote.items.map(s=>s.id)};
+    const p=findStore()?.getState().player,items=p?.queue||[];
+    return {items,index:items.findIndex(s=>s.uuid===p?.current?.uuid),keys:items.map(s=>s.uuid),remote:false};
+  }
+  async function editQueue(action,from,to,expected){
+    const q=queueSnapshot();
+    if(JSON.stringify(q.keys)!==JSON.stringify(expected.keys)||q.remote!==expected.remote||q.remote&&q.version!==expected.version)throw Error('Kolejka się zmieniła. Spróbuj ponownie.');
+    if(q.remote){const result=await window.PiterfyPlayback.editQueue(action,{from,to,expected:q.version});if(action==='remove')queueUndo={song:q.items[from],at:from,remote:true,version:result.version,remaining:result.items.map(s=>s.id),account:identity()};return;}
+    const p=findStore().getState().player,items=[...q.items];
+    if(action==='remove'){
+      if(from===q.index)throw Error('Bieżący utwór pozostaje w kolejce. Najpierw wybierz następny.');
+      const removed=items.splice(from,1)[0];queueUndo={song:removed,at:from,remaining:items.map(s=>s.uuid),account:identity()};
+    }else if(action==='move')items.splice(to,0,items.splice(from,1)[0]);
+    else throw Error('Nieobsługiwana zmiana kolejki.');
+    findStore().dispatch({type:'PLAYER_SYNC_QUEUE',data:{audioInfo:p.current,audioLists:items}});saveQueue();
+  }
+  function openQueue(){
+    if(queueDialog?.open)return;queueDialog?.remove();queueUndo=null;
+    queueDialog=el('dialog','',document.body,'pf-library-dialog pf-queue-dialog');queueDialog.setAttribute('aria-labelledby','pf-queue-heading');
+    const head=el('header','',queueDialog,'pf-library-heading');el('h2','Twoja kolejka',head).id='pf-queue-heading';button(head,'Zamknij',()=>queueDialog.close());
+    el('p','Przeciągnij utwór lub użyj strzałek. Przypięte utwory pozostaną po zmianie klimatu DJ-a.',queueDialog,'pf-library-muted');
+    const notice=el('p','',queueDialog);notice.setAttribute('role','status');
+    const undo=button(queueDialog,'Cofnij usunięcie',async()=>{
+      const q=queueSnapshot(),u=queueUndo;
+      if(!u||u.account!==identity()||q.remote!==!!u.remote||JSON.stringify(q.keys)!==JSON.stringify(u.remaining)||u.remote&&u.version!==q.version){notice.textContent='Kolejka się zmieniła. Nie przywrócono starego układu.';return;}
+      if(u.remote){try{await window.PiterfyPlayback.editQueue('insert',{items:[u.song],index:u.at,expected:u.version});queueUndo=null;renderQueue(true);notice.textContent='Przywrócono utwór.';}catch(e){notice.textContent=e.message;}return;}
+      const items=[...q.items];items.splice(u.at,0,u.song);const p=findStore().getState().player;
+      findStore().dispatch({type:'PLAYER_SYNC_QUEUE',data:{audioInfo:p.current,audioLists:items}});queueUndo=null;saveQueue();renderQueue();notice.textContent='Przywrócono utwór.';
+    });undo.hidden=true;
+    const rows=el('div','',queueDialog);let signature='',drag=null;
+    const fail=e=>notice.textContent=e.message;
+    function renderQueue(force=false){
+      if(!queueDialog.open)return;
+      const q=queueSnapshot(),sig=JSON.stringify([q.keys,q.index,q.remote,preferences.pins]);
+      if(!force&&sig===signature)return;
+      if(!force&&rows.contains(document.activeElement))return;
+      signature=sig;rows.replaceChildren();undo.hidden=!queueUndo;
+      if(!q.items.length)el('p','Kolejka jest pusta.',rows,'pf-library-muted');
+      q.items.forEach((item,i)=>{
+        const song=q.remote?item:item.song||{},row=el('article','',rows,'pf-queue-row');row.draggable=true;
+        const pin=preferences.pins?.includes(song.id);
+        el('small',i===q.index?'TERAZ GRA':String(i+1).padStart(2,'0'),row,'pf-dj-eyebrow');
+        el('strong',(pin?'📌 ':'')+(song.title||item.name||'Utwór'),row);el('span',song.artist||item.singer||'',row,'pf-library-muted');
+        row.addEventListener('dragstart',e=>{drag={i,q};e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain',String(i));});
+        row.addEventListener('dragover',e=>e.preventDefault());row.addEventListener('drop',e=>{e.preventDefault();if(drag)editQueue('move',drag.i,i,drag.q).then(()=>renderQueue(true)).catch(fail);drag=null;});
+        const controls=el('div','',row,'pf-library-actions');
+        const move=(to)=>editQueue('move',i,to,q).then(()=>renderQueue(true)).catch(fail);
+        const up=button(controls,'↑',()=>move(i-1));up.disabled=i===0;up.setAttribute('aria-label','Przesuń wyżej: '+song.title);
+        const down=button(controls,'↓',()=>move(i+1));down.disabled=i===q.items.length-1;down.setAttribute('aria-label','Przesuń niżej: '+song.title);
+        const next=button(controls,'Zagraj następne',()=>move(i<q.index?q.index:q.index+1));next.disabled=i===q.index||q.index<0;
+        button(controls,pin?'Odepnij':'Przypnij',()=>api({action:'pin',id:song.id,enabled:!pin}).then(()=>{renderQueue(true);notice.textContent=pin?'Odpięto.':'Ten utwór zostanie zachowany przy zmianie klimatu.';}).catch(fail));
+        const remove=button(controls,'Usuń',()=>editQueue('remove',i,i+1,q).then(()=>{renderQueue(true);notice.textContent='Usunięto utwór. Możesz cofnąć tę zmianę.';}).catch(fail));remove.disabled=i===q.index;
+      });
+    }
+    queueDialog.showModal();renderQueue(true);api({action:'get'}).then(()=>renderQueue(true)).catch(fail);
+    const poll=setInterval(renderQueue,1500);queueDialog.addEventListener('close',()=>clearInterval(poll),{once:true});
+  }
+  async function vote(song,value,reason='') {
+    if(value===-1&&!reason)return new Promise((resolve,reject)=>{
+      const choice=el('dialog','',document.body,'pf-library-dialog');choice.setAttribute('aria-label','Co nie pasuje?');el('h2','Co nie pasuje?',choice);el('p','Powód pomoże dokładniej dobierać muzykę. Możesz go pominąć.',choice,'pf-library-muted');
+      for(const [key,title] of [['track','Ten utwór'],['artist','Wykonawca'],['genre','Gatunek'],['energy','Energia utworu'],['repetition','Zbyt częste powtórki']]){const b=button(choice,title,()=>{b.disabled=true;vote(song,value,key).then(()=>{choice.close();resolve();}).catch(e=>{b.disabled=false;reject(e);choice.close();});});}
+      button(choice,'Bez podawania powodu',()=>vote(song,value,'track').then(()=>{choice.close();resolve();}).catch(reject));
+      button(choice,'Anuluj',()=>{resolve(false);choice.close();});choice.addEventListener('close',()=>{choice.remove();resolve(false);},{once:true});choice.showModal();
+    });
+    await api({action:'feedback',id:song.id,artist:song.artist||'',genre:song.genre||'',reason,vote:value,event:crypto.randomUUID()});
+    message('Zapisano — kolejne propozycje uwzględnią Twoją reakcję.');return true;
   }
   function open() {
     if(dialog?.open)return;
@@ -189,6 +283,8 @@
     slider.oninput=update;slider.onchange=()=>api({action:'settings',exploration:Number(slider.value)}).then(()=>message('Zapisane na Twoim koncie.')).catch(e=>message(e.message));
     el('p','Znajome brzmienia ← → Nowi wykonawcy',dialog,'pf-library-muted');
     const actions=el('div','',dialog,'pf-library-actions');
+    button(actions,'Edytuj kolejkę',()=>{dialog.close();openQueue();});
+    button(actions,'Pobieranie i gotowe bloki',()=>{dialog.close();openDownloads();});
     button(actions,'Piterfy DJ',()=>{dialog.close();window.PiterfyDJ?.open('dj');});
     button(actions,'Nowe utwory · pobieranie',()=>{dialog.close();window.PiterfyDJ?.open('discover');});
     const status=el('p','',dialog,'pf-library-muted');status.setAttribute('role','status');
@@ -211,7 +307,7 @@
           const row=el('article','',results,'pf-library-song');el('strong',song.title,row);el('span',song.artist,row,'pf-library-muted');el('small',song.piterfyReason,row,'pf-library-muted');
           const controls=el('div','',row,'pf-library-actions');
           button(controls,'Więcej takich',()=>vote(song,1).catch(e=>message(e.message)));
-          button(controls,'Mniej takich',()=>vote(song,-1).then(()=>row.remove()).catch(e=>message(e.message)));
+          button(controls,'Mniej takich',()=>vote(song,-1).then(saved=>{if(saved)row.remove();}).catch(e=>message(e.message)));
         }
         message(songs.length?'Propozycje uwzględniają reakcje i wczesne pominięcia.':'Brak propozycji. Zmień ustawienie i spróbuj ponownie.');
       }catch(e){message(e.message);}finally{refresh.disabled=false;}

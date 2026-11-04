@@ -41,6 +41,15 @@ class ConnectTest(unittest.TestCase):
         with self.assertRaises(Rejected):
             self.command(state, "pause")
 
+    def test_undo_insert_preserves_duplicate_current_occurrence_and_position(self):
+        state=self.start()
+        removed=self.command(state,'edit',edit='remove',**{'from':0,'to':1})
+        restored=self.b.command('alice',dict(action='edit',edit='insert',items=[state['items'][0]],index=0,version=removed['version'],requestId='undo-one'))
+        self.assertEqual(['a','a','b'],[row['id'] for row in restored['items']])
+        self.assertEqual(1,restored['index']);self.assertEqual(12000,restored['position'])
+        self.assertTrue(restored['playing'])
+        with self.assertRaises(Rejected):self.b.command('alice',dict(action='edit',edit='insert',items=[state['items'][0]],index=0,version=removed['version'],requestId='stale-undo'))
+
     def test_offline_handoff_waits_full_lease(self):
         state = self.command(self.start(), "transfer", target="phone")
         self.now += 10

@@ -181,6 +181,8 @@ public class PlayerQueueFragment extends Fragment implements ClickCallback {
         });
 
         playerSongQueueAdapter = new PlayerSongQueueAdapter(this);
+        playerSongQueueAdapter.setQueueAction(this::queueAction);
+        com.eddyizm.tempus.util.PiterfyLibrary.refresh(ignored -> { if(bind!=null)playerSongQueueAdapter.notifyDataSetChanged(); });
         bind.playerQueueRecyclerView.setAdapter(playerSongQueueAdapter);
         reapplyPlayback();
 
@@ -215,10 +217,12 @@ public class PlayerQueueFragment extends Fragment implements ClickCallback {
 
                 fromPosition = viewHolder.getBindingAdapterPosition();
                 toPosition = target.getBindingAdapterPosition();
-                Collections.swap(playerSongQueueAdapter.getItems(), fromPosition, toPosition);
+                if(fromPosition<0||toPosition<0)return false;
+                List<Child> items=playerSongQueueAdapter.getItems();
+                items.add(toPosition,items.remove(fromPosition));
                 recyclerView.getAdapter().notifyItemMoved(fromPosition, toPosition);
 
-                return false;
+                return true;
             }
 
             @Override
@@ -236,14 +240,39 @@ public class PlayerQueueFragment extends Fragment implements ClickCallback {
 
             @Override
             public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int direction) {
-                MediaManager.remove(mediaBrowserListenableFuture, playerSongQueueAdapter.getItems(), viewHolder.getBindingAdapterPosition());
-                viewHolder.getBindingAdapter().notifyDataSetChanged();
+                queueAction("remove",viewHolder.getBindingAdapterPosition());
             }
         }).attachToRecyclerView(bind.playerQueueRecyclerView);
     }
 
     private void updateNowPlayingItem() {
         playerSongQueueAdapter.notifyDataSetChanged();
+    }
+
+    private void queueAction(String action,int index) {
+        if(bind==null||index<0||index>=playerSongQueueAdapter.getItems().size())return;
+        Child song=playerSongQueueAdapter.getItem(index);
+        if(action.equals("pin")){
+            com.eddyizm.tempus.util.PiterfyLibrary.pin(song.getId(),!com.eddyizm.tempus.util.PiterfyLibrary.isPinned(song.getId()),ignored->{if(bind!=null)playerSongQueueAdapter.notifyDataSetChanged();},message->{if(bind!=null)Toast.makeText(requireContext(),message,Toast.LENGTH_LONG).show();});return;
+        }
+        MediaManager.getCurrentIndex(mediaBrowserListenableFuture,new com.eddyizm.tempus.interfaces.MediaIndexCallback(){ @Override public void onRecovery(int current){
+            if(bind==null||index>=playerSongQueueAdapter.getItems().size()||playerSongQueueAdapter.getItem(index)!=song)return;
+            List<Child> items=playerSongQueueAdapter.getItems();
+            if(index==current){playerSongQueueAdapter.notifyDataSetChanged();Toast.makeText(requireContext(),"Bieżący utwór pozostaje w kolejce. Wybierz następny utwór, aby go usunąć.",Toast.LENGTH_SHORT).show();return;}
+            if(action.equals("next")){
+                int target=index<current?current:current+1;
+                if(target<0||target>=items.size())return;
+                items.add(target,items.remove(index));MediaManager.swap(mediaBrowserListenableFuture,items,index,target);playerSongQueueAdapter.notifyDataSetChanged();return;
+            }
+            boolean remote=com.eddyizm.tempus.lan.LanRemoteSession.isActive();
+            if(remote&&com.eddyizm.tempus.lan.LanRemoteSession.isConnect()){
+                com.eddyizm.tempus.connect.ConnectSession.removeUndoable(index,token->{if(bind!=null)com.google.android.material.snackbar.Snackbar.make(bind.getRoot(),"Usunięto: "+song.getTitle(),com.google.android.material.snackbar.Snackbar.LENGTH_LONG).setAction("Cofnij",v->com.eddyizm.tempus.connect.ConnectSession.restoreRemoved(token)).show();});return;
+            }
+            List<String> expected=items.stream().map(Child::getId).collect(Collectors.toCollection(ArrayList::new));expected.remove(index);
+            MediaManager.remove(mediaBrowserListenableFuture,items,index);playerSongQueueAdapter.notifyDataSetChanged();
+            if(!remote)com.google.android.material.snackbar.Snackbar.make(bind.getRoot(),"Usunięto: "+song.getTitle(),com.google.android.material.snackbar.Snackbar.LENGTH_LONG)
+                .setAction("Cofnij",v->MediaManager.restoreQueueItem(mediaBrowserListenableFuture,song,index,expected,()->{if(bind!=null)Toast.makeText(requireContext(),"Kolejka zmieniła się. Nie przywrócono starego układu.",Toast.LENGTH_SHORT).show();})).show();
+        }});
     }
 
     @Override

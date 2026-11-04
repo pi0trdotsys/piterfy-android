@@ -232,15 +232,17 @@ class Broker:
         action = body.get("edit")
         items = s["items"]
         count = len(items)
-        if action in ("replace", "append", "next"):
+        if action in ("replace", "append", "next", "insert"):
             added = snapshot({"items": body.get("items")})["items"]
             if not added or (action != "replace" and count + len(added) > LIMIT):
                 raise Rejected("queue_limit", 400)
             if action == "replace":
                 s.update(items=added, index=body.get("index", 0), position=body.get("position", 0), playing=True)
             else:
-                at = s["index"] + 1 if action == "next" and count else count
+                at = s["index"] + 1 if action == "next" and count else body.get('index') if action == 'insert' else count
+                if type(at) is not int or not 0 <= at <= count:raise Rejected('invalid_index',400)
                 items[at:at] = added
+                if action == 'insert' and count and at <= s['index']:s['index'] += len(added)
         elif action == "clear":
             s.update(items=[], index=0, position=0, playing=False)
         else:

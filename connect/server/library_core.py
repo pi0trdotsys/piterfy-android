@@ -25,6 +25,17 @@ def artist_key(value):
     return ' '.join(text(value).casefold().split())
 
 
+def taste_scores(feedback):
+    artists, genres = {}, {}
+    for row in feedback.values():
+        key = row.get('artist', '')
+        if row.get('reason', '') in ('', 'artist'):
+            artists[key] = artists.get(key, 0) + row.get('vote', 0) * 2 - min(row.get('skips', 0), 5) * .25
+        if row.get('reason') == 'genre' and row.get('genre'):
+            genres[row['genre']] = genres.get(row['genre'], 0) + row.get('vote', 0) * 2
+    return artists, genres
+
+
 class Library:
     def __init__(self, directory):
         self.directory = Path(directory) / 'library'
@@ -38,9 +49,21 @@ class Library:
             except FileNotFoundError:
                 data = {'exploration': 50, 'feedback': {}, 'episodes': {}, 'subscriptions': [], 'events': []}
             action = body.get('action', 'get')
+            data.setdefault('pins', [])
             changed = False
             if action == 'settings':
                 data['exploration'] = int(number(body.get('exploration'), 0, 100))
+                changed = True
+            elif action == 'pin':
+                identifier = text(body.get('id'))
+                if not identifier or type(body.get('enabled')) is not bool:
+                    raise Rejected('invalid_pin', 400)
+                pins = [p for p in data['pins'] if p != identifier]
+                if body['enabled']:
+                    pins.append(identifier)
+                if len(pins) > 100:
+                    raise Rejected('pin_limit', 400)
+                data['pins'] = pins
                 changed = True
             elif action in ('feedback', 'skip'):
                 identifier = text(body.get('id'))
@@ -57,11 +80,17 @@ class Library:
                         return {key: data[key] for key in ('exploration', 'feedback', 'episodes', 'subscriptions')}
                 elif body.get('vote') not in (-1, 0, 1) or isinstance(body.get('vote'), bool):
                     raise Rejected('invalid_vote', 400)
+                reason = body.get('reason', '')
+                if reason not in ('', 'track', 'artist', 'genre', 'energy', 'repetition'):
+                    raise Rejected('invalid_reason', 400)
+                genre = artist_key(body.get('genre', ''))
                 if event not in data['events']:
                     row = data['feedback'].setdefault(identifier, {'artist': artist, 'vote': 0, 'skips': 0})
                     row['artist'] = artist
                     if action == 'feedback':
                         row['vote'] = int(number(body.get('vote'), -1, 1))
+                        row['reason'] = reason
+                        row['genre'] = genre
                     else:
                         # Only deliberate, early track changes count. Seeking, buffering and
                         # interrupted connections must not become a negative preference.
@@ -112,22 +141,26 @@ class Library:
                 candidates = body.get('items')
                 if not isinstance(candidates, list) or len(candidates) > 1000:
                     raise Rejected('candidate_limit', 400)
-                artists = {}
-                for row in data['feedback'].values():
-                    key = row['artist']
-                    artists[key] = artists.get(key, 0) + row['vote'] * 2 - min(row['skips'], 5) * .25
+                artists, genres = taste_scores(data['feedback'])
                 ranked = []
                 for index, candidate in enumerate(candidates):
                     identifier = text(candidate.get('id'))
                     artist = artist_key(candidate.get('artist', ''))
+                    genre = artist_key(candidate.get('genre', ''))
                     row = data['feedback'].get(identifier, {})
                     if row.get('vote') == -1:
                         continue
                     familiar = artist in artists or candidate.get('familiar') is True
                     novelty = (data['exploration'] - 50) / 25 * (-1 if familiar else 1)
-                    score = 2 + novelty + max(-4, min(4, artists.get(artist, 0))) + row.get('vote', 0) * 3 - min(row.get('skips', 0), 5)
+                    score = 2 + novelty + max(-4, min(4, artists.get(artist, 0))) + max(-4, min(4, genres.get(genre, 0))) + row.get('vote', 0) * 3 - min(row.get('skips', 0), 5)
                     reason = 'Więcej podobnych do Twoich wyborów' if artists.get(artist, 0) > 0 else (
                         'Nowe brzmienie do sprawdzenia' if not familiar else 'Blisko Twojego gustu')
+                    if row.get('vote') == 1:
+                        reason = 'Ten utwór otrzymał od Ciebie „Więcej takich”'
+                    elif artists.get(artist, 0) > 0:
+                        reason = 'Lubisz utwory wykonawcy: ' + candidate.get('artist', '')
+                    elif genres.get(genre, 0) > 0:
+                        reason = 'Wyżej oceniasz ten gatunek: ' + candidate.get('genre', '')
                     ranked.append({'id': identifier, 'score': score, 'reason': reason, '_index': index})
                 ranked.sort(key=lambda row: (-row['score'], row['_index']))
                 return {'items': [{k: v for k, v in row.items() if k != '_index'} for row in ranked]}
@@ -138,4 +171,4 @@ class Library:
                 temporary = path.with_suffix('.tmp')
                 temporary.write_text(json.dumps(data, ensure_ascii=False), 'utf-8')
                 os.replace(temporary, path)
-            return {key: data[key] for key in ('exploration', 'feedback', 'episodes', 'subscriptions')}
+            return {key: data[key] for key in ('exploration', 'feedback', 'episodes', 'subscriptions', 'pins')}

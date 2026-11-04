@@ -18,6 +18,31 @@ class LibraryTests(unittest.TestCase):
         self.assertEqual(self.call(user='two')['exploration'], 50)
         self.assertEqual(Library(self.temp.name).handle('one', {})['exploration'], 85)
 
+    def test_pin_is_account_scoped_idempotent_and_bounded(self):
+        for _ in range(2): self.call('pin',id='song',enabled=True)
+        self.assertEqual(['song'],self.call()['pins'])
+        self.assertEqual([],self.call(user='two')['pins'])
+        self.assertEqual(['song'],Library(self.temp.name).handle('one',{})['pins'])
+        self.call('pin',id='song',enabled=False)
+        self.assertEqual([],self.call()['pins'])
+        with self.assertRaises(Rejected):self.call('pin',id='song',enabled=1)
+
+    def test_track_dislike_does_not_penalize_the_whole_artist(self):
+        self.call('feedback',id='a',artist='Artist',genre='Pop',vote=-1,reason='track',event='1')
+        ranked=self.call('rank',items=[dict(id='b',artist='Artist',genre='Jazz'),dict(id='c',artist='Other',genre='Pop')])
+        self.assertEqual(ranked['items'][0]['score'],ranked['items'][1]['score'])
+
+    def test_genre_dislike_affects_genre_instead_of_other_work_by_artist(self):
+        self.call('feedback',id='a',artist='Artist',genre='Pop',vote=-1,reason='genre',event='1')
+        rows=self.call('rank',items=[dict(id='b',artist='Artist',genre='Jazz'),dict(id='c',artist='Other',genre='Pop')])['items']
+        self.assertGreater(rows[0]['score'],rows[1]['score'])
+        with self.assertRaises(Rejected):self.call('feedback',id='a',vote=-1,reason='invented',event='2')
+
+    def test_reason_is_grounded_in_explicit_feedback(self):
+        self.call('feedback',id='a',artist='Artist',vote=1,event='1')
+        row=self.call('rank',items=[dict(id='b',artist='Artist')])['items'][0]
+        self.assertIn('Artist',row['reason'])
+
     def test_feedback_changes_order_and_dislike_hides_song(self):
         self.call('feedback', id='a', artist='Artist', vote=1, event='1')
         self.call('feedback', id='b', artist='Other', vote=-1, event='2')

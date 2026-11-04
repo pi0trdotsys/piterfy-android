@@ -297,7 +297,7 @@ public class PlayerControllerFragment extends Fragment {
                                       state -> { message.accept(next ? "Nowe odcinki będą pobierane automatycznie przez Wi-Fi" : "Wyłączono automatyczne pobieranie audycji");
                                           if (next && isAdded()) com.eddyizm.tempus.service.PiterfyPodcastDownloads.refreshSoon(requireContext()); }, message);
                               } else if (!podcast) {
-                                  com.eddyizm.tempus.util.PiterfyLibrary.feedback(song.getId(), song.getArtist(), item.getItemId() == R.id.action_more_like ? 1 : -1, state -> message.accept("Zapisano preferencję"), message);
+                                  com.eddyizm.tempus.ui.dialog.PiterfyFeedback.show(requireContext(), song, item.getItemId() == R.id.action_more_like ? 1 : -1, state -> message.accept("Zapisano preferencję"), message);
                               }
                           } catch (Exception ignored) { }
                           return true;

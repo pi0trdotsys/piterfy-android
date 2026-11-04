@@ -83,6 +83,7 @@ public class DownloaderService extends androidx.media3.exoplayer.offline.Downloa
     protected Notification getForegroundNotification(
             @NonNull List<Download> downloads,
             @Requirements.RequirementFlags int notMetRequirements) {
+        com.eddyizm.tempus.util.PiterfyOfflinePolicy.enforce(this);
 
         int total = Math.max(batchMaxTotal, downloads.size());
         int completed = batchCompletedCount;

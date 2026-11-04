@@ -40,6 +40,7 @@ public final class PiterfyPodcastDownloads extends JobService {
         active=params;stopped=false;String account=PiterfyLibrary.account();
         PiterfyLibrary.request(new org.json.JSONObject(),state->{
             if(stopped||active!=params)return;
+            PiterfyOfflinePolicy.cleanup(this);
             var subscriptions=state.optJSONArray("subscriptions");
             List<String> albums=new ArrayList<>();if(subscriptions!=null)for(int i=0;i<subscriptions.length();i++)albums.add(subscriptions.optString(i));
             fetch(params,account,albums,0);

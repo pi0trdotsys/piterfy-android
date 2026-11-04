@@ -83,6 +83,7 @@ public class DownloaderManager {
     }
 
     public boolean download(MediaItem mediaItem, com.eddyizm.tempus.model.Download download, boolean foreground) {
+        if (!com.eddyizm.tempus.util.PiterfyOfflinePolicy.allow(context)) return false;
         MusicUtil.applyTranscodedDownloadMetadata(download);
         download.setDownloadUri(mediaItem.requestMetadata.mediaUri.toString());
         // Marked before the send so a completion racing this call cannot leave the id behind.
@@ -96,6 +97,7 @@ public class DownloaderManager {
             return false;
         }
         insertDatabase(download);
+        com.eddyizm.tempus.util.PiterfyOfflinePolicy.noteDownload(context, mediaItem.mediaId);
         return true;
     }
 
@@ -127,6 +129,11 @@ public class DownloaderManager {
         DownloadService.sendRemoveAllDownloads(context, DownloaderService.class, false);
         deleteAllDatabase();
         DownloadUtil.eraseDownloadFolder(context);
+    }
+    /** Remove only managed offline data through Media3 and Room, without resolving a stream. */
+    public void removeById(String id) {
+        DownloadService.sendRemoveDownload(context, DownloaderService.class, id, false);
+        deleteDatabase(id); downloads.remove(id); requested.remove(id);
     }
 
     private void loadDownloads() {

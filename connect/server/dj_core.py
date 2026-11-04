@@ -24,6 +24,8 @@ class Sessions:
                 CREATE TABLE IF NOT EXISTS acquired(key TEXT PRIMARY KEY, at REAL, state TEXT, data TEXT);
                 CREATE TABLE IF NOT EXISTS block_archive(owner TEXT, session TEXT, block TEXT, data TEXT, created REAL,
                     PRIMARY KEY(owner,session,block));
+                CREATE TABLE IF NOT EXISTS speech_memory(owner TEXT, key TEXT, data TEXT, at REAL,
+                    PRIMARY KEY(owner,key));
             ''')
 
     @contextmanager
@@ -38,6 +40,11 @@ class Sessions:
     @staticmethod
     def owner(user):
         return hashlib.sha256(user.encode()).hexdigest()
+
+    def script_history(self, owner):
+        with self.db() as db:
+            rows=db.execute('SELECT data FROM speech_memory WHERE owner=? AND at>? ORDER BY at DESC LIMIT 80',(owner,time.time()-30*86400)).fetchall()
+        return [json.loads(row[0]) for row in reversed(rows)]
 
     def handle(self, user, body):
         owner = self.owner(user)
@@ -65,7 +72,7 @@ class Sessions:
                     state = dict(active=True, id=uuid.uuid4().hex, mode=mode, seeds=clean, blocks=[],
                                  summaryEmail=state.get('summaryEmail',True), summaryTelegram=state.get('summaryTelegram',True),
                                  exploration=int(number(body.get('exploration', 50), 0, 100)),
-                                 voice=state.get('voice', mode == 'dj'), revision=state['revision'] + 1, updated=time.time())
+                                 voice=state.get('voice', mode == 'dj'), talkLevel=state.get('talkLevel','radio'), revision=state['revision'] + 1, updated=time.time())
                 else:
                     state['seeds'] = clean
                     state['exploration'] = int(number(body.get('exploration', state['exploration']), 0, 100))
@@ -76,6 +83,9 @@ class Sessions:
                 state['active'] = False
                 db.execute("UPDATE jobs SET state='cancelled' WHERE owner=? AND mode=? AND state='queued'", (owner, mode))
             elif action == 'settings':
+                if 'talkLevel' in body:
+                    if body['talkLevel'] not in ('sparse','balanced','radio'):raise Rejected('invalid_talk_level',400)
+                    state['talkLevel']=body['talkLevel']
                 for setting in ('summaryEmail','summaryTelegram'):
                     if setting in body:
                         if type(body[setting]) is not bool: raise Rejected('invalid_setting',400)
@@ -97,7 +107,15 @@ class Sessions:
                     clip=next((a for a in block.get('announcements',[]) if a['track']==track),None)
                     if clip is None:raise Rejected('announcement_missing',404)
                 result = state['active'] and block.get('ready',True) and not clip.get('announced', False) and state.get('voice', False)
-                if result:clip['announced'] = True
+                track_index=next((i for i,song in enumerate(block.get('tracks',[])) if song.get('id')==track),0)
+                talk=state.get('talkLevel','radio')
+                result=result and (track_index==0 or talk=='radio' or talk=='balanced' and track_index%2==0)
+                if result:
+                    clip['announced'] = True
+                    variant=clip.get('variant') or clip.get('openingVariant') or 'cached:'+hashlib.sha256(clip['text'].encode()).hexdigest()[:16]
+                    heard=dict(openingVariant=variant,lastTrack=(block.get('tracks') or [{}])[track_index],text=clip['text'])
+                    db.execute('INSERT OR REPLACE INTO speech_memory VALUES(?,?,?,?)',(owner,variant,json.dumps(heard,ensure_ascii=False),time.time()))
+                    db.execute('DELETE FROM speech_memory WHERE owner=? AND key NOT IN (SELECT key FROM speech_memory WHERE owner=? ORDER BY at DESC LIMIT 80)',(owner,owner))
                 db.execute('INSERT OR REPLACE INTO sessions VALUES(?,?,?)', (owner, mode, json.dumps(state)))
                 return {'speak': result, 'text': clip['text'] if result else '', 'voiceKey': clip.get('voiceKey') if result else None}
             elif action not in ('get', 'refill', 'next'):

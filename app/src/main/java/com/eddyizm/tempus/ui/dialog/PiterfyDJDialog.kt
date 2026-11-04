@@ -74,12 +74,12 @@ object PiterfyDJDialog {
         val dialog=MaterialAlertDialogBuilder(context).setTitle(if(mode=="dj")"Piterfy DJ" else "Odkrywaj").setView(scroll).setNegativeButton("Zamknij",null).create()
         var state=JSONObject();var starting=false;var pendingNextIds:Set<String>?=null;var initialized=false
         var historyOpen=false;var rendered="";val expandedTracks=mutableSetOf<String>()
-        var primary:MaterialButton?=null;var voiceToggle:MaterialButton?=null;var skip:MaterialButton?=null
+        var primary:MaterialButton?=null;var voiceToggle:MaterialButton?=null;var talkToggle:MaterialButton?=null;var skip:MaterialButton?=null
         val summaryButtons=mutableMapOf<String,MaterialButton>()
         fun playBlock(block:JSONObject){
             PiterfyDJSession.cancelAwait()
             PiterfyLibrary.dj(JSONObject().put("action","select").put("mode",mode).put("session",state.optString("id")).put("block",block.optString("id")).put("device",ConnectSession.deviceId()),{selected->
-                state=selected;PiterfyDJSession.arm(selected);play.accept(PiterfyDJSession.decode(block.getJSONArray("tracks")));dialog.dismiss()
+                state=selected;PiterfyDJSession.arm(selected);play.accept(PiterfyDJSession.protectedTracks(block.getJSONArray("tracks")));dialog.dismiss()
             },{notice(it)})
         }
         lateinit var render:()->Unit
@@ -124,6 +124,7 @@ object PiterfyDJDialog {
             if(dialog.isShowing){
                 primary?.text=transportTitle();primary?.isEnabled=!starting
                 voiceToggle?.text=if(state.optBoolean("voice"))"Głos DJ-a: włączony" else "Głos DJ-a: wyłączony"
+                talkToggle?.text="Ile mówi DJ · "+when(state.optString("talkLevel","radio")){"sparse"->"Mało mówienia";"balanced"->"Równowaga";else->"Audycja radiowa"}
                 for((key,b) in summaryButtons)b.text=(if(key=="summaryEmail")"Podsumowania e-mail: " else "Podsumowania Telegram: ")+(if(state.optBoolean(key,true))"włączone" else "wyłączone")
                 val count=state.optJSONObject("buffer")?.optInt("ready")?:0
                 val alternatives=state.optJSONObject("buffer")?.optJSONArray("alternatives")?.length()?:0
@@ -164,7 +165,7 @@ object PiterfyDJDialog {
         for(vote in listOf(1,-1)){
             val b=button(feedback,if(vote==1)"Więcej takich" else "Mniej takich"){
                 val song=PiterfyDJSession.currentSong()
-                if(song==null)notice("Odtwórz najpierw utwór na telefonie.")else PiterfyLibrary.feedback(song.id,song.artist.orEmpty(),vote,{notice("Zapisano reakcję na: ${song.title}");request(JSONObject().put("action","invalidate"))},{notice(it)})
+                if(song==null)notice("Odtwórz najpierw utwór na telefonie.")else PiterfyFeedback.show(context,song,vote,{notice("Zapisano reakcję na: ${song.title}");request(JSONObject().put("action","invalidate"))},{notice(it)})
             };b.layoutParams=LinearLayout.LayoutParams(0,-2,1f).apply{marginEnd=dp(4)}
         }
         slider.setOnSeekBarChangeListener(object:SeekBar.OnSeekBarChangeListener{
@@ -173,11 +174,16 @@ object PiterfyDJDialog {
             override fun onStopTrackingTouch(bar:SeekBar){request(JSONObject().put("action","settings").put("exploration",bar.progress))}
         });explorationLabel.text="Eksperymentowanie · ${slider.progress}%"
         if(mode=="dj")voiceToggle=button(settings,"Głos DJ-a"){if(state.optBoolean("voice"))PiterfyDJSession.cancelNarration();request(JSONObject().put("action","settings").put("voice",!state.optBoolean("voice")))}
+        if(mode=="dj")talkToggle=button(settings,"Ile mówi DJ"){
+            val keys=listOf("sparse","balanced","radio")
+            MaterialAlertDialogBuilder(context).setTitle("Ile mówi DJ")
+                .setSingleChoiceItems(arrayOf("Mało mówienia · początek bloku","Równowaga · co drugi utwór","Audycja radiowa · każdy utwór"),keys.indexOf(state.optString("talkLevel","radio"))){choice,index->request(JSONObject().put("action","settings").put("talkLevel",keys[index]));choice.dismiss()}.show()
+        }
         for(key in listOf("summaryEmail","summaryTelegram"))summaryButtons[key]=button(settings,if(key=="summaryEmail")"Podsumowania e-mail" else "Podsumowania Telegram"){request(JSONObject().put("action","settings").put(key,!state.optBoolean(key,true)))}
         button(settings,"Zakończ sesję"){pendingNextIds=null;PiterfyDJSession.cancelAwait();PiterfyDJSession.disarm();PiterfyDJSession.cancelNarration();request(JSONObject().put("action","stop"))}
         val handler=Handler(Looper.getMainLooper());val poll=object:Runnable{override fun run(){if(dialog.isShowing){request(JSONObject().put("action","get"));handler.postDelayed(this,8000)}}}
         val animate=object:Runnable{override fun run(){if(dialog.isShowing){avatar?.setActive(state.optBoolean("active")&&PiterfyDJSession.hasPlayback(mode)&&PiterfyDJSession.visualActive());val title=transportTitle();if(primary?.text.toString()!=title)primary?.text=title;skip?.visibility=if(PiterfyDJSession.narratingInMode(mode))View.VISIBLE else View.GONE;handler.postDelayed(this,500)}}}
         dialog.setOnDismissListener{handler.removeCallbacks(poll);handler.removeCallbacks(animate);avatar?.setActive(false)}
-        dialog.show();render();request(JSONObject().put("action","warm"));handler.post(poll);handler.post(animate)
+        dialog.show();PiterfyLibrary.refresh(null);render();request(JSONObject().put("action","warm"));handler.post(poll);handler.post(animate)
     }
 }

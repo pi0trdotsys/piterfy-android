@@ -56,3 +56,5 @@
 .MuiAppBar-root:has(.pf-discovery-launch) .pf-discovery-launch,.MuiAppBar-root:has(.pf-discovery-launch) [data-dj-launch]{grid-column:span 3;width:calc(100% - 8px);padding:8px!important;min-height:44px!important}
 body:has(.MuiAppBar-root .pf-discovery-launch) #main-content{margin-top:48px}
 }
+
+.pf-queue-row{padding:16px 0;border-bottom:1px solid var(--pf-line);overflow-wrap:anywhere}.pf-queue-row>strong,.pf-queue-row>span{display:block}.pf-queue-row>strong{font-size:16px;margin-block:6px}.pf-queue-row[draggable=true]{cursor:grab}.pf-queue-row:active{cursor:grabbing}.pf-library-dialog select{min-height:48px;width:100%;border:1px solid var(--pf-line);border-radius:12px;background:var(--pf-raised);color:var(--pf-ink);padding:10px;font:inherit}.pf-library-dialog progress{width:100%;height:10px;accent-color:var(--pf-mint)}

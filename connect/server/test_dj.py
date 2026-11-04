@@ -47,6 +47,30 @@ class DJTest(unittest.TestCase):
         self.assertTrue(self.s.handle('a', body)['speak'])
         self.assertFalse(Sessions(self.tmp.name).handle('a', body)['speak'])
 
+    def test_spoken_memory_survives_session_end_and_is_account_scoped(self):
+        self.start();job=self.s.take()
+        self.s.finish(job,dict(id='b',text='Hello',openingVariant='opening:1',tracks=[dict(id='one',genre='Jazz')]))
+        self.assertEqual([],self.s.script_history(self.s.owner('a')))
+        self.s.handle('a',dict(action='claim',block='b',track='one'))
+        self.s.handle('a',dict(action='stop'));self.start()
+        memory=Sessions(self.tmp.name).script_history(self.s.owner('a'))
+        self.assertEqual('opening:1',memory[0]['openingVariant'])
+        self.assertEqual('Jazz',memory[0]['lastTrack']['genre'])
+        self.assertEqual([],self.s.script_history(self.s.owner('b')))
+
+    def test_talk_levels_control_claims_without_rebuilding_the_block(self):
+        self.start();job=self.s.take()
+        self.s.finish(job,dict(id='b',text='Intro',tracks=[dict(id=str(i)) for i in range(5)],announcements=[dict(track=str(i),text='Track '+str(i)) for i in range(1,5)]))
+        self.s.handle('a',dict(action='settings',talkLevel='sparse'))
+        self.assertTrue(self.s.handle('a',dict(action='claim',block='b',track='0'))['speak'])
+        self.assertFalse(self.s.handle('a',dict(action='claim',block='b',track='1'))['speak'])
+        self.s.handle('a',dict(action='settings',talkLevel='balanced'))
+        self.assertTrue(self.s.handle('a',dict(action='claim',block='b',track='2'))['speak'])
+        self.assertFalse(self.s.handle('a',dict(action='claim',block='b',track='3'))['speak'])
+        self.s.handle('a',dict(action='settings',talkLevel='radio'))
+        self.assertTrue(self.s.handle('a',dict(action='claim',block='b',track='3'))['speak'])
+        with self.assertRaises(Rejected):self.s.handle('a',dict(action='settings',talkLevel='invalid'))
+
     def test_hourly_budget_cannot_be_reset_with_stop(self):
         for _ in range(8):
             self.start(); self.s.finish(self.s.take())
