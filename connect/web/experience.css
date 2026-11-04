@@ -60,3 +60,5 @@ body:has(.MuiAppBar-root .pf-discovery-launch) #main-content{margin-top:48px}
 .pf-queue-row{padding:16px 0;border-bottom:1px solid var(--pf-line);overflow-wrap:anywhere}.pf-queue-row>strong,.pf-queue-row>span{display:block}.pf-queue-row>strong{font-size:16px;margin-block:6px}.pf-queue-row[draggable=true]{cursor:grab}.pf-queue-row:active{cursor:grabbing}.pf-library-dialog select{min-height:48px;width:100%;border:1px solid var(--pf-line);border-radius:12px;background:var(--pf-raised);color:var(--pf-ink);padding:10px;font:inherit}.pf-library-dialog progress{width:100%;height:10px;accent-color:var(--pf-mint)}
 
 .pf-queue-dialog>[role=status]:empty{display:none}.pf-queue-row .pf-library-actions{gap:6px;margin:8px 0 0}.pf-queue-row .pf-library-button{min-width:44px;font-size:12px!important;padding:8px 10px!important}.pf-queue-row{padding:12px 0}
+
+html:has(dialog[open]){overflow:hidden}.pf-queue-row>span{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}@media(max-width:600px){main{min-width:0;max-width:100%;box-sizing:border-box;overflow-x:auto}}

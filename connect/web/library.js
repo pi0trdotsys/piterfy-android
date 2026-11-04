@@ -1,6 +1,7 @@
 /* Shared discovery and podcast experience for the existing Navidrome player. */
 (() => {
   'use strict';
+  function queueIndex(queue,current,saved=0){const at=queue.findIndex(t=>t.uuid===current);return at>=0?at:queue.length?Math.max(0,Math.min(queue.length-1,saved||0)):-1;}
   function protectedQueue(songs,queue,current,pinned){
     if(!songs.length)return songs;
     const at=queue.findIndex(t=>t.uuid===current),ids=new Set(songs.map(s=>s.id));
@@ -9,7 +10,7 @@
     return [songs[0],...pins,...songs.slice(1)].slice(0,500);
   }
   function podcast(song){return /(^|[;,/])\s*podcasts?\s*($|[;,/])/i.test(song?.genre||'')||/(^|\/)Podcasty\//i.test(song?.path||'');}
-  if(typeof module==='object'&&module.exports){module.exports={protectedQueue};return;}
+  if(typeof module==='object'&&module.exports){module.exports={protectedQueue,queueIndex};return;}
   if (window.PiterfyLibrary) return;
   let store, dialog, account = '', preferences = {}, previous, lastSave = 0, generation = 0;
   let applyingQueue = false, seekGuard = 0, saving = false, checkedAlbum = '', coverSource = '';
@@ -106,7 +107,7 @@
     if(window.PiterfyPlayback?.current()?.remote)throw Error('Najpierw wybierz „Przenieś tutaj” w Connect.');
     if(protect&&songs.length){
       const wanted=songs[index]?.id,player=findStore()?.getState().player;
-      songs=protectedQueue(songs,player?.queue||[],player?.current?.uuid,preferences.pins||[]);index=Math.max(0,songs.findIndex(s=>s.id===wanted));
+      songs=protectedQueue(songs,player?.queue||[],player?.queue[queueIndex(player.queue,player.current?.uuid,player.savedPlayIndex)]?.uuid,preferences.pins||[]);index=Math.max(0,songs.findIndex(s=>s.id===wanted));
     }
     saveQueue();window.PiterfyCrossfade?.cancel();
     const token=generation, s=findStore();if(!s)throw Error('Odtwarzacz nie jest jeszcze gotowy.');
@@ -135,7 +136,9 @@
     const node=document.createElement(tag);if(text)node.textContent=text;if(cls)node.className=cls;parent?.append(node);return node;
   }
   function button(parent,text,handler,cls='pf-library-button') {
-    const node=el('button',text,parent,cls);node.type='button';node.addEventListener('click',handler);return node;
+    const node=el('button',text,parent,cls);node.type='button';node.addEventListener('click',handler);
+    for(const kind of ['keydown','keyup'])node.addEventListener(kind,event=>{if(event.key===' '||event.key==='Enter')event.stopPropagation();});
+    return node;
   }
   function mobileBar() {
     let bar=document.querySelector('.pf-mobile-bar');
@@ -213,7 +216,7 @@
     const remote=window.PiterfyPlayback?.remoteQueue?.();
     if(remote)return {...remote,remote:true,keys:remote.items.map(s=>s.id)};
     const p=findStore()?.getState().player,items=p?.queue||[];
-    return {items,index:items.findIndex(s=>s.uuid===p?.current?.uuid),keys:items.map(s=>s.uuid),remote:false};
+    return {items,index:queueIndex(items,p?.current?.uuid,p?.savedPlayIndex),keys:items.map(s=>s.uuid),remote:false};
   }
   async function editQueue(action,from,to,expected){
     const q=queueSnapshot();

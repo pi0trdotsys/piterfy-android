@@ -62,7 +62,7 @@
     if(body.action==='list')for(const kind of ['dj','discover'])if(states[kind]?.revision>result[kind]?.revision)result[kind]=states[kind];
     return result;
   }
-  function button(parent,label,handler){const b=document.createElement('button');b.className='pf-library-button';b.textContent=label;b.type='button';b.onclick=async()=>{if(b.disabled)return;b.disabled=true;try{await handler();}catch(e){status(e.message);}finally{b.disabled=b.dataset.djSkip?!skipIntro:false;}};parent.append(b);return b;}
+  function button(parent,label,handler){const b=document.createElement('button');b.className='pf-library-button';b.textContent=label;b.type='button';b.onclick=async()=>{if(b.disabled)return;b.disabled=true;try{await handler();}catch(e){status(e.message);}finally{b.disabled=b.dataset.djSkip?!skipIntro:false;}};for(const kind of ['keydown','keyup'])b.addEventListener(kind,event=>{if(event.key===' '||event.key==='Enter')event.stopPropagation();});parent.append(b);return b;}
   function status(text){const s=dialog?.querySelector('[role=status]');if(s&&s.textContent!==text)s.textContent=text;}
   function transportLabel(){const s=selected();return s?.state.mode===mode&&(pendingPlayback||current()?.playing)?'Wstrzymaj':'Uruchom';}
   function stopVoice(){speechGeneration++;settleIntro?.();settleIntro=null;if(clip){clip.pause();clip.removeAttribute('src');clip.load();clip=null;}if(clipUrl)URL.revokeObjectURL(clipUrl);clipUrl='';narrating=false;pendingPlayback=null;skipIntro=null;}
