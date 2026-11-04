@@ -52,7 +52,7 @@ public class PiterfyPodcastViewModel extends AndroidViewModel {
         io.execute(() -> {
             Map<String, AlbumID3> local = new LinkedHashMap<>();
             for (var song : AppDatabase.getInstance().downloadDao().getAllSync()) {
-                if (!PiterfyMedia.isPodcast(song.getGenre()) || song.getAlbumId() == null
+                if (!PiterfyMedia.isPodcast(song) || song.getAlbumId() == null
                         || !DownloadUtil.getDownloadTracker(getApplication()).isDownloaded(song.getId())) continue;
                 AlbumID3 album = local.get(song.getAlbumId());
                 if (album == null) {
@@ -84,12 +84,31 @@ public class PiterfyPodcastViewModel extends AndroidViewModel {
                 var batch = sr.getAlbumList2().getAlbums();
                 if (batch != null) all.addAll(batch);
                 if (batch != null && batch.size() == 100) { page(offset + 100, token, key, all); return; }
-                all.sort(Comparator.comparing(a -> String.valueOf(a.getName()), String.CASE_INSENSITIVE_ORDER));
-                loadedAt = System.currentTimeMillis(); loading.setValue(false); albums.setValue(all);
-                io.execute(() -> getApplication().getSharedPreferences("piterfy_podcasts", 0).edit().putString(key, new Gson().toJson(all)).apply());
+                scanUntagged(0,token,key,all);
             }
             public void onFailure(@NonNull Call<ApiResponse> request, @NonNull Throwable error) {
                 if (!request.isCanceled() && token == generation) finishError();
+            }
+        });
+    }
+    private void scanUntagged(int offset,int token,String key,List<AlbumID3> all){
+        call=App.getSubsonicClientInstance(false).getSearchingClient().allLibrarySongs(500,offset);
+        call.enqueue(new Callback<ApiResponse>(){
+            public void onFailure(@NonNull Call<ApiResponse> request,@NonNull Throwable error){if(!request.isCanceled()&&token==generation)finishError();}
+            public void onResponse(@NonNull Call<ApiResponse> request,@NonNull Response<ApiResponse> response){
+                if(request.isCanceled()||token!=generation)return;
+                var sr=response.body()==null?null:response.body().getSubsonicResponse();
+                if(!response.isSuccessful()||sr==null||sr.getSearchResult3()==null){finishError();return;}
+                var songs=sr.getSearchResult3().getSongs();
+                Set<String> known=new HashSet<>();for(AlbumID3 album:all)known.add(album.getId());
+                if(songs!=null)for(var song:songs){
+                    if(!PiterfyMedia.isPodcast(song)||song.getAlbumId()==null||!known.add(song.getAlbumId()))continue;
+                    AlbumID3 album=new AlbumID3();album.setId(song.getAlbumId());album.setName(song.getAlbum());album.setArtist(song.getArtist());album.setCoverArtId(song.getCoverArtId());album.setGenre("Podcast");all.add(album);
+                }
+                if(songs!=null&&songs.size()==500){scanUntagged(offset+500,token,key,all);return;}
+                all.sort(Comparator.comparing(a -> String.valueOf(a.getName()), String.CASE_INSENSITIVE_ORDER));
+                loadedAt = System.currentTimeMillis(); loading.setValue(false); albums.setValue(all);
+                io.execute(() -> getApplication().getSharedPreferences("piterfy_podcasts", 0).edit().putString(key, new Gson().toJson(all)).apply());
             }
         });
     }

@@ -32,6 +32,7 @@ public final class FavoriteRegistry {
     // Set by the session callback so the notification heart follows a song star made anywhere in
     // the app. It runs on the caller's thread while the lock is held, so it must only post work.
     public static volatile Runnable onChange;
+    public static volatile Runnable onAcceptedSongStar;
 
     private FavoriteRegistry() {
     }
@@ -56,9 +57,12 @@ public final class FavoriteRegistry {
 
     public static synchronized void accept(Record record) {
         if (record == null) return;
+        boolean newlyAccepted = !record.accepted;
         record.accepted = true;
         record.struck = false;
         changed();
+        Runnable listener=onAcceptedSongStar;
+        if(newlyAccepted&&record.starred&&record.key.startsWith("SONG:")&&listener!=null)listener.run();
     }
 
     public static synchronized void strike(Record record) {

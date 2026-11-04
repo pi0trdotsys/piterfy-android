@@ -29,4 +29,8 @@ public class SearchingClient {
         Log.d(TAG, "search3()");
         return searchingService.search3(subsonic.getParams(), query, songCount, songOffset, albumCount, albumOffset, artistCount, artistOffset, Preferences.getActiveMusicFolderId());
     }
+    /** Podcast discovery must include the podcast folder even when music is scoped elsewhere. */
+    public Call<ApiResponse> allLibrarySongs(int count,int offset) {
+        return searchingService.search3(subsonic.getParams(), "", count, offset, 0, 0, 0, 0, null);
+    }
 }

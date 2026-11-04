@@ -44,7 +44,7 @@ public final class PiterfyLyricsLoader {
         }
         if (offline) return new Result(null, null, "Brak zapisanego tekstu. Połącz się z internetem.", false);
         if (song == null) return new Result(null, null, "", false);
-        if (PiterfyMedia.isPodcast(song.getGenre()) || Constants.MEDIA_TYPE_PODCAST.equals(song.getType()))
+        if (PiterfyMedia.isPodcast(song) || Constants.MEDIA_TYPE_PODCAST.equals(song.getType()))
             return new Result(null, null, "Opis odcinka", false);
         if (expected != generation) throw new InterruptedException();
         try {

@@ -9,7 +9,7 @@
       .filter(s=>{if(podcast(s)||!pinned.includes(s.id)||ids.has(s.id))return false;ids.add(s.id);return true;});
     return [songs[0],...pins,...songs.slice(1)].slice(0,500);
   }
-  function podcast(song){return /(^|[;,/])\s*podcasts?\s*($|[;,/])/i.test(song?.genre||'')||/(^|\/)Podcasty\//i.test(song?.path||'');}
+  function podcast(song){const core=typeof module==='object'&&module.exports?require('./media-kind-core.js'):window.PiterfyMediaKinds;return core?core.isPodcast(song):String(song?.type).toLowerCase()==='podcast'||/(^|[;,/])\s*(podcasts?|podcasty)\s*($|[;,/])/i.test(song?.genre||'')||/(^|[/\\])(podcasts?|podcasty)([/\\]|$)/i.test(song?.path||'');}
   if(typeof module==='object'&&module.exports){module.exports={protectedQueue,queueIndex};return;}
   if (window.PiterfyLibrary) return;
   let store, dialog, account = '', preferences = {}, previous, lastSave = 0, generation = 0;

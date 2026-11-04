@@ -108,7 +108,8 @@ def wait_downloads(sl,jobs,job):
 
 
 def allowed(song):
-    return 'podcast' not in str(song.get('genre', '')).lower() and bool(song.get('id'))
+    from library_core import is_podcast
+    return not is_podcast(song) and bool(song.get('id'))
 
 
 def run_job(job):

@@ -384,7 +384,7 @@ public class HomeViewModel extends AndroidViewModel {
                     for (Object item : (List<?>) value) {
                         String genre = item instanceof Child ? ((Child)item).getGenre()
                             : item instanceof AlbumID3 ? ((AlbumID3)item).getGenre() : null;
-                        if (!com.eddyizm.tempus.util.PiterfyMedia.isPodcast(genre)) music.add(item);
+                        if (!(item instanceof Child ? com.eddyizm.tempus.util.PiterfyMedia.isPodcast((Child)item) : com.eddyizm.tempus.util.PiterfyMedia.isPodcast(genre))) music.add(item);
                     }
                     target.setValue((T) music);
                 } else target.setValue(value);

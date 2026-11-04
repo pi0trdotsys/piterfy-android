@@ -15,7 +15,7 @@ import java.util.*;
 @UnstableApi
 public final class PiterfyQueues {
     private PiterfyQueues(){}
-    public static boolean podcast(Child song){return PiterfyMedia.isPodcast(song.getGenre())||Constants.MEDIA_TYPE_PODCAST.equals(song.getType());}
+    public static boolean podcast(Child song){return PiterfyMedia.isPodcast(song)||Constants.MEDIA_TYPE_PODCAST.equals(song.getType());}
     private static String key(boolean podcast){return PiterfyLibrary.account()+":"+(podcast?"podcasts":"music");}
     public static List<Child> partition(List<Child> songs,int index){
         if(songs==null||songs.isEmpty()||index<0||index>=songs.size())return Collections.emptyList();

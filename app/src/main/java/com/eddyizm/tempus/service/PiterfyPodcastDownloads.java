@@ -60,7 +60,7 @@ public final class PiterfyPodcastDownloads extends JobService {
                 var sr=response.body()==null?null:response.body().getSubsonicResponse();
                 if(!response.isSuccessful()||sr==null||sr.getAlbum()==null)throw new IllegalStateException();
                 List<Child> songs=new ArrayList<>(sr.getAlbum().getSongs());
-                songs.removeIf(song->!PiterfyMedia.isPodcast(song.getGenre()));
+                songs.removeIf(song->!PiterfyMedia.isPodcast(song));
                 songs.sort(Comparator.comparing((Child song)->song.getCreated()==null?new Date(0):song.getCreated()).reversed());
                 var prefs=getSharedPreferences("piterfy_podcast_downloads",0);
                 String key=account+":"+id;Set<String> seen=new HashSet<>(prefs.getStringSet(key,Collections.emptySet()));

@@ -16,7 +16,7 @@
   const errors = { session_changed: 'Kolejka się zmieniła. Spróbuj ponownie.', transfer_pending: 'Trwa przenoszenie odtwarzania.',
     device_offline: 'Urządzenie jest teraz niedostępne.', choose_device: 'Najpierw wybierz urządzenie.',
     queue_limit: 'Connect obsługuje kolejki do 500 utworów.', library_tracks_only: 'Connect przenosi utwory z biblioteki.',
-    transfer_first: 'Najpierw przenieś odtwarzanie na to urządzenie.' };
+    transfer_first: 'Najpierw przenieś odtwarzanie na to urządzenie.', separate_queues:'Podcasty i muzyka mają osobne kolejki. Otwórz właściwą kategorię.' };
 
   function findStore() {
     if (store) return store;
@@ -45,7 +45,7 @@
     const items = player.queue.map(x => ({ id: safe(x.trackId), title: safe(x.song?.title || x.name),
       artist: safe(x.song?.artist || x.singer), album: safe(x.song?.album), albumId: safe(x.song?.albumId),
       artistId: safe(x.song?.artistId), cover: safe(x.trackId), suffix: safe(x.song?.suffix),
-      duration: Number(x.song?.duration || x.duration || 0), bitrate: Number(x.song?.bitRate || 0) }));
+      type:window.PiterfyMediaKinds?.isPodcast(x.song)?'podcast':'music', duration: Number(x.song?.duration || x.duration || 0), bitrate: Number(x.song?.bitRate || 0) }));
     return { items, index: Math.max(0, player.queue.findIndex(x => x.uuid === player.current?.uuid)),
       position: Math.round((element.currentTime || 0) * 1000), playing: (!element.paused || window.PiterfyDJ?.isNarrating()) && !element.ended,
       repeat: player.mode === 'singleLoop' ? 1 : player.mode === 'orderLoop' ? 2 : 0,

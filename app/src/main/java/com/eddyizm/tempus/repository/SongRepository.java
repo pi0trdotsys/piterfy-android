@@ -40,7 +40,8 @@ public class SongRepository {
                     @Override
                     public void onResponse(@NonNull Call<ApiResponse> call, @NonNull Response<ApiResponse> response) {
                         if (response.isSuccessful() && response.body() != null && response.body().getSubsonicResponse().getStarred2() != null) {
-                            List<Child> songs = response.body().getSubsonicResponse().getStarred2().getSongs();
+                            List<Child> rawSongs = response.body().getSubsonicResponse().getStarred2().getSongs();
+                            List<Child> songs = rawSongs == null ? null : rawSongs.stream().filter(song -> !com.eddyizm.tempus.util.PiterfyMedia.isPodcast(song)).collect(java.util.stream.Collectors.toCollection(ArrayList::new));
 
                             if (songs != null) {
                                 if (!random) {

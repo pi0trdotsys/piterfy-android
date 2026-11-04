@@ -3,6 +3,7 @@ import hashlib
 import json
 import math
 import os
+import re
 import threading
 import time
 from pathlib import Path
@@ -23,6 +24,9 @@ def number(value, low, high):
 
 def artist_key(value):
     return ' '.join(text(value).casefold().split())
+
+def is_podcast(song):
+    return str(song.get('type','')).casefold()=='podcast' or bool(re.search(r'(^|[;,/])\s*(podcasts?|podcasty)\s*($|[;,/])',str(song.get('genre','')),re.I)) or bool(re.search(r'(^|/)(podcasts?|podcasty)(/|$)',str(song.get('path','')).replace('\\','/'),re.I))
 
 
 def taste_scores(feedback):
@@ -144,6 +148,7 @@ class Library:
                 artists, genres = taste_scores(data['feedback'])
                 ranked = []
                 for index, candidate in enumerate(candidates):
+                    if is_podcast(candidate):continue
                     identifier = text(candidate.get('id'))
                     artist = artist_key(candidate.get('artist', ''))
                     genre = artist_key(candidate.get('genre', ''))

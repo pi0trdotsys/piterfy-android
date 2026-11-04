@@ -180,6 +180,7 @@ public class MainActivity extends BaseActivity {
     @Override
     protected void onStart() {
         super.onStart();
+        com.eddyizm.tempus.service.PiterfyFavoriteDownloads.refreshSoon(this);
         pingServer();
         initService();
         consumePendingPlaybackIntent();

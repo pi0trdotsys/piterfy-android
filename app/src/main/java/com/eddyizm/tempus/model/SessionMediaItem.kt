@@ -168,7 +168,7 @@ class SessionMediaItem() {
         starred = child.starred
         albumId = child.albumId
         artistId = child.artistId
-        type = if (com.eddyizm.tempus.util.PiterfyMedia.isPodcast(child.genre) || child.type == Constants.MEDIA_TYPE_PODCAST) Constants.MEDIA_TYPE_PODCAST else Constants.MEDIA_TYPE_MUSIC
+        type = if (com.eddyizm.tempus.util.PiterfyMedia.isPodcast(child) || child.type == Constants.MEDIA_TYPE_PODCAST) Constants.MEDIA_TYPE_PODCAST else Constants.MEDIA_TYPE_MUSIC
         if (type == Constants.MEDIA_TYPE_PODCAST) streamId = child.id
         bookmarkPosition = child.bookmarkPosition
         originalWidth = child.originalWidth
@@ -247,7 +247,7 @@ class SessionMediaItem() {
         bundle.putLong("starred", starred?.time ?: 0)
         bundle.putString("albumId", albumId)
         bundle.putString("artistId", artistId)
-        val playbackType = if (com.eddyizm.tempus.util.PiterfyMedia.isPodcast(genre)) Constants.MEDIA_TYPE_PODCAST else type
+        val playbackType = if (com.eddyizm.tempus.util.PiterfyMedia.isPodcast(genre,path,type)) Constants.MEDIA_TYPE_PODCAST else type
         bundle.putString("type", playbackType)
         bundle.putLong("bookmarkPosition", bookmarkPosition ?: 0)
         bundle.putInt("originalWidth", originalWidth ?: 0)

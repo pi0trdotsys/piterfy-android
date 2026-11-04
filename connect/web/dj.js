@@ -67,7 +67,7 @@
   function transportLabel(){const s=selected();return s?.state.mode===mode&&(pendingPlayback||current()?.playing)?'Wstrzymaj':'Uruchom';}
   function stopVoice(){speechGeneration++;settleIntro?.();settleIntro=null;if(clip){clip.pause();clip.removeAttribute('src');clip.load();clip=null;}if(clipUrl)URL.revokeObjectURL(clipUrl);clipUrl='';narrating=false;pendingPlayback=null;skipIntro=null;}
   async function prepare(kind,seeds){
-    const valid=seeds.filter(s=>s.artist&&!/podcast/i.test(s.genre||'')).slice(0,6);
+    const valid=seeds.filter(s=>s.artist&&!(window.PiterfyMediaKinds?.isPodcast(s)||/podcast/i.test(s.genre||''))).slice(0,6);
     if(!valid.length)throw Error('Wybierz najpierw muzykę, od której zaczniemy.');
     const state=await request({action:'start',mode:kind,seeds:valid.map(s=>({id:s.id,artist:s.artist,title:s.title,genre:s.genre||''})),
       exploration:dialog?.open&&mode===kind?Number(dialog.querySelector('input[type=range]').value):window.PiterfyLibrary.exploration()});

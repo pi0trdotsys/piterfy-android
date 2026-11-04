@@ -59,6 +59,8 @@ public class App extends Application {
 
         ClientCertManager.setupSslSocketFactory(context);
         com.eddyizm.tempus.service.PiterfyPodcastDownloads.schedule(context);
+        com.eddyizm.tempus.service.PiterfyFavoriteDownloads.schedule(context);
+        com.eddyizm.tempus.util.FavoriteRegistry.onAcceptedSongStar=()->com.eddyizm.tempus.service.PiterfyFavoriteDownloads.refreshSoon(context);
     }
 
     public static App getInstance() {

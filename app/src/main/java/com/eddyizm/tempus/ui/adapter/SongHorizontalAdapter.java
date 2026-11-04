@@ -155,7 +155,7 @@ public class SongHorizontalAdapter extends RecyclerView.Adapter<SongHorizontalAd
         );
 
         // Piterfy: show episode progress rather than codec details in spoken-word lists.
-        if (com.eddyizm.tempus.util.PiterfyMedia.isPodcast(song.getGenre())) {
+        if (com.eddyizm.tempus.util.PiterfyMedia.isPodcast(song)) {
             long progress = Preferences.getResumePoint(song.getId());
             if (progress == 0 && song.getBookmarkPosition() != null) progress = song.getBookmarkPosition();
             String duration = MusicUtil.getReadableDurationString(song.getDuration(), false);
@@ -287,7 +287,11 @@ public class SongHorizontalAdapter extends RecyclerView.Adapter<SongHorizontalAd
 
 
     public void setItems(List<Child> songs) {
-        this.songsFull = songs != null ? songs : Collections.emptyList();
+        // Only an explicitly opened podcast album may render podcast episodes.
+        boolean podcastAlbum = album != null && songs != null && songs.stream().anyMatch(com.eddyizm.tempus.util.PiterfyMedia::isPodcast);
+        this.songsFull = songs == null ? Collections.emptyList() : songs.stream()
+                .filter(song -> com.eddyizm.tempus.util.PiterfyMedia.isPodcast(song) == podcastAlbum)
+                .collect(java.util.stream.Collectors.toList());
         filtering.filter(currentFilter);
     }
 

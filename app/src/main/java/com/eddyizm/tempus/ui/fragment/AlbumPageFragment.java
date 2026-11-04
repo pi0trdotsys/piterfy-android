@@ -432,7 +432,7 @@ public class AlbumPageFragment extends Fragment implements ClickCallback {
 
                 albumPageViewModel.getAlbumSongLiveList().observe(getViewLifecycleOwner(), songs -> {
                     // Piterfy: odcinki audycji od najnowszego (numer odcinka rośnie z datą, album sortuje rosnąco)
-                    if (songs != null && !songs.isEmpty() && com.eddyizm.tempus.util.PiterfyMedia.isPodcast(songs.get(0).getGenre())) {
+                    if (songs != null && !songs.isEmpty() && com.eddyizm.tempus.util.PiterfyMedia.isPodcast(songs.get(0))) {
                         songs = new ArrayList<>(songs);
                         songs.sort(java.util.Comparator.comparing((com.eddyizm.tempus.subsonic.models.Child c) -> c.getTrack() == null ? 0 : c.getTrack()).reversed());
                     }

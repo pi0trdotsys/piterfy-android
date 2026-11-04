@@ -19,4 +19,9 @@ public class PiterfyQueueSeparationTest {
     @Test public void invalidSelectionCannotStartUnrelatedCategory(){
         assertTrue(PiterfyQueues.partition(Arrays.asList(song("a","Rock")),-1).isEmpty());
     }
+    @Test public void untaggedPodcastCanNeverEnterMusicQueue(){
+        Child music=song("music","Rock"),episode=song("episode",null);episode.setPath("Podcasty/Raport/episode.mp3");
+        assertEquals(Arrays.asList(music),PiterfyQueues.partition(Arrays.asList(music,episode),0));
+        assertEquals(Arrays.asList(episode),PiterfyQueues.partition(Arrays.asList(music,episode),1));
+    }
 }

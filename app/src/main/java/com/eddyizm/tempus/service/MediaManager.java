@@ -269,7 +269,7 @@ public class MediaManager {
         long position = 0L;
         if (media != null && startIndex >= 0 && startIndex < media.size()) {
             Child selected = media.get(startIndex);
-            if (com.eddyizm.tempus.util.PiterfyMedia.isPodcast(selected.getGenre()) || Constants.MEDIA_TYPE_PODCAST.equals(selected.getType())) {
+            if (com.eddyizm.tempus.util.PiterfyMedia.isPodcast(selected) || Constants.MEDIA_TYPE_PODCAST.equals(selected.getType())) {
                 position = Preferences.getResumePoint(selected.getId());
                 if (position == 0 && selected.getBookmarkPosition() != null) position = selected.getBookmarkPosition();
             }

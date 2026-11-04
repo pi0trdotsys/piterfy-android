@@ -525,3 +525,10 @@ W webie otwÃ³rz **Odkrywaj â†’ Edytuj kolejkÄ™**; w mobilnym pasku sÅ‚uÅ¼y do te
 Przy **Mniej takich** moÅ¼esz wskazaÄ‡ powÃ³d. **Ile mÃ³wi DJ** w ustawieniach audycji wybiera zapowiedÅº na poczÄ…tku bloku, co drugi utwÃ³r albo kaÅ¼dy utwÃ³r. PamiÄ™Ä‡ zapowiedzi jest oddzielna dla kont i trwa miÄ™dzy sesjami.
 
 Na Androidzie **Pobrane â†’ Centrum pobierania** pokazuje postÄ™p i bÅ‚Ä™dy oraz pozwala ponowiÄ‡, wstrzymaÄ‡ lub wznowiÄ‡ pobieranie. Limit pamiÄ™ci wewnÄ™trznej zatrzymuje pobieranie po osiÄ…gniÄ™ciu progu; nie usuwa muzyki. Opcjonalne sprzÄ…tanie po 24 godzinach obejmuje ukoÅ„czone podcasty z pobraÅ„, ktÃ³rych konto jest rozpoznane, z ochronÄ… przypiÄ™tych i aktualnie odtwarzanych odcinkÃ³w. Nie usuwa plikÃ³w w folderach zewnÄ™trznych. W webie panel **Pobieranie i gotowe bloki** pokazuje postÄ™p przygotowania na serwerze; pamiÄ™Ä‡ offline telefonu jest zarzÄ…dzana na telefonie.
+
+
+### Ulubione offline i oddzielne podcasty
+
+Android domyœlnie synchronizuje **ulubione utwory** do pobierania przez po³¹czenie bez naliczania op³at (zwykle Wi-Fi). Obejmuje obecne i kolejne polubienia, tak¿e z webu; albumy oznaczone sercem nie s¹ pobierane w ca³oœci. Nowe polubienie na telefonie zleca sprawdzenie, a okresowa synchronizacja wychwytuje pozosta³e. Android mo¿e opóŸniæ pracê w tle. W **Pobrane** sta³y przycisk pod paskiem tytu³u otwiera **Centrum pobierania** z prze³¹cznikiem automatycznych ulubionych, stanem i przyciskiem „SprawdŸ ulubione teraz”. Istniej¹ce pliki s¹ pomijane, cofniêcie polubienia ich nie usuwa, a limit offline wstrzymuje kolejne pobrania. Pobieranie respektuje ogólne ustawienia sieci pobierania aplikacji.
+
+**Utwory** zawieraj¹ muzykê; podcasty maj¹ w³asn¹ kategoriê i kolejkê. Odcinki s¹ rozpoznawane po typie, gatunku oraz folderach `Podcast`, `Podcasts` lub `Podcasty`, równie¿ gdy brakuje tagów. Tytu³ ani wspólny wykonawca nie decyduj¹ o klasyfikacji. Webowy katalog Utworów, jego wyszukiwanie, odtwarzanie i tasowanie u¿ywaj¹ listy muzycznej. Podcasty z pustym gatunkiem s¹ dostêpne w katalogu Podcasty. Connect odrzuca próbê po³¹czenia odcinków i muzyki w jedn¹ kolejkê.

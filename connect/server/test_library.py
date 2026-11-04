@@ -49,6 +49,10 @@ class LibraryTests(unittest.TestCase):
         result = self.call('rank', items=[{'id':'b','artist':'Other'}, {'id':'c','artist':'Artist'}, {'id':'d','artist':'Different'}])
         self.assertEqual([x['id'] for x in result['items']], ['c', 'd'])
 
+    def test_music_ranking_excludes_untagged_podcasts(self):
+        rows=self.call('rank',items=[dict(id='song',genre='Rock'),dict(id='ep',genre='',path='Podcasty/Raport/episode.mp3'),dict(id='typed',type='podcast')])['items']
+        self.assertEqual(['song'],[row['id'] for row in rows])
+
     def test_skip_deduplication_and_early_skip_only(self):
         event = dict(id='a', artist='Artist', position=10000, duration=180000, event='1')
         self.call('skip', **event)

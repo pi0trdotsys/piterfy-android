@@ -15,12 +15,23 @@ public class FavoriteRegistryTest {
     @Before
     public void reset() {
         FavoriteRegistry.onChange = null;
+        FavoriteRegistry.onAcceptedSongStar = null;
         FavoriteRegistry.clear();
     }
 
     @After
     public void dropTheListener() {
         FavoriteRegistry.onChange = null;
+        FavoriteRegistry.onAcceptedSongStar = null;
+    }
+
+    @Test public void autoDownloadsStartOnlyAfterAConfirmedSongStarAndOnlyOnce(){
+        int[] count={0};FavoriteRegistry.onAcceptedSongStar=()->count[0]++;
+        var star=FavoriteRegistry.set(Kind.SONG,"song",true);assertEquals(0,count[0]);
+        FavoriteRegistry.accept(star);FavoriteRegistry.accept(star);assertEquals(1,count[0]);
+        FavoriteRegistry.accept(FavoriteRegistry.set(Kind.ALBUM,"album",true));
+        FavoriteRegistry.accept(FavoriteRegistry.set(Kind.SONG,"song",false));assertEquals(1,count[0]);
+        var failed=FavoriteRegistry.set(Kind.SONG,"failed",true);FavoriteRegistry.withdraw(failed);assertEquals(1,count[0]);
     }
 
     @Test

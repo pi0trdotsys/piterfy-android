@@ -5,7 +5,7 @@
   function seconds(value) { return Number.isFinite(Number(value)) ? clamp(Math.round(Number(value)), 1, 10) : 5; }
   function music(item) {
     const song = item?.song || {};
-    return !!item?.uuid && !item.isRadio && !song.isPodcast && !/podcast/i.test(song.genre || '') &&
+    return !!item?.uuid && !item.isRadio && !song.isPodcast && String(song.type||'').toLowerCase()!=='podcast' && !/podcast/i.test(song.genre || '') &&
       !/(^|[/\\])podcast[sy]?[/\\]/i.test(song.path || '') && Number(song.duration || item.duration) > 4;
   }
   function next(state, random = Math.random) {

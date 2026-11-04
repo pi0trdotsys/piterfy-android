@@ -55,7 +55,7 @@ public final class PiterfyDiscoveryDialog {
                     if(!response.isSuccessful()||sr==null||sr.getRandomSongs()==null){onFailure(c,new Exception());return;}
                     Map<String,Child> songs=new LinkedHashMap<>(); JSONArray candidates=new JSONArray();
                     try {
-                        for(Child song:sr.getRandomSongs().getSongs()) if(!PiterfyMedia.isPodcast(song.getGenre())){
+                        for(Child song:sr.getRandomSongs().getSongs()) if(!PiterfyMedia.isPodcast(song)){
                             songs.put(song.getId(),song);candidates.put(new JSONObject().put("id",song.getId()).put("artist",song.getArtist()).put("genre",song.getGenre()==null?"":song.getGenre()).put("familiar",song.getPlayCount()!=null&&song.getPlayCount()>0));
                         }
                         PiterfyLibrary.request(new JSONObject().put("action","rank").put("items",candidates), ranked->{

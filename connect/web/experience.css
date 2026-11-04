@@ -64,3 +64,5 @@ body:has(.MuiAppBar-root .pf-discovery-launch) #main-content{margin-top:48px}
 html:has(dialog[open]){overflow:hidden}.pf-queue-row>span{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}@media(max-width:600px){main{min-width:0;max-width:100%;box-sizing:border-box;overflow-x:auto}}
 
 @media(max-width:600px){.layout{min-width:0!important;width:100%;max-width:100%}.layout>div{min-width:0;max-width:100%}}
+
+html[data-pf-route=utwory] #main-content>:not(.pf-home){display:none!important}html[data-pf-route=utwory] .pf-page-art svg{display:none}html[data-pf-route=utwory] .pf-page-art:before{content:'♫';font-size:60px}html[data-pf-route=utwory] .pf-songs>.pf-btn-ghost{margin:20px auto;display:block}

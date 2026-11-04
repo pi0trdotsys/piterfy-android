@@ -67,7 +67,7 @@ public class SongListPageViewModel extends AndroidViewModel {
                 break;
         }
 
-        return songList;
+        return androidx.lifecycle.Transformations.map(songList, songs -> songs == null ? new ArrayList<>() : songs.stream().filter(song -> !com.eddyizm.tempus.util.PiterfyMedia.isPodcast(song)).collect(java.util.stream.Collectors.toList()));
     }
 
     public void getSongsByPage(LifecycleOwner owner) {

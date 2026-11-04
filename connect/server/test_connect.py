@@ -41,6 +41,13 @@ class ConnectTest(unittest.TestCase):
         with self.assertRaises(Rejected):
             self.command(state, "pause")
 
+    def test_connect_keeps_podcast_type_and_rejects_mixed_queues(self):
+        from connect_core import snapshot
+        self.assertEqual('podcast',snapshot(dict(items=[dict(id='ep',type='podcast')]))['items'][0]['type'])
+        with self.assertRaises(Rejected):snapshot(dict(items=[dict(id='music'),dict(id='ep',type='podcast')]))
+        state=self.start()
+        with self.assertRaises(Rejected):self.b.command('alice',dict(action='edit',edit='append',items=[dict(id='ep',type='podcast')],version=state['version'],requestId='wrong-kind'))
+
     def test_undo_insert_preserves_duplicate_current_occurrence_and_position(self):
         state=self.start()
         removed=self.command(state,'edit',edit='remove',**{'from':0,'to':1})

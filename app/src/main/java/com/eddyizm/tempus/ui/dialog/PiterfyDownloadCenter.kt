@@ -32,6 +32,11 @@ object PiterfyDownloadCenter {
         val stats=label("Sprawdzam pobieranie…");stats.accessibilityLiveRegion=android.view.View.ACCESSIBILITY_LIVE_REGION_POLITE
         val notice=label("")
         fun button(title:String,action:()->Unit)=MaterialButton(context,null,com.google.android.material.R.attr.materialButtonOutlinedStyle).apply{text=title;isAllCaps=false;minimumHeight=dp(48);setOnClickListener{action()};body.addView(this)}
+        val favorites=SwitchMaterial(context).apply{text="Automatycznie pobieraj ulubione utwory";isChecked=com.eddyizm.tempus.service.PiterfyFavoriteDownloads.enabled(context);minimumHeight=dp(48);body.addView(this)}
+        favorites.setOnCheckedChangeListener{_,enabled->com.eddyizm.tempus.service.PiterfyFavoriteDownloads.setEnabled(context,enabled)}
+        label("Przez Wi-Fi: obecne ulubione i kolejne polubienia. Podcasty mają osobne subskrypcje. Cofnięcie polubienia nie usuwa zapisanych plików.")
+        val favoritesStatus=label(com.eddyizm.tempus.service.PiterfyFavoriteDownloads.status(context))
+        button("Sprawdź ulubione teraz"){com.eddyizm.tempus.service.PiterfyFavoriteDownloads.refreshSoon(context);favoritesStatus.text=com.eddyizm.tempus.service.PiterfyFavoriteDownloads.status(context)}
         val pause=button("Wstrzymaj pobieranie"){
             if(!DownloadUtil.getDownloadManager(context).downloadsPaused)DownloadService.sendPauseDownloads(context,DownloaderService::class.java,false)
             else if(PiterfyOfflinePolicy.allow(context))DownloadService.sendResumeDownloads(context,DownloaderService::class.java,false)
@@ -66,6 +71,7 @@ object PiterfyDownloadCenter {
                         val bytes=DownloadUtil.getOfflineBytes(context);val paused=manager.downloadsPaused
                         main.post{
                             loading=false;if(!dialog.isShowing||owner!=PiterfyLibrary.account())return@post
+                            val favoriteState=com.eddyizm.tempus.service.PiterfyFavoriteDownloads.status(context);if(favoritesStatus.text.toString()!=favoriteState)favoritesStatus.text=favoriteState
                             val pending=all.count{it.state in listOf(Download.STATE_QUEUED,Download.STATE_DOWNLOADING,Download.STATE_STOPPED,Download.STATE_RESTARTING)}
                             stats.text="Gotowe: ${all.count{it.state==Download.STATE_COMPLETED}} · w kolejce: $pending · błędy: ${all.count{it.state==Download.STATE_FAILED}}\nZapisano: ${Formatter.formatFileSize(context,bytes)}"
                             pause.text=if(paused)"Wznów pobieranie" else "Wstrzymaj pobieranie"

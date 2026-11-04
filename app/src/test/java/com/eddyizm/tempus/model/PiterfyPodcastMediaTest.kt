@@ -6,6 +6,12 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class PiterfyPodcastMediaTest {
+    @Test fun untaggedFileInPodcastFolderKeepsItsTypeAcrossPlayback() {
+        val child=Child("episode-path",path="Podcasty/Raport/episode.mp3",genre="")
+        val item=SessionMediaItem(child)
+        assertEquals(Constants.MEDIA_TYPE_PODCAST,item.type)
+        assertEquals("episode-path",item.streamId)
+    }
     @Test fun libraryPodcastRetainsStreamIdAndPodcastType() {
         val child = Child("episode")
         child.genre = "Podcast"

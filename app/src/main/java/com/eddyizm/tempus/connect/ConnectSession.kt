@@ -383,11 +383,11 @@ object ConnectSession {
     private fun encode(song: Child) = JSONObject().put("id", song.id).put("title", song.title.orEmpty().take(512))
         .put("artist", song.artist.orEmpty().take(512)).put("album", song.album.orEmpty().take(512))
         .put("albumId", song.albumId.orEmpty()).put("artistId", song.artistId.orEmpty()).put("cover", song.coverArtId.orEmpty())
-        .put("suffix", song.suffix.orEmpty()).put("duration", song.duration ?: 0).put("bitrate", song.bitrate ?: 0)
+        .put("type",if(com.eddyizm.tempus.util.PiterfyMedia.isPodcast(song))"podcast" else "music").put("suffix", song.suffix.orEmpty()).put("duration", song.duration ?: 0).put("bitrate", song.bitrate ?: 0)
 
     private fun decode(items: JSONArray): List<Child> = (0 until items.length()).map { i ->
         val row = items.getJSONObject(i)
-        Child(row.getString("id"), title = row.optString("title"), artist = row.optString("artist"), album = row.optString("album"),
+        Child(row.getString("id"), type=row.optString("type","music"), title = row.optString("title"), artist = row.optString("artist"), album = row.optString("album"),
             albumId = row.optString("albumId").takeIf { it.isNotBlank() }, artistId = row.optString("artistId").takeIf { it.isNotBlank() },
             coverArtId = row.optString("cover").ifBlank { row.getString("id") }, duration = row.optInt("duration"),
             suffix = row.optString("suffix"), bitrate = row.optInt("bitrate"), genre = row.optString("genre"))

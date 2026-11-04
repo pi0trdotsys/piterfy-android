@@ -222,7 +222,7 @@ public class QueueRepository {
                                             entry.getArtist(),
                                             entry.getAlbumId(),
                                             entry.getCoverArtId(),
-                                            com.eddyizm.tempus.util.PiterfyMedia.isPodcast(entry.getGenre()) ? com.eddyizm.tempus.util.Constants.MEDIA_TYPE_PODCAST : entry.getType(),
+                                            com.eddyizm.tempus.util.PiterfyMedia.isPodcast(entry) ? com.eddyizm.tempus.util.Constants.MEDIA_TYPE_PODCAST : entry.getType(),
                                             ts
                                     ));
                                 }

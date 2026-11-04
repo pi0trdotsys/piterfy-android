@@ -45,11 +45,14 @@ def snapshot(raw):
         if not identity or identity.startswith(("ir_", "local_piterfy_")):
             raise Rejected("library_tracks_only", 400)
         row = {"id": identity}
+        row['type']=item.get('type','music')
+        if row['type'] not in ('music','podcast'):raise Rejected('invalid_media_type',400)
         for key in ("title", "artist", "album", "albumId", "artistId", "cover", "suffix"):
             row[key] = text(item.get(key, ""), 512)
         row["duration"] = number(item.get("duration", 0), 0, 864000)
         row["bitrate"] = number(item.get("bitrate", 0), 0, 100000)
         clean.append(row)
+    if len({row['type'] for row in clean})>1:raise Rejected('separate_queues',400)
     index = int(number(raw.get("index", 0), 0, max(0, len(clean) - 1)))
     duration = clean[index]["duration"] * 1000 if clean else 0
     return dict(items=clean, index=index, position=int(number(raw.get("position", 0), 0, duration or 864000000)),
@@ -234,6 +237,8 @@ class Broker:
         count = len(items)
         if action in ("replace", "append", "next", "insert"):
             added = snapshot({"items": body.get("items")})["items"]
+            if action!='replace' and count and added and added[0]['type']!=items[0]['type']:
+                raise Rejected('separate_queues',400)
             if not added or (action != "replace" and count + len(added) > LIMIT):
                 raise Rejected("queue_limit", 400)
             if action == "replace":
