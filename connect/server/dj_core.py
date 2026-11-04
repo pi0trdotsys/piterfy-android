@@ -110,6 +110,11 @@ class Sessions:
                 track_index=next((i for i,song in enumerate(block.get('tracks',[])) if song.get('id')==track),0)
                 talk=state.get('talkLevel','radio')
                 result=result and (track_index==0 or talk=='radio' or talk=='balanced' and track_index%2==0)
+                if state['active'] and block.get('ready',True) and state.get('voice',False) and not clip.get('announced',False) and not result:
+                    # Suppressed speech is consumed too, so a later poll/receiver cannot
+                    # repeatedly pause music trying to claim the same quiet transition.
+                    clip['announced']=True
+                    clip['skippedByTalkLevel']=True
                 if result:
                     clip['announced'] = True
                     variant=clip.get('variant') or clip.get('openingVariant') or 'cached:'+hashlib.sha256(clip['text'].encode()).hexdigest()[:16]

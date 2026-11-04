@@ -77,7 +77,7 @@ class Library:
                     position = number(body.get('position'), 0, 86400000)
                     duration = number(body.get('duration'), 1, 86400000)
                     if not 3000 <= position < min(30000, duration * .3):
-                        return {key: data[key] for key in ('exploration', 'feedback', 'episodes', 'subscriptions')}
+                        return {key: data[key] for key in ('exploration', 'feedback', 'episodes', 'subscriptions', 'pins')}
                 elif body.get('vote') not in (-1, 0, 1) or isinstance(body.get('vote'), bool):
                     raise Rejected('invalid_vote', 400)
                 reason = body.get('reason', '')

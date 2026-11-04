@@ -1,6 +1,15 @@
 /* Shared discovery and podcast experience for the existing Navidrome player. */
 (() => {
   'use strict';
+  function protectedQueue(songs,queue,current,pinned){
+    if(!songs.length)return songs;
+    const at=queue.findIndex(t=>t.uuid===current),ids=new Set(songs.map(s=>s.id));
+    const pins=queue.slice(at+1).filter(t=>t.song).map(t=>({...t.song,id:t.trackId||t.song.mediaFileId||t.song.id}))
+      .filter(s=>{if(podcast(s)||!pinned.includes(s.id)||ids.has(s.id))return false;ids.add(s.id);return true;});
+    return [songs[0],...pins,...songs.slice(1)].slice(0,500);
+  }
+  function podcast(song){return /(^|[;,/])\s*podcasts?\s*($|[;,/])/i.test(song?.genre||'')||/(^|\/)Podcasty\//i.test(song?.path||'');}
+  if(typeof module==='object'&&module.exports){module.exports={protectedQueue};return;}
   if (window.PiterfyLibrary) return;
   let store, dialog, account = '', preferences = {}, previous, lastSave = 0, generation = 0;
   let applyingQueue = false, seekGuard = 0, saving = false, checkedAlbum = '', coverSource = '';
@@ -26,7 +35,6 @@
   }
   setInterval(prefetchNextAudio,4000);
   const audio = () => document.querySelector('audio.music-player-audio');
-  const podcast = song => /(^|[;,/])\s*podcasts?\s*($|[;,/])/i.test(song?.genre || '') || /(^|\/)Podcasty\//i.test(song?.path || '');
   const identity = () => localStorage.getItem('username') || '';
   const queueKey = kind => 'piterfy.queue.v1:' + account + ':' + kind;
   function findStore() {
@@ -98,9 +106,7 @@
     if(window.PiterfyPlayback?.current()?.remote)throw Error('Najpierw wybierz „Przenieś tutaj” w Connect.');
     if(protect&&songs.length){
       const wanted=songs[index]?.id,player=findStore()?.getState().player;
-      const at=player?.queue.findIndex(t=>t.uuid===player.current?.uuid)??-1,ids=new Set(songs.map(s=>s.id));
-      const pins=(player?.queue.slice(at+1)||[]).map(t=>t.song).filter(s=>s&&!podcast(s)&&preferences.pins?.includes(s.id)&&!ids.has(s.id));
-      songs=[songs[0],...pins,...songs.slice(1)].slice(0,500);index=Math.max(0,songs.findIndex(s=>s.id===wanted));
+      songs=protectedQueue(songs,player?.queue||[],player?.current?.uuid,preferences.pins||[]);index=Math.max(0,songs.findIndex(s=>s.id===wanted));
     }
     saveQueue();window.PiterfyCrossfade?.cancel();
     const token=generation, s=findStore();if(!s)throw Error('Odtwarzacz nie jest jeszcze gotowy.');
@@ -193,7 +199,8 @@
         const p=state.progress||{},labels={queued:'W kolejce',matching:'Dobieranie muzyki',searching:'Wyszukiwanie',downloading:'Pobieranie na serwer',importing:'Dodawanie do biblioteki',voice:'Przygotowanie zapowiedzi',ready:'Gotowe',unavailable:'Nie udało się przygotować',hourly_limit:'Osiągnięto godzinny limit pobierania'};
         el('p',`Gotowe bloki: ${state.buffer?.ready||0}/2 · inne klimaty: ${state.buffer?.alternatives?.length||0}`,card);
         const progress=el('progress','',card);progress.max=100;progress.value=Math.max(0,Math.min(100,Number(p.percent)||0));progress.setAttribute('aria-label','Postęp przygotowania '+(state.mode==='dj'?'DJ':'Odkrywaj'));
-        el('p',(labels[p.stage]||'Zapas przygotowuje się w tle')+(p.total?` · ${p.completed||0}/${p.total} plików`:''),card,'pf-library-muted');
+        const stage=p.stage==='unavailable'&&state.buffer?.ready?'Zapas gotowy do odsłuchu. Nowe odkrycia chwilowo niedostępne.':labels[p.stage]||'Zapas przygotowuje się w tle';
+        el('p',stage+(p.total?` · ${p.completed||0}/${p.total} plików`:''),card,'pf-library-muted');
         if(p.failed)el('p',`Nieudane pliki: ${p.failed}. Gotowy zapas nadal możesz odtworzyć.`,card,'pf-library-muted');
         button(card,'Otwórz '+(state.mode==='dj'?'DJ':'Odkrywaj'),()=>{panel.close();window.PiterfyDJ.open(state.mode);});
         button(card,'Sprawdź ponownie',async()=>{try{await window.PiterfyDJ.refreshBuffer(state.mode);notice.textContent='Sprawdzono przygotowanie. Pobieranie działa w ramach limitów serwera.';render();}catch(e){notice.textContent=e.message;}});
@@ -234,16 +241,16 @@
       findStore().dispatch({type:'PLAYER_SYNC_QUEUE',data:{audioInfo:p.current,audioLists:items}});queueUndo=null;saveQueue();renderQueue();notice.textContent='Przywrócono utwór.';
     });undo.hidden=true;
     const rows=el('div','',queueDialog);let signature='',drag=null;
-    const fail=e=>notice.textContent=e.message;
+    const fail=e=>{notice.textContent=e.message;renderQueue(true);};
     function renderQueue(force=false){
       if(!queueDialog.open)return;
-      const q=queueSnapshot(),sig=JSON.stringify([q.keys,q.index,q.remote,preferences.pins]);
+      const q=queueSnapshot(),sig=JSON.stringify([q.keys,q.index,q.remote,q.version,preferences.pins]);
       if(!force&&sig===signature)return;
       if(!force&&rows.contains(document.activeElement))return;
       signature=sig;rows.replaceChildren();undo.hidden=!queueUndo;
       if(!q.items.length)el('p','Kolejka jest pusta.',rows,'pf-library-muted');
       q.items.forEach((item,i)=>{
-        const song=q.remote?item:item.song||{},row=el('article','',rows,'pf-queue-row');row.draggable=true;
+        const song=q.remote?item:{...item.song,id:item.trackId||item.song?.mediaFileId||item.song?.id},row=el('article','',rows,'pf-queue-row');row.draggable=true;
         const pin=preferences.pins?.includes(song.id);
         el('small',i===q.index?'TERAZ GRA':String(i+1).padStart(2,'0'),row,'pf-dj-eyebrow');
         el('strong',(pin?'📌 ':'')+(song.title||item.name||'Utwór'),row);el('span',song.artist||item.singer||'',row,'pf-library-muted');

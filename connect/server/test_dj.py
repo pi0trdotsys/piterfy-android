@@ -68,7 +68,8 @@ class DJTest(unittest.TestCase):
         self.assertTrue(self.s.handle('a',dict(action='claim',block='b',track='2'))['speak'])
         self.assertFalse(self.s.handle('a',dict(action='claim',block='b',track='3'))['speak'])
         self.s.handle('a',dict(action='settings',talkLevel='radio'))
-        self.assertTrue(self.s.handle('a',dict(action='claim',block='b',track='3'))['speak'])
+        self.assertFalse(self.s.handle('a',dict(action='claim',block='b',track='3'))['speak'])
+        self.assertTrue(self.s.handle('a',dict(action='claim',block='b',track='4'))['speak'])
         with self.assertRaises(Rejected):self.s.handle('a',dict(action='settings',talkLevel='invalid'))
 
     def test_hourly_budget_cannot_be_reset_with_stop(self):
