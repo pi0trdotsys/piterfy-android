@@ -1,0 +1,696 @@
+<meta charset="utf-8">
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<title>Panel Gustu Piterfy</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Work+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap">
+<style>
+  :root {
+    --bg: #ECEDEF;
+    --surface: #F7F8F9;
+    --surface-2: #DFE1E4;
+    --surface-3: #D2D5DA;
+    --border: #C4C8CE;
+    --text: #1B1D22;
+    --text-2: #4B515A;
+    --text-muted: #7A808A;
+    --accent: #B4581E;
+    --accent-fill: #CB6B2C;
+    --accent-soft: #E7D2BC;
+    --mood-euforia: #96701A;
+    --mood-napiecie: #A83A2E;
+    --mood-spokoj: #2E7E62;
+    --mood-melancholia: #4759A6;
+    --shadow: 0 1px 0 rgba(20,22,26,0.06);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #14161A;
+      --surface: #1D2026;
+      --surface-2: #262A32;
+      --surface-3: #2E333C;
+      --border: #363B44;
+      --text: #EDEFF2;
+      --text-2: #B7BCC5;
+      --text-muted: #7E8490;
+      --accent: #F2B65C;
+      --accent-fill: #E08A3E;
+      --accent-soft: #3A2A1C;
+      --mood-euforia: #C9A23F;
+      --mood-napiecie: #D46F5E;
+      --mood-spokoj: #4FB08D;
+      --mood-melancholia: #7C8CDA;
+      --shadow: 0 1px 0 rgba(0,0,0,0.4);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #14161A;
+    --surface: #1D2026;
+    --surface-2: #262A32;
+    --surface-3: #2E333C;
+    --border: #363B44;
+    --text: #EDEFF2;
+    --text-2: #B7BCC5;
+    --text-muted: #7E8490;
+    --accent: #F2B65C;
+    --accent-fill: #E08A3E;
+    --accent-soft: #3A2A1C;
+    --mood-euforia: #C9A23F;
+    --mood-napiecie: #D46F5E;
+    --mood-spokoj: #4FB08D;
+    --mood-melancholia: #7C8CDA;
+    --shadow: 0 1px 0 rgba(0,0,0,0.4);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: "Work Sans", ui-sans-serif, system-ui, sans-serif;
+    padding: 0 20px;
+    padding-block: 28px 60px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; animation: none !important; }
+  }
+
+  .rack {
+    max-width: 1080px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+  }
+
+  /* ---------- header ---------- */
+  .panel-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    gap: 10px 20px;
+    border-bottom: 3px solid var(--text);
+    padding-bottom: 14px;
+  }
+  .brand-mark {
+    font-family: "Oswald", ui-sans-serif, sans-serif;
+    font-weight: 700;
+    font-size: clamp(28px, 5vw, 42px);
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    display: block;
+    text-wrap: balance;
+  }
+  .brand-sub {
+    font-family: "Oswald", ui-sans-serif, sans-serif;
+    font-weight: 500;
+    font-size: 14px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+  .meta {
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-size: 12.5px;
+    color: var(--text-muted);
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+
+  h2 {
+    font-family: "Oswald", ui-sans-serif, sans-serif;
+    font-weight: 600;
+    font-size: 15px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text);
+    margin: 0 0 4px;
+    text-wrap: balance;
+  }
+  .lead {
+    color: var(--text-2);
+    font-size: 14px;
+    max-width: 62ch;
+    margin: 0 0 16px;
+    line-height: 1.5;
+  }
+
+  /* ---------- meters ---------- */
+  .meters {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+  }
+  @media (max-width: 720px) {
+    .meters { grid-template-columns: repeat(2, 1fr); }
+  }
+  .meter {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 14px 16px 16px;
+    box-shadow: var(--shadow);
+  }
+  .meter-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+  }
+  .meter-label {
+    font-family: "Oswald", ui-sans-serif, sans-serif;
+    font-weight: 500;
+    font-size: 12px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-2);
+  }
+  .meter-value {
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-weight: 700;
+    font-size: 20px;
+    color: var(--text);
+  }
+  .meter-track {
+    position: relative;
+    height: 10px;
+    border-radius: 2px;
+    background:
+      repeating-linear-gradient(90deg, var(--border) 0 1px, transparent 1px 10%),
+      var(--surface-3);
+    overflow: hidden;
+  }
+  .meter-fill {
+    height: 100%;
+    background: var(--accent-fill);
+    border-radius: 2px;
+  }
+  .meter-scale {
+    display: flex;
+    justify-content: space-between;
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-size: 10px;
+    color: var(--text-muted);
+    margin-top: 4px;
+  }
+
+  /* ---------- section shell ---------- */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 20px 22px 22px;
+    box-shadow: var(--shadow);
+  }
+
+  /* ---------- quadrant chart ---------- */
+  .quadrant-wrap {
+    position: relative;
+    width: 100%;
+  }
+  .quadrant-chart {
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+  .quad-label {
+    font-family: "Oswald", ui-sans-serif, sans-serif;
+    font-weight: 600;
+    font-size: 13px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+  .axis-label {
+    font-family: "Oswald", ui-sans-serif, sans-serif;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    fill: var(--text-muted);
+  }
+  .tick-label {
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-size: 10px;
+    fill: var(--text-muted);
+  }
+  .tooltip {
+    position: absolute;
+    pointer-events: none;
+    background: var(--text);
+    color: var(--bg);
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-size: 11.5px;
+    padding: 6px 9px;
+    border-radius: 3px;
+    line-height: 1.4;
+    max-width: 220px;
+    transform: translate(-50%, -110%);
+    white-space: nowrap;
+    z-index: 5;
+  }
+  .tooltip b { font-family: "Work Sans", sans-serif; }
+
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px 22px;
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid var(--border);
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 13px;
+    color: var(--text-2);
+  }
+  .legend-dot {
+    width: 11px;
+    height: 11px;
+    border-radius: 2px;
+    flex: none;
+  }
+  .legend-item b {
+    color: var(--text);
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+  }
+
+  .table-toggle {
+    margin-top: 14px;
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--text-2);
+    font-family: "Oswald", sans-serif;
+    font-size: 11.5px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 7px 12px;
+    border-radius: 3px;
+    cursor: pointer;
+  }
+  .table-toggle:hover { border-color: var(--accent); color: var(--accent); }
+  .table-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .quadrant-table {
+    margin-top: 14px;
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  .quadrant-table th, .quadrant-table td {
+    text-align: left;
+    padding: 7px 10px;
+    border-bottom: 1px solid var(--border);
+  }
+  .quadrant-table th {
+    font-family: "Oswald", sans-serif;
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    font-weight: 500;
+  }
+  .quadrant-table td.num { font-family: "JetBrains Mono", monospace; }
+
+  /* ---------- two-col grid ---------- */
+  .bars-grid {
+    display: grid;
+    grid-template-columns: 1.2fr 1fr;
+    gap: 14px;
+  }
+  @media (max-width: 760px) {
+    .bars-grid { grid-template-columns: 1fr; }
+  }
+
+  .hbar-row {
+    display: grid;
+    grid-template-columns: 118px 1fr 44px;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 9px;
+  }
+  .hbar-row .name {
+    font-size: 12.5px;
+    color: var(--text-2);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .hbar-track {
+    height: 8px;
+    background: var(--surface-3);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .hbar-fill {
+    height: 100%;
+    background: var(--accent-fill);
+    border-radius: 2px;
+  }
+  .hbar-row .count {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 12px;
+    color: var(--text-muted);
+    text-align: right;
+  }
+
+  .rank-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    counter-reset: rank;
+  }
+  .rank-item {
+    display: grid;
+    grid-template-columns: 26px 1fr 44px;
+    align-items: center;
+    gap: 10px;
+    padding: 7px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .rank-item:last-child { border-bottom: none; }
+  .rank-num {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+  .rank-name {
+    font-size: 13.5px;
+    color: var(--text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .rank-count {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 12px;
+    color: var(--accent);
+    text-align: right;
+  }
+
+  /* ---------- decades ---------- */
+  .decade-chart {
+    display: flex;
+    align-items: flex-end;
+    gap: 10px;
+    height: 150px;
+    padding-top: 10px;
+  }
+  .decade-col {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    height: 100%;
+    gap: 6px;
+  }
+  .decade-bar {
+    width: 100%;
+    max-width: 46px;
+    background: var(--accent-fill);
+    border-radius: 2px 2px 0 0;
+  }
+  .decade-count {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 10.5px;
+    color: var(--text-muted);
+  }
+  .decade-label {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 11px;
+    color: var(--text-2);
+  }
+
+  footer.panel-foot {
+    border-top: 1px solid var(--border);
+    padding-top: 14px;
+    font-size: 12.5px;
+    color: var(--text-muted);
+    line-height: 1.6;
+    max-width: 72ch;
+  }
+</style>
+
+<div class="rack">
+  <header class="panel-head">
+    <div>
+      <span class="brand-mark">Piterfy</span>
+      <span class="brand-sub">Analizator gustu &mdash; Liked Songs</span>
+    </div>
+    <div class="meta">
+      <span id="meta-count">&mdash; utworów</span>
+      <span>&middot;</span>
+      <span>wygenerowano 2026-09-14</span>
+    </div>
+  </header>
+
+  <section class="meters" aria-label="Średnie cechy audio biblioteki">
+    <div class="meter">
+      <div class="meter-top"><span class="meter-label">Taneczność</span><span class="meter-value" id="m-dance">&mdash;</span></div>
+      <div class="meter-track"><div class="meter-fill" id="m-dance-fill" style="width:0%"></div></div>
+      <div class="meter-scale"><span>0%</span><span>100%</span></div>
+    </div>
+    <div class="meter">
+      <div class="meter-top"><span class="meter-label">Energia</span><span class="meter-value" id="m-energy">&mdash;</span></div>
+      <div class="meter-track"><div class="meter-fill" id="m-energy-fill" style="width:0%"></div></div>
+      <div class="meter-scale"><span>0%</span><span>100%</span></div>
+    </div>
+    <div class="meter">
+      <div class="meter-top"><span class="meter-label">Walencja</span><span class="meter-value" id="m-valence">&mdash;</span></div>
+      <div class="meter-track"><div class="meter-fill" id="m-valence-fill" style="width:0%"></div></div>
+      <div class="meter-scale"><span>0% smutny</span><span>100% radosny</span></div>
+    </div>
+    <div class="meter">
+      <div class="meter-top"><span class="meter-label">Tempo</span><span class="meter-value" id="m-tempo">&mdash;</span></div>
+      <div class="meter-track"><div class="meter-fill" id="m-tempo-fill" style="width:0%"></div></div>
+      <div class="meter-scale"><span>60 BPM</span><span>180 BPM</span></div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Mapa nastroju</h2>
+    <p class="lead">Każdy z Twoich polubionych utworów, rozstawiony wg energii i walencji &mdash; wskaźników audio ze Spotify. To realny obraz tego, po co sięgasz najczęściej.</p>
+    <div class="quadrant-wrap">
+      <svg class="quadrant-chart" viewBox="0 0 640 500" width="640" height="500" preserveAspectRatio="xMidYMid meet" id="quad-svg" role="img" aria-label="Wykres rozrzutu energii i walencji utworów"></svg>
+      <div class="tooltip" id="tooltip" hidden></div>
+    </div>
+    <div class="legend" id="legend"></div>
+    <button class="table-toggle" id="table-toggle" aria-expanded="false">Pokaż jako tabelę</button>
+    <table class="quadrant-table" id="quad-table" hidden>
+      <thead><tr><th>Nastrój</th><th>Energia</th><th>Walencja</th><th>Utworów</th><th>% biblioteki</th></tr></thead>
+      <tbody id="quad-table-body"></tbody>
+    </table>
+  </section>
+
+  <section class="bars-grid">
+    <div class="card">
+      <h2>Top gatunki</h2>
+      <div id="genres"></div>
+    </div>
+    <div class="card">
+      <h2>Top artyści</h2>
+      <ol class="rank-list" id="artists"></ol>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Dekady wydania</h2>
+    <div class="decade-chart" id="decades"></div>
+  </section>
+
+  <footer class="panel-foot">
+    <p id="foot-text">Źródło: eksport Spotify &bdquo;Liked Songs&rdquo; (Exportify). Ten profil to punkt odniesienia dla dalszej automatyzacji Piterfy &mdash; porównania z cotygodniowymi playlistami ListenBrainz (Weekly Jams / Weekly Exploration) i tym, co faktycznie trafia do biblioteki Navidrome.</p>
+  </footer>
+</div>
+
+<script>
+(function () {
+  const MOOD = {
+    euforia:     { name: "Euforia",     def: "energia ≥50%, walencja ≥50%", color: "var(--mood-euforia)" },
+    napiecie:    { name: "Napięcie",    def: "energia ≥50%, walencja <50%", color: "var(--mood-napiecie)" },
+    spokoj:      { name: "Spokój",      def: "energia <50%, walencja ≥50%", color: "var(--mood-spokoj)" },
+    melancholia: { name: "Melancholia", def: "energia <50%, walencja <50%", color: "var(--mood-melancholia)" },
+  };
+
+  function quadrantOf(e, v) {
+    if (e >= 0.5 && v >= 0.5) return "euforia";
+    if (e >= 0.5 && v < 0.5) return "napiecie";
+    if (e < 0.5 && v >= 0.5) return "spokoj";
+    return "melancholia";
+  }
+
+  function resolveColor(varExpr) {
+    const m = varExpr.match(/var\((--[a-z-]+)\)/);
+    return getComputedStyle(document.documentElement).getPropertyValue(m[1]).trim();
+  }
+
+  function render(data) {
+    document.getElementById("meta-count").textContent = data.total_tracks.toLocaleString("pl-PL") + " utworów · " + data.explicit_pct + "% explicit";
+
+    const a = data.averages;
+    setMeter("dance", a.Danceability, Math.round(a.Danceability * 100) + "%");
+    setMeter("energy", a.Energy, Math.round(a.Energy * 100) + "%");
+    setMeter("valence", a.Valence, Math.round(a.Valence * 100) + "%");
+    const tempoPct = Math.max(0, Math.min(100, ((a.Tempo - 60) / (180 - 60)) * 100));
+    document.getElementById("m-tempo-fill").style.width = tempoPct + "%";
+    document.getElementById("m-tempo").textContent = Math.round(a.Tempo) + " BPM";
+
+    function setMeter(key, frac, label) {
+      document.getElementById("m-" + key + "-fill").style.width = Math.round(frac * 100) + "%";
+      document.getElementById("m-" + key).textContent = label;
+    }
+
+    renderGenres(data.top_genres);
+    renderArtists(data.top_artists);
+    renderDecades(data.decades);
+    renderQuadrant(data.tracks);
+  }
+
+  function renderGenres(genres) {
+    const max = Math.max(...genres.map((g) => g[1]));
+    const el = document.getElementById("genres");
+    el.innerHTML = genres.map(([name, count]) => `
+      <div class="hbar-row">
+        <span class="name" title="${name}">${name}</span>
+        <div class="hbar-track"><div class="hbar-fill" style="width:${(count / max * 100).toFixed(1)}%"></div></div>
+        <span class="count">${count}</span>
+      </div>`).join("");
+  }
+
+  function renderArtists(artists) {
+    const el = document.getElementById("artists");
+    el.innerHTML = artists.map(([name, count], i) => `
+      <li class="rank-item">
+        <span class="rank-num">${String(i + 1).padStart(2, "0")}</span>
+        <span class="rank-name" title="${name}">${name}</span>
+        <span class="rank-count">${count}</span>
+      </li>`).join("");
+  }
+
+  function renderDecades(decades) {
+    const max = Math.max(...decades.map((d) => d[1]));
+    const el = document.getElementById("decades");
+    el.innerHTML = decades.map(([decade, count]) => `
+      <div class="decade-col">
+        <span class="decade-count">${count}</span>
+        <div class="decade-bar" style="height:${Math.max(3, (count / max * 100))}%"></div>
+        <span class="decade-label">${decade}</span>
+      </div>`).join("");
+  }
+
+  function renderQuadrant(tracks) {
+    const W = 640, H = 500;
+    const padL = 54, padR = 24, padT = 20, padB = 44;
+    const plotW = W - padL - padR;
+    const plotH = H - padT - padB;
+    const x = (v) => padL + v * plotW;
+    const y = (e) => padT + (1 - e) * plotH;
+
+    const counts = { euforia: 0, napiecie: 0, spokoj: 0, melancholia: 0 };
+    const colors = {};
+    Object.keys(MOOD).forEach((k) => { colors[k] = resolveColor(MOOD[k].color); });
+
+    let circles = "";
+    tracks.forEach((t) => {
+      const q = quadrantOf(t.e, t.v);
+      counts[q]++;
+      circles += `<circle cx="${x(t.v).toFixed(1)}" cy="${y(t.e).toFixed(1)}" r="3" fill="${colors[q]}" fill-opacity="0.55" data-n="${escAttr(t.n)}" data-a="${escAttr(t.a)}" data-e="${t.e}" data-v="${t.v}" data-t="${t.t}"></circle>`;
+    });
+
+    const gridColor = resolveColor("var(--border)");
+    const textMuted = resolveColor("var(--text-muted)");
+
+    let svg = "";
+    // quadrant background tints — top = wysoka energia, prawo = wysoka walencja
+    svg += `<rect x="${x(0.5)}" y="${padT}" width="${plotW / 2}" height="${plotH / 2}" fill="${colors.euforia}" fill-opacity="0.07"/>`; // top-right: E+ V+
+    svg += `<rect x="${padL}" y="${padT}" width="${plotW / 2}" height="${plotH / 2}" fill="${colors.napiecie}" fill-opacity="0.07"/>`; // top-left: E+ V-
+    svg += `<rect x="${x(0.5)}" y="${y(0.5)}" width="${plotW / 2}" height="${plotH / 2}" fill="${colors.spokoj}" fill-opacity="0.07"/>`; // bottom-right: E- V+
+    svg += `<rect x="${padL}" y="${y(0.5)}" width="${plotW / 2}" height="${plotH / 2}" fill="${colors.melancholia}" fill-opacity="0.07"/>`; // bottom-left: E- V-
+
+    // axes/gridlines at 0, .5, 1
+    [0, 0.5, 1].forEach((v) => {
+      svg += `<line x1="${x(v)}" y1="${padT}" x2="${x(v)}" y2="${padT + plotH}" stroke="${gridColor}" stroke-width="${v === 0.5 ? 1.4 : 1}"/>`;
+      svg += `<line x1="${padL}" y1="${y(v)}" x2="${padL + plotW}" y2="${y(v)}" stroke="${gridColor}" stroke-width="${v === 0.5 ? 1.4 : 1}"/>`;
+      svg += `<text class="tick-label" x="${x(v)}" y="${padT + plotH + 16}" text-anchor="middle" fill="${textMuted}">${v}</text>`;
+      svg += `<text class="tick-label" x="${padL - 8}" y="${y(v) + 4}" text-anchor="end" fill="${textMuted}">${v}</text>`;
+    });
+
+    svg += circles;
+
+    // quadrant direct labels (left-side ones nudged right/down to clear the axis tick numbers)
+    svg += `<text class="quad-label" x="${x(0.98)}" y="${padT + 18}" text-anchor="end" fill="${colors.euforia}">${MOOD.euforia.name}</text>`;
+    svg += `<text class="quad-label" x="${padL + 44}" y="${padT + 18}" text-anchor="start" fill="${colors.napiecie}">${MOOD.napiecie.name}</text>`;
+    svg += `<text class="quad-label" x="${x(0.98)}" y="${padT + plotH - 8}" text-anchor="end" fill="${colors.spokoj}">${MOOD.spokoj.name}</text>`;
+    svg += `<text class="quad-label" x="${padL + 44}" y="${padT + plotH - 8}" text-anchor="start" fill="${colors.melancholia}">${MOOD.melancholia.name}</text>`;
+
+    // axis titles
+    svg += `<text class="axis-label" x="${padL + plotW / 2}" y="${H - 6}" text-anchor="middle">Walencja (nastrój) →</text>`;
+    svg += `<text class="axis-label" x="14" y="${padT + plotH / 2}" text-anchor="middle" transform="rotate(-90 14 ${padT + plotH / 2})">Energia →</text>`;
+
+    const svgEl = document.getElementById("quad-svg");
+    svgEl.innerHTML = svg;
+
+    // tooltip
+    const tooltip = document.getElementById("tooltip");
+    const wrap = svgEl.parentElement;
+    svgEl.querySelectorAll("circle").forEach((c) => {
+      c.addEventListener("mouseenter", (ev) => {
+        const r = wrap.getBoundingClientRect();
+        const cx = ((parseFloat(c.getAttribute("cx")) / W) * r.width);
+        const cy = ((parseFloat(c.getAttribute("cy")) / H) * r.height);
+        tooltip.innerHTML = `<b>${c.dataset.n}</b><br>${c.dataset.a}<br>energia ${Math.round(c.dataset.e * 100)}% · walencja ${Math.round(c.dataset.v * 100)}% · ${Math.round(c.dataset.t)} BPM`;
+        tooltip.style.left = cx + "px";
+        tooltip.style.top = cy + "px";
+        tooltip.hidden = false;
+      });
+      c.addEventListener("mouseleave", () => { tooltip.hidden = true; });
+    });
+
+    // legend + table
+    const legend = document.getElementById("legend");
+    const total = tracks.length;
+    legend.innerHTML = Object.keys(MOOD).map((k) => `
+      <span class="legend-item">
+        <span class="legend-dot" style="background:${colors[k]}"></span>
+        ${MOOD[k].name} &mdash; <b>${counts[k]}</b>
+      </span>`).join("");
+
+    const tbody = document.getElementById("quad-table-body");
+    tbody.innerHTML = Object.keys(MOOD).map((k) => {
+      const [eRange, vRange] = MOOD[k].def.split(", ");
+      return `<tr>
+        <td>${MOOD[k].name}</td>
+        <td class="num">${eRange.replace("energia ", "")}</td>
+        <td class="num">${vRange.replace("walencja ", "")}</td>
+        <td class="num">${counts[k]}</td>
+        <td class="num">${(counts[k] / total * 100).toFixed(1)}%</td>
+      </tr>`;
+    }).join("");
+
+    const toggle = document.getElementById("table-toggle");
+    const table = document.getElementById("quad-table");
+    toggle.addEventListener("click", () => {
+      const showing = !table.hidden;
+      table.hidden = showing;
+      toggle.setAttribute("aria-expanded", String(!showing));
+      toggle.textContent = showing ? "Pokaż jako tabelę" : "Ukryj tabelę";
+    });
+  }
+
+  function escAttr(s) {
+    return String(s).replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
+  }
+
+  fetch("data/taste.json")
+    .then((r) => r.json())
+    .then(render)
+    .catch((err) => {
+      document.querySelector(".rack").insertAdjacentHTML("afterbegin",
+        `<p style="color:var(--mood-napiecie)">Nie udało się wczytać danych (${err.message}).</p>`);
+    });
+})();
+</script>

@@ -1,5 +1,7 @@
 # Piterfy Connect and lyrics
 
+A fresh server can be staged from this repository. See the [Piterfy installation and recovery guide](stack/README.md) for Compose, service configuration and private backup requirements.
+
 The `server/` directory provides the optional shared playback session for the Android client and the Navidrome 0.64 browser adapter. The service authenticates the existing Navidrome account and keeps queues separate by user. Stream URLs and account credentials are never stored in session snapshots.
 
 `deploy.py` installs the service and browser adapter on the existing Piterfy stack. `deploy_lyrics.py` installs the lyrics assets and their loader. Both scripts are specific to this stack, create backups before replacing assets, and must be reviewed before reuse on another server. Do not commit server state or credentials.

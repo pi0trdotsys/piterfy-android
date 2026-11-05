@@ -1,0 +1,14 @@
+<!doctype html><html lang="pl"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>Piterfy — test połączenia</title>
+<style>body{background:#121212;color:#eee;font:16px system-ui;padding:24px}button{padding:12px;margin:8px}pre{white-space:pre-wrap}audio{display:block;width:100%}</style>
+<h1>Test połączenia Piterfy</h1><p>Ten test używa istniejącego konta i oryginalnego pliku audio. Nie zmienia biblioteki ani kolejki.</p>
+<label>ID utworu <input id="track-id" required></label> <button id="test">Sprawdź transfer</button><button id="play">Odtwórz plik testowy</button><button id="stop">Zatrzymaj</button><audio controls preload="none"></audio><pre id="result"></pre><p id="state"></p>
+<script>
+const out=document.querySelector('#result'), audio=document.querySelector('audio');
+function stream(){const id=document.querySelector('#track-id').value.trim();if(!id)throw Error('Wpisz ID utworu z biblioteki.');const u=localStorage.getItem('username'),t=localStorage.getItem('subsonic-token'),s=localStorage.getItem('subsonic-salt');if(!u||!t||!s)throw Error('Zaloguj się najpierw w Piterfy.');return '/rest/stream?'+new URLSearchParams({u,t,s,v:'1.8.0',c:'NavidromeUI',id,format:'raw'});}
+function log(value){out.textContent+=JSON.stringify(value)+'\n';}
+document.querySelector('#test').onclick=async()=>{out.textContent='';for(const [name,url,range] of [['Skrypt','/piterfy-ui/piterfy.js?v=diag-'+Date.now(),false],['Audio',stream(),true]]){const at=performance.now();try{const r=await fetch(url,{cache:'no-store',headers:range?{Range:'bytes=0-1048575'}:{},signal:AbortSignal.timeout(20000)});const headers=performance.now();const bytes=(await r.arrayBuffer()).byteLength;log({name,status:r.status,headers:Math.round(headers-at),body:Math.round(performance.now()-headers),bytes});}catch(e){log({name,error:e.name,ms:Math.round(performance.now()-at)});}}};
+document.querySelector('#play').onclick=()=>{audio.src=stream();audio.play().catch(e=>log({play:e.name}));};
+document.querySelector('#stop').onclick=()=>audio.pause();
+for(const event of ['loadstart','loadedmetadata','canplay','playing','waiting','stalled','error'])audio.addEventListener(event,()=>log({event,time:audio.currentTime,error:audio.error?.code}));
+setInterval(()=>{document.querySelector('#state').textContent=JSON.stringify({time:audio.currentTime,paused:audio.paused,ready:audio.readyState,buffered:Array.from({length:audio.buffered.length},(_,i)=>[audio.buffered.start(i),audio.buffered.end(i)])});},1000);
+</script></html>

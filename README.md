@@ -47,6 +47,6 @@ Aby przygotować web do słuchania bez internetu, otwórz **Offline**, będąc o
 
 ## Kod i dokumentacja
 
-[Wydania](https://github.com/pi0trdotsys/piterfy-android/releases) · [Zmiany i budowanie Androida](PITERFY.md) · [Wdrożenie Connect](connect/README.md) · [Zgłoś problem](https://github.com/pi0trdotsys/piterfy-android/issues)
+[Wydania](https://github.com/pi0trdotsys/piterfy-android/releases) · [Zmiany i budowanie Androida](PITERFY.md) · [Instalacja i odtworzenie serwera](connect/stack/README.md) · [Dokumentacja Connect](connect/README.md) · [Zgłoś problem](https://github.com/pi0trdotsys/piterfy-android/issues)
 
 Piterfy rozwija kod [Tempus](https://github.com/eddyizm/tempus), który wywodzi się z [Tempo](https://github.com/CappielloAntonio/tempo) autorstwa CappielloAntonio. Dziękujemy także [SeattleGuy](https://github.com/SeattleGuy) za projekt logo Tempus oraz [współtwórcom Tempus](https://github.com/eddyizm/tempus/graphs/contributors). Kod jest dostępny na licencji [GPL-3.0](LICENSE), a używany krój Figtree na [SIL Open Font License](third-party/Figtree-OFL.txt).

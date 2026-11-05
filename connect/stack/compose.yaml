@@ -1,0 +1,204 @@
+networks:
+  piterfy_net:
+    driver: bridge
+
+volumes:
+  navidrome_data:
+  caddy_data:
+  caddy_config:
+  slskd_data:
+
+services:
+  piterfy-navidrome:
+    image: deluan/navidrome:0.64.0@sha256:a384948b81bd1529986c5960169e7fc4fa00f46bde6bd517971a4c36671db2af
+    restart: unless-stopped
+    networks:
+      - piterfy_net
+    environment:
+      ND_LOGLEVEL: info
+      ND_SCANSCHEDULE: "1h"
+      ND_SESSIONTIMEOUT: "24h"
+      ND_ENABLETRANSCODINGCONFIG: "true"
+      ND_DEFAULTLANGUAGE: pl
+      ND_UICOVERARTSIZE: "600"
+      ND_ENABLENATURALSORTING: "true"
+      ND_PID_ALBUM: "musicbrainz_albumid|albumartistid,album,albumversion"
+      ND_DEFAULTTHEME: "Spotify-ish"
+      ND_ENABLECOVERANIMATION: "false"
+      ND_DEEZER_LANGUAGE: pl
+      ND_LASTFM_LANGUAGE: pl
+      ND_UIWELCOMEMESSAGE: "Piterfy — Twoja muzyka, Twój gust."
+      ND_BASEURL: ""
+      ND_LASTFM_APIKEY: "${LASTFM_API_KEY}"
+      ND_LASTFM_SECRET: "${LASTFM_SECRET}"
+      TZ: Europe/Warsaw
+    volumes:
+      - navidrome_data:/data
+      - ./library:/music:ro
+    expose:
+      - "4533"
+
+  piterfy-caddy:
+    build: ./discover/caddy
+    restart: unless-stopped
+    networks:
+      - piterfy_net
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./gust:/srv/gust:ro
+      - ./discover/navidrome-ui:/srv/piterfy-ui:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    environment:
+      PITERFY_HOST: "${PITERFY_HOST:-localhost}"
+    ports:
+      - "${PITERFY_BIND:-127.0.0.1}:${PITERFY_PORT:-8080}:80"
+
+  piterfy-cloudflared:
+    profiles: [tunnel]
+    image: cloudflare/cloudflared@sha256:51c9cefcb4569df44e1ad403ab1d3d8065aa8e84339bcfc6aee75502e1140339
+    restart: unless-stopped
+    networks:
+      - piterfy_net
+    command: tunnel --no-autoupdate --protocol quic run
+    environment:
+      TUNNEL_TOKEN: "${CLOUDFLARE_TUNNEL_TOKEN}"
+    depends_on:
+      - piterfy-caddy
+
+  piterfy-slskd:
+    image: slskd/slskd@sha256:ecd4026d4f8fb504e2cc55323efa2c1f5b56d20d3686b018249cc36b48ea17a6
+    restart: unless-stopped
+    networks:
+      - piterfy_net
+    ports:
+      - "127.0.0.1:${SLSKD_PORT:-5030}:5030"
+    environment:
+      SLSKD_USERNAME: "${SLSKD_WEB_USERNAME}"
+      SLSKD_PASSWORD: "${SLSKD_WEB_PASSWORD}"
+      SLSKD_SLSK_USERNAME: "${SOULSEEK_USERNAME}"
+      SLSKD_SLSK_PASSWORD: "${SOULSEEK_PASSWORD}"
+      SLSKD_NO_HTTPS: "true"
+      SLSKD_DOWNLOADS_DIR: /downloads
+      SLSKD_INCOMPLETE_DIR: /incomplete
+      TZ: Europe/Warsaw
+    volumes:
+      - slskd_data:/app
+      - ./incoming:/downloads
+      - ./slskd-incomplete:/incomplete
+
+
+  piterfy-discover:
+    image: python:3.12-alpine@sha256:1b668429b3511ab407d8e00648891631b0b1a4d7e15e3ca70f38ab5b91ad4ab4
+    restart: unless-stopped
+    networks:
+      - piterfy_net
+    entrypoint: ["python", "-u", "/app/discover.py"]
+    env_file: .env
+    environment:
+      NAVIDROME_URL: http://piterfy-navidrome:4533
+      SLSKD_URL: http://piterfy-slskd:5030
+      SLSKD_USER: "${SLSKD_WEB_USERNAME}"
+      SLSKD_PASSWORD: "${SLSKD_WEB_PASSWORD}"
+      DATA_DIR: /app/state
+      REPORTS_DIR: /reports
+      MUSIC_DIR: /music
+      TRASH_DIR: /trash
+      INCOMING_DIR: /incoming
+      MSMTPRC: /config/msmtprc
+      GUST_DIR: /gust
+      SPOTIFY_CSV: /config/liked_songs.csv
+      TZ: Europe/Warsaw
+    volumes:
+      - ./discover:/app
+      - ./reports:/reports
+      - ./library:/music
+      - ./discover-trash:/trash
+      - ./incoming:/incoming:ro
+      - ./gust:/gust
+      - ./private/liked_songs.csv:/config/liked_songs.csv:ro
+      - ./private/msmtprc:/config/msmtprc:ro
+      - /etc/localtime:/etc/localtime:ro
+      - /usr/share/zoneinfo:/usr/share/zoneinfo:ro
+    depends_on:
+      - piterfy-navidrome
+      - piterfy-slskd
+
+  piterfy-beets:
+    build: ./discover/beets
+    restart: unless-stopped
+    networks:
+      - piterfy_net
+    environment:
+      TZ: Europe/Warsaw
+    volumes:
+      - ./discover/beets:/config
+      - ./incoming:/incoming
+      - ./library:/music
+      - /etc/localtime:/etc/localtime:ro
+
+  piterfy-connect:
+    image: python:3.12-alpine@sha256:1b668429b3511ab407d8e00648891631b0b1a4d7e15e3ca70f38ab5b91ad4ab4
+    restart: unless-stopped
+    networks:
+      - piterfy_net
+    entrypoint: ["python", "-u", "/app/app.py"]
+    environment:
+      NAVIDROME_URL: http://piterfy-navidrome:4533
+      CONNECT_STATE_DIR: /state
+    volumes:
+      - ./discover/connectserver:/app:ro
+      - ./discover/state/connect:/state
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop: [ALL]
+    mem_limit: 192m
+    pids_limit: 64
+
+  piterfy-dj:
+    build:
+      context: ./discover/connectserver
+      dockerfile: Dockerfile.dj
+    restart: unless-stopped
+    networks:
+      - piterfy_net
+    user: "${PITERFY_UID:-1000}:${PITERFY_GID:-1000}"
+    environment:
+      NAVIDROME_URL: http://piterfy-navidrome:4533
+      NAVIDROME_USER: "${NAVIDROME_USER}"
+      NAVIDROME_PASSWORD: "${NAVIDROME_PASSWORD}"
+      SLSKD_URL: http://piterfy-slskd:5030
+      SLSKD_USER: "${SLSKD_WEB_USERNAME}"
+      SLSKD_PASSWORD: "${SLSKD_WEB_PASSWORD}"
+      LASTFM_API_KEY: "${LASTFM_API_KEY}"
+      LASTFM_USER: "${LASTFM_USER}"
+      DISCOVER_MAIL_TO: "${DISCOVER_MAIL_TO}"
+      SMTP_HOST: "${SMTP_HOST}"
+      SMTP_PORT: "${SMTP_PORT}"
+      SMTP_USER: "${SMTP_USER}"
+      SMTP_PASSWORD: "${SMTP_PASSWORD}"
+      SMTP_FROM: "${SMTP_FROM}"
+      SMTP_TLS: "${SMTP_TLS}"
+      SMTP_TLS_STARTTLS: "${SMTP_TLS_STARTTLS}"
+      TELEGRAM_BOT_TOKEN: "${TELEGRAM_BOT_TOKEN}"
+      TELEGRAM_CHAT_ID: "${TELEGRAM_CHAT_ID}"
+      DJ_VOICE_ENGINE: "${DJ_VOICE_ENGINE:-multilingual}"
+      DJ_STATE_DIR: /state/dj
+      CONNECT_STATE_DIR: /connect
+      MSMTPRC: /config/msmtprc
+      PITERFY_PUBLIC_URL: "${PITERFY_PUBLIC_URL:-http://localhost:8080}"
+    volumes:
+      - ./discover:/legacy:ro
+      - ./discover/dj-state:/state/dj
+      - ./discover/state/connect:/connect:ro
+      - ./private/msmtprc:/config/msmtprc:ro
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m
+    cpus: 0.75
+    mem_limit: 512m
+    pids_limit: 64
+    security_opt:
+      - no-new-privileges:true
+    cap_drop: [ALL]

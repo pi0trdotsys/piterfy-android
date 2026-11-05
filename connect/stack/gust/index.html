@@ -1,0 +1,611 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" type="image/svg+xml" href="/piterfy-ui/logo.svg">
+<title>Piterfy · Twój gust</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap">
+<style>
+  :root {
+    color-scheme: dark;
+    --bg: #000000;
+    --panel: #121212;
+    --surface: #181818;
+    --surface-solid: #181818;
+    --surface-hi: #282828;
+    --border: rgba(255, 255, 255, 0.06);
+    --border-hi: rgba(255, 255, 255, 0.16);
+    --text: #FFFFFF;
+    --text-2: #B3B3B3;
+    --text-muted: #A7A7A7;
+    --accent: #1DB954;
+    --accent-hi: #1ED760;
+    --accent-lo: #169C46;
+    --grad: linear-gradient(90deg, var(--accent), var(--accent-hi));
+    --mood-euforia: #E0B44A;
+    --mood-napiecie: #E06B5A;
+    --mood-spokoj: #4FC193;
+    --mood-melancholia: #7C8CEA;
+    --radius: 10px;
+    --shadow: none;
+  }
+
+  * { box-sizing: border-box; }
+  html { background: var(--panel); }
+  body {
+    margin: 0;
+    background: linear-gradient(180deg, #1c3b2b 0, var(--panel) 420px) var(--panel);
+    color: var(--text);
+    font-family: Figtree, ui-sans-serif, system-ui, sans-serif;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.45;
+    min-height: 100vh;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition: none !important; }
+  }
+  a { color: inherit; }
+
+  .page { max-width: 1180px; margin: 0 auto; padding: 18px 20px 72px; display: flex; flex-direction: column; gap: 22px; }
+  @media (max-width: 560px) { .page { padding: 12px 16px 56px; } }
+
+  /* ---------- pasek górny ---------- */
+  .topbar { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+  .back {
+    display: inline-flex; align-items: center; gap: 8px; text-decoration: none; white-space: nowrap;
+    font: 700 14px Figtree, sans-serif; padding: 10px 18px; border-radius: 999px;
+    background: #ffffff; color: #000000; transition: transform .15s;
+  }
+  .back:hover { transform: scale(1.04); }
+  .back:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+  .stamp { font-family: Figtree, sans-serif; font-size: 12px; color: var(--text-muted); text-align: right; }
+
+  /* ---------- hero ---------- */
+  .hero {
+    position: relative; overflow: hidden; border-radius: 28px; border: 1px solid var(--border);
+    padding: clamp(24px, 4vw, 44px); min-height: 330px; isolation: isolate;
+    display: grid; grid-template-columns: 1.45fr 1fr; gap: 28px; align-items: center;
+    box-shadow: var(--shadow);
+  }
+  @media (max-width: 860px) { .hero { grid-template-columns: 1fr; } }
+  .hero-bg { position: absolute; inset: -40px; z-index: -2; background-size: cover; background-position: center;
+             filter: blur(42px) saturate(1.4); opacity: .55; transform: scale(1.1); }
+  .hero::after { content: ""; position: absolute; inset: 0; z-index: -1;
+                 background: linear-gradient(120deg, color-mix(in srgb, var(--bg) 92%, transparent) 30%,
+                                             color-mix(in srgb, var(--bg) 55%, transparent)); }
+  .kicker { font-family: Figtree, sans-serif; font-weight: 600; letter-spacing: .22em; text-transform: uppercase; font-size: 13px;
+            background: var(--grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .hero h1 { font-family: Figtree, sans-serif; font-weight: 800; letter-spacing: -0.04em;
+             font-size: clamp(42px, 7.4vw, 86px); line-height: 1; margin: 10px 0 14px; text-wrap: balance; }
+  .hero h1 em { font-style: normal; background: var(--grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .hero-lead { color: var(--text-2); margin: 0 0 24px; max-width: 46ch; }
+  .kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+  @media (max-width: 560px) { .kpis { grid-template-columns: repeat(2, 1fr); } }
+  .kpi { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 12px 14px; backdrop-filter: blur(10px); }
+  .kpi b { display: block; font-family: Figtree, sans-serif; font-size: clamp(22px, 2.6vw, 30px); font-weight: 800; line-height: 1.1; }
+  .kpi span { font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: .08em; }
+
+  .star { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 12px; }
+  .star-ring { position: relative; width: min(240px, 60vw); aspect-ratio: 1; border-radius: 50%; padding: 5px;
+               background: var(--accent); }
+  .star-ring img, .star-ring .ph { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; display: block;
+                                   border: 5px solid var(--panel); background: var(--surface-solid); }
+  .star-ring .ph { display: grid; place-items: center; font-family: Figtree, sans-serif; font-size: 72px; color: var(--text-muted); }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .star-label { font-family: Figtree, sans-serif; letter-spacing: .18em; text-transform: uppercase; font-size: 12px; color: var(--text-muted); }
+  .star-name { font-family: Figtree, sans-serif; font-size: 30px; font-weight: 600; line-height: 1.05; }
+  .star-plays { font-family: Figtree, sans-serif; font-size: 13px; color: var(--accent); }
+
+  /* ---------- karty ---------- */
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 22px;
+          backdrop-filter: blur(14px); box-shadow: var(--shadow); min-width: 0; }
+  .card h2 { font-family: Figtree, sans-serif; font-weight: 800; font-size: 22px; letter-spacing: -0.02em; margin: 0 0 4px; }
+  .card .lead { color: var(--text-muted); font-size: 13.5px; margin: 0 0 18px; max-width: 68ch; }
+  .grid-2 { display: grid; grid-template-columns: 1.15fr 1fr; gap: 22px; }
+  .grid-2.even { grid-template-columns: 1fr 1fr; }
+  @media (max-width: 860px) { .grid-2, .grid-2.even { grid-template-columns: 1fr; } }
+  .note { font-size: 12.5px; color: var(--text-muted); border-left: 3px solid var(--accent); padding: 6px 10px; margin: 12px 0 0;
+          background: color-mix(in srgb, var(--accent) 7%, transparent); border-radius: 0 8px 8px 0; }
+  .empty { color: var(--text-muted); font-size: 14px; padding: 18px 0; }
+
+  /* ---------- rytm dni ---------- */
+  .daily { position: relative; }
+  .daily svg { width: 100%; height: 190px; display: block; overflow: visible; }
+  .tooltip { position: absolute; pointer-events: none; background: var(--surface-solid); color: var(--text); border: 1px solid var(--border-hi);
+             font-family: Figtree, sans-serif; font-size: 11.5px; padding: 6px 9px; border-radius: 8px; white-space: nowrap;
+             transform: translate(-50%, -115%); z-index: 5; box-shadow: var(--shadow); }
+  .tooltip b { font-family: Figtree, sans-serif; }
+
+  /* ---------- wykonawcy ---------- */
+  .artists { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 14px; }
+  .artist { position: relative; margin: 0; border-radius: 14px; overflow: hidden; aspect-ratio: 1; background: var(--surface-solid);
+            border: 1px solid var(--border); transition: transform .25s, border-color .25s; }
+  .artist:hover { transform: translateY(-3px); border-color: var(--border-hi); }
+  .artist img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform .5s; }
+  .artist:hover img { transform: scale(1.05); }
+  .artist .ph { width: 100%; height: 100%; display: grid; place-items: center; font-family: Figtree, sans-serif; font-size: 54px;
+                color: var(--text-muted); background: var(--surface-hi); }
+  .artist figcaption { position: absolute; inset: auto 0 0 0; padding: 30px 12px 10px;
+                       background: linear-gradient(transparent, rgba(0, 0, 0, .82)); color: #fff; }
+  .artist .rank { position: absolute; top: 8px; left: 8px; font-family: Figtree, sans-serif; font-size: 11px; font-weight: 700;
+                  background: rgba(0, 0, 0, .55); color: #fff; padding: 3px 7px; border-radius: 999px; backdrop-filter: blur(6px); }
+  .artist .nm { font-family: Figtree, sans-serif; font-weight: 600; font-size: 17px; line-height: 1.1; display: block;
+                overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .artist .pl { font-family: Figtree, sans-serif; font-size: 11px; opacity: .8; }
+  .more-artists { list-style: none; margin: 16px 0 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 6px 18px; }
+  .more-artists li { display: flex; justify-content: space-between; gap: 10px; font-size: 13px; color: var(--text-2);
+                     border-bottom: 1px dashed var(--border); padding: 5px 0; }
+  .more-artists li span:last-child { font-family: Figtree, sans-serif; color: var(--text-muted); }
+
+  /* ---------- utwory ---------- */
+  .tracks { list-style: none; margin: 0; padding: 0; }
+  .track { display: grid; grid-template-columns: 32px 1fr auto; gap: 12px; align-items: center; padding: 9px 0; border-bottom: 1px solid var(--border); }
+  .track:last-child { border-bottom: 0; }
+  .track .no { font-family: Figtree, sans-serif; font-size: 20px; font-weight: 600; color: var(--text-muted); text-align: right; }
+  .track:first-child .no { background: var(--grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .track .t { min-width: 0; }
+  .track .t b { display: block; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .track .t span { font-size: 12.5px; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block; }
+  .track .n { font-family: Figtree, sans-serif; font-size: 12px; color: var(--accent); white-space: nowrap; }
+
+  /* ---------- nastrój ---------- */
+  .gauges { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-bottom: 18px; }
+  @media (max-width: 640px) { .gauges { grid-template-columns: repeat(2, 1fr); } }
+  .gauge { text-align: center; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 12px 8px 10px; }
+  .gauge svg { width: 100%; max-width: 132px; height: auto; display: block; margin: 0 auto; }
+  .gauge .val { font-family: Figtree, sans-serif; font-size: 22px; font-weight: 600; }
+  .gauge .lab { font-size: 11.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--text-muted); }
+  .mood-wrap { position: relative; }
+  .mood-wrap svg { width: 100%; height: auto; display: block; }
+  .legend { display: flex; flex-wrap: wrap; gap: 10px 20px; margin-top: 12px; font-size: 13px; color: var(--text-2); }
+  .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; vertical-align: middle; }
+  .legend b { font-family: Figtree, sans-serif; color: var(--text); }
+
+  /* ---------- gatunki, dekady ---------- */
+  .bar-row { display: grid; grid-template-columns: minmax(90px, 140px) 1fr 52px; gap: 10px; align-items: center; margin-bottom: 9px; }
+  .bar-row .nm { font-size: 13px; color: var(--text-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .bar-row .track-bg { height: 10px; border-radius: 999px; background: var(--surface-hi); overflow: hidden; }
+  .bar-row .fill { height: 100%; border-radius: 999px; background: var(--grad); transform-origin: left; animation: grow .9s cubic-bezier(.2, .8, .2, 1) both; }
+  .bar-row .ct { font-family: Figtree, sans-serif; font-size: 12px; color: var(--text-muted); text-align: right; }
+  @keyframes grow { from { transform: scaleX(0); } }
+  .decades { display: flex; align-items: flex-end; gap: 8px; height: 180px; }
+  .decade { flex: 1; height: 100%; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; gap: 6px; min-width: 0; }
+  .decade .col { width: 100%; max-width: 54px; border-radius: 8px 8px 3px 3px; background: linear-gradient(to top, var(--accent-hi), var(--accent));
+                 transform-origin: bottom; animation: rise .9s cubic-bezier(.2, .8, .2, 1) both; }
+  .decade .ct { font-family: Figtree, sans-serif; font-size: 10.5px; color: var(--text-muted); }
+  .decade .lab { font-family: Figtree, sans-serif; font-size: 11px; color: var(--text-2); }
+  @keyframes rise { from { transform: scaleY(0); } }
+
+  /* ---------- zegar ---------- */
+  .clock { display: grid; grid-template-columns: 28px repeat(24, minmax(0, 1fr)); gap: 3px; }
+  .clock .dl { font-family: Figtree, sans-serif; font-size: 10.5px; color: var(--text-muted); align-self: center; }
+  .clock .c { aspect-ratio: 1; border-radius: 4px; background: var(--surface-hi); }
+  .clock .h { font-family: Figtree, sans-serif; font-size: 9.5px; color: var(--text-muted); text-align: center; }
+
+  /* ---------- odkrycia ---------- */
+  .disc { display: grid; grid-template-columns: 200px 1fr; gap: 24px; align-items: start; }
+  .disc .track .no { color: var(--accent-lo); background: none; font-size: 16px; }
+  @media (max-width: 640px) { .disc { grid-template-columns: 1fr; } }
+  .donut { position: relative; width: 180px; aspect-ratio: 1; margin: 0 auto; }
+  .donut svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+  .donut .mid { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; }
+  .donut .mid b { font-family: Figtree, sans-serif; font-size: 38px; line-height: 1; }
+  .donut .mid span { font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--text-muted); }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+  .chip { font-size: 12.5px; padding: 6px 11px; border-radius: 999px; border: 1px solid var(--border-hi); background: var(--surface); }
+  .chip b { font-weight: 600; }
+
+  /* ---------- teraz vs Spotify ---------- */
+  .vs { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+  @media (max-width: 640px) { .vs { grid-template-columns: 1fr; } }
+  .vs h3 { font-family: Figtree, sans-serif; font-weight: 500; letter-spacing: .12em; text-transform: uppercase; font-size: 12.5px; color: var(--text-muted); margin: 0 0 8px; }
+  .vs ol { margin: 0; padding-left: 22px; font-size: 13.5px; color: var(--text-2); }
+  .vs li { padding: 3px 0; }
+  .vs li.new { color: var(--text); }
+  .vs li.new::after { content: " nowość"; font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: var(--accent-lo); margin-left: 6px; }
+  .deltas { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
+  .delta { font-size: 13px; padding: 8px 12px; border-radius: 12px; background: var(--surface); border: 1px solid var(--border); }
+  .delta b { font-family: Figtree, sans-serif; }
+  .up { color: var(--accent); }
+  .down { color: var(--text-2); }
+
+  footer { color: var(--text-muted); font-size: 12.5px; line-height: 1.6; border-top: 1px solid var(--border); padding-top: 16px; }
+  .reveal { animation: reveal .7s cubic-bezier(.2, .8, .2, 1) both; }
+  @keyframes reveal { from { opacity: 0; transform: translateY(14px); } }
+
+/* Piterfy mobile: readable cards, touch targets and contained charts. */
+html { scroll-behavior: smooth; }
+.page > *, .hero > *, .grid-2 > *, .disc > *, .vs > * { min-width: 0; }
+.star-name, .hero-lead, .stamp, .chip, .delta { overflow-wrap: anywhere; }
+.clock-scroll { overflow-x: auto; overscroll-behavior-inline: contain; padding-bottom: 8px; }
+.clock-scroll:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
+@media (max-width: 600px) {
+  .page { gap: 16px; padding: 12px max(12px, env(safe-area-inset-left)) max(32px, env(safe-area-inset-bottom)); }
+  .back { min-height: 44px; padding: 10px 16px; }
+  .stamp { font-size: 11px; max-width: 55%; }
+  .hero { padding: 24px 20px; border-radius: 24px; gap: 24px; min-height: 0; }
+  .hero h1 { font-size: clamp(38px, 11vw, 58px); line-height: 1.05; }
+  .hero-lead { font-size: 14px; margin-bottom: 20px; }
+  .kicker { font-size: 11px; letter-spacing: .16em; }
+  .kpi { padding: 12px; }
+  .kpi span { font-size: 11px; letter-spacing: .04em; }
+  .star-ring { width: 160px; }
+  .star-name { font-size: 26px; }
+  .card { padding: 18px 16px; border-radius: 18px; }
+  .card h2 { font-size: 23px; line-height: 1.2; margin-bottom: 8px; }
+  .card .lead { font-size: 14px; line-height: 1.55; }
+  .grid-2, .grid-2.even { gap: 16px; }
+  .artists { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .artist .nm { font-size: 16px; }
+  .more-artists { grid-template-columns: minmax(0, 1fr); gap: 0; }
+  .more-artists li { padding: 10px 0; }
+  .more-artists li span:first-child { min-width: 0; overflow-wrap: anywhere; }
+  .more-artists li span:last-child { flex-shrink: 0; }
+  .track { grid-template-columns: 24px minmax(0, 1fr) auto; gap: 9px; padding: 12px 0; }
+  .track .t b { white-space: normal; overflow-wrap: anywhere; line-height: 1.35; }
+  .track .n { font-size: 11px; }
+  .gauges { gap: 8px; }
+  .bar-row { grid-template-columns: minmax(70px, 30%) minmax(0, 1fr) 44px; gap: 8px; }
+  .bar-row .nm { white-space: normal; overflow-wrap: anywhere; line-height: 1.25; }
+  .clock { min-width: 560px; }
+  .decades { gap: 4px; }
+  .legend { gap: 10px 14px; }
+  .disc { gap: 20px; }
+  footer { font-size: 12px; overflow-wrap: anywhere; }
+}
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="topbar">
+    <a class="back" href="/app/" aria-label="Wróć do Piterfy">← Piterfy</a>
+    <div class="stamp" id="stamp">wczytuję…</div>
+  </div>
+
+  <section class="hero reveal" aria-labelledby="hero-title">
+    <div class="hero-bg" id="hero-bg"></div>
+    <div>
+      <div class="kicker">Piterfy · Twój gust</div>
+      <h1 id="hero-title">Ostatnie <em id="period">30</em> dni</h1>
+      <p class="hero-lead" id="hero-lead">Czego słuchasz w Piterfy — liczone na nowo każdej nocy o północy.</p>
+      <div class="kpis" id="kpis"></div>
+    </div>
+    <div class="star" id="star"></div>
+  </section>
+
+  <section class="card reveal">
+    <h2>Rytm dni</h2>
+    <p class="lead">Odsłuchy dzień po dniu. Piterfy zna tylko łączną liczbę odsłuchów, więc historia buduje się z nocnych zapisów.</p>
+    <div class="daily" id="daily"></div>
+  </section>
+
+  <section class="grid-2">
+    <div class="card reveal">
+      <h2>Twoi wykonawcy</h2>
+      <p class="lead">Najczęściej grani w ostatnich 30 dniach.</p>
+      <div class="artists" id="artists"></div>
+      <ul class="more-artists" id="more-artists"></ul>
+    </div>
+    <div class="card reveal">
+      <h2>Na zapętleniu</h2>
+      <p class="lead">Utwory, do których wracasz najczęściej.</p>
+      <ol class="tracks" id="tracks"></ol>
+    </div>
+  </section>
+
+  <section class="card reveal">
+    <h2>Mapa nastroju</h2>
+    <p class="lead">Słuchane utwory według energii i walencji (smutny ↔ radosny). Im większa kropka, tym częściej grany.</p>
+    <div class="gauges" id="gauges"></div>
+    <div class="mood-wrap" id="mood"></div>
+    <div class="legend" id="mood-legend"></div>
+    <p class="note" id="mood-note" hidden></p>
+  </section>
+
+  <section class="grid-2 even">
+    <div class="card reveal">
+      <h2>Gatunki</h2>
+      <p class="lead">Ważone liczbą odsłuchów.</p>
+      <div id="genres"></div>
+    </div>
+    <div class="card reveal">
+      <h2>Dekady</h2>
+      <p class="lead">Z jakich lat jest to, czego słuchasz.</p>
+      <div class="decades" id="decades"></div>
+    </div>
+  </section>
+
+  <section class="card reveal" id="clock-card" hidden>
+    <h2>Kiedy słuchasz</h2>
+    <p class="lead">Dzień tygodnia × godzina, ze scrobbli Last.fm — ze wszystkich Twoich urządzeń.</p>
+    <div class="clock-scroll" tabindex="0" role="region" aria-label="Godziny słuchania — przewiń poziomo"><div class="clock" id="clock"></div></div>
+  </section>
+
+  <section class="card reveal">
+    <h2>Odkrycia</h2>
+    <p class="lead">Jak przyjmujesz utwory, które discover ściąga dla Ciebie codziennie.</p>
+    <div class="disc" id="discover"></div>
+  </section>
+
+  <section class="card reveal" id="vs-card" hidden>
+    <h2>Teraz vs. polubione ze Spotify</h2>
+    <p class="lead" id="vs-lead"></p>
+    <div class="vs" id="vs"></div>
+    <div class="deltas" id="deltas"></div>
+  </section>
+
+  <footer>
+    Dane: Piterfy (odsłuchy), eksport Spotify (energia, walencja, tempo — tylko dla utworów, które w nim są),
+    Deezer (zdjęcia wykonawców), Last.fm (zegar słuchania). Strona odświeża się sama co noc o północy.
+  </footer>
+</div>
+
+<script>
+(function () {
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const fmt = (n) => Math.round(n).toLocaleString("pl-PL");
+  const css = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  const initial = (name) => esc((name || "?").trim().charAt(0).toUpperCase());
+
+  const MOOD = {
+    euforia: { name: "Euforia", color: "--mood-euforia" },
+    napiecie: { name: "Napięcie", color: "--mood-napiecie" },
+    spokoj: { name: "Spokój", color: "--mood-spokoj" },
+    melancholia: { name: "Melancholia", color: "--mood-melancholia" },
+  };
+  const quadrant = (e, v) => (e >= 0.5 ? (v >= 0.5 ? "euforia" : "napiecie") : (v >= 0.5 ? "spokoj" : "melancholia"));
+
+  function render(data, baseline) {
+    const t = data.totals;
+    const generated = new Date(data.generated);
+    $("stamp").textContent = "odświeżone " + generated.toLocaleString("pl-PL", { day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" });
+    $("period").textContent = data.period_days;
+    if (data.estimated) {
+      $("hero-lead").textContent = "Historia słuchania dopiero się zbiera (od " + new Date(data.history_since).toLocaleDateString("pl-PL") +
+        "), więc te liczby to na razie szacunek z ostatnich odsłuchów. Za tydzień będą dokładne.";
+    }
+    $("kpis").innerHTML = [
+      [fmt(t.plays), "odsłuchów"],
+      [fmt(t.minutes / 60), "godzin muzyki"],
+      [fmt(t.artists), "wykonawców"],
+      [fmt(t.tracks), "utworów"],
+    ].map(([v, l]) => `<div class="kpi"><b>${v}</b><span>${l}</span></div>`).join("");
+
+    const top = data.top_artists[0];
+    if (top) {
+      if (top.img) $("hero-bg").style.backgroundImage = `url("${top.img}")`;
+      $("star").innerHTML = `
+        <div class="star-ring">${top.img ? `<img src="${esc(top.img)}" alt="">` : `<div class="ph">${initial(top.name)}</div>`}</div>
+        <div class="star-label">Wykonawca miesiąca</div>
+        <div class="star-name">${esc(top.name)}</div>
+        <div class="star-plays">${fmt(top.plays)} odsłuchów · ${Math.round(top.plays / Math.max(1, t.plays) * 100)}% wszystkich</div>`;
+    }
+
+    renderDaily(data.daily, data.history_since);
+    renderArtists(data.top_artists);
+    renderTracks(data.top_tracks);
+    renderMood(data.mood);
+    renderBars($("genres"), data.top_genres);
+    renderDecades(data.decades);
+    renderClock(data.clock);
+    renderDiscover(data.discover);
+    if (baseline) renderVs(data, baseline);
+  }
+
+  function renderDaily(days, since) {
+    const el = $("daily");
+    if (!days || days.length < 2) {
+      el.innerHTML = `<div class="empty">Wykres pojawi się po kilku nocach — historia zbiera się od ${since ? new Date(since).toLocaleDateString("pl-PL") : "dziś"}.</div>`;
+      return;
+    }
+    const W = 1000, H = 190, pb = 22, max = Math.max(1, ...days.map((d) => d[1]));
+    const bw = W / days.length;
+    let bars = `<defs><linearGradient id="dg" x1="0" y1="1" x2="0" y2="0">
+        <stop offset="0" stop-color="${css("--accent-hi")}"/><stop offset="1" stop-color="${css("--accent-lo")}"/></linearGradient></defs>`;
+    days.forEach(([day, n], i) => {
+      const h = Math.max(n ? 4 : 1.5, (n / max) * (H - pb - 10));
+      const weekend = [0, 6].includes(new Date(day).getDay());
+      bars += `<rect x="${(i * bw + bw * 0.16).toFixed(1)}" y="${(H - pb - h).toFixed(1)}" width="${(bw * 0.68).toFixed(1)}" height="${h.toFixed(1)}"
+                 rx="${Math.min(6, bw * 0.3).toFixed(1)}" fill="${n ? "url(#dg)" : css("--border-hi")}" opacity="${weekend ? 1 : 0.86}" data-d="${day}" data-n="${n}"/>`;
+      if (i % Math.ceil(days.length / 10) === 0) {
+        bars += `<text x="${(i * bw + bw / 2).toFixed(1)}" y="${H - 4}" text-anchor="middle" font-size="11" font-family="Figtree" fill="${css("--text-muted")}">${new Date(day).toLocaleDateString("pl-PL", { day: "numeric", month: "numeric" })}</text>`;
+      }
+    });
+    el.innerHTML = `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="Odsłuchy dzień po dniu">${bars}</svg><div class="tooltip" hidden></div>`;
+    hover(el, "rect", (r) => `<b>${new Date(r.dataset.d).toLocaleDateString("pl-PL", { weekday: "long", day: "numeric", month: "long" })}</b><br>${r.dataset.n} odsłuchów`);
+  }
+
+  function hover(wrap, selector, html) {
+    const tip = wrap.querySelector(".tooltip");
+    wrap.querySelectorAll(selector).forEach((node) => {
+      node.addEventListener("mouseenter", () => {
+        const box = node.getBoundingClientRect(), host = wrap.getBoundingClientRect();
+        tip.innerHTML = html(node);
+        tip.style.left = (box.left - host.left + box.width / 2) + "px";
+        tip.style.top = (box.top - host.top) + "px";
+        tip.hidden = false;
+      });
+      node.addEventListener("mouseleave", () => { tip.hidden = true; });
+    });
+  }
+
+  function renderArtists(artists) {
+    if (!artists.length) { $("artists").innerHTML = `<div class="empty">Brak odsłuchów w tym okresie.</div>`; return; }
+    $("artists").innerHTML = artists.slice(0, 6).map((a, i) => `
+      <figure class="artist">
+        ${a.img ? `<img src="${esc(a.img)}" alt="" loading="lazy">` : `<div class="ph">${initial(a.name)}</div>`}
+        <span class="rank">#${i + 1}</span>
+        <figcaption><span class="nm" title="${esc(a.name)}">${esc(a.name)}</span><span class="pl">${fmt(a.plays)} odsłuchów</span></figcaption>
+      </figure>`).join("");
+    $("more-artists").innerHTML = artists.slice(6).map((a, i) => `<li><span>${i + 7}. ${esc(a.name)}</span><span>${fmt(a.plays)}</span></li>`).join("");
+  }
+
+  function renderTracks(tracks) {
+    $("tracks").innerHTML = tracks.length ? tracks.map((t, i) => `
+      <li class="track"><span class="no">${i + 1}</span>
+        <span class="t"><b title="${esc(t.title)}">${esc(t.title)}</b><span>${esc(t.artist)}${t.album ? " · " + esc(t.album) : ""}</span></span>
+        <span class="n">${fmt(t.plays)}×</span></li>`).join("") : `<div class="empty">Brak odsłuchów w tym okresie.</div>`;
+  }
+
+  function gauge(label, frac, text) {
+    const r = 46, c = Math.PI * r, f = Math.max(0, Math.min(1, frac));
+    return `<div class="gauge"><svg viewBox="0 0 120 70" aria-hidden="true">
+        <defs><linearGradient id="gg-${label}" x1="0" x2="1"><stop offset="0" stop-color="${css("--accent")}"/><stop offset="1" stop-color="${css("--accent-lo")}"/></linearGradient></defs>
+        <path d="M14 62 A46 46 0 0 1 106 62" fill="none" stroke="${css("--surface-hi")}" stroke-width="10" stroke-linecap="round"/>
+        <path d="M14 62 A46 46 0 0 1 106 62" fill="none" stroke="url(#gg-${label})" stroke-width="10" stroke-linecap="round"
+              stroke-dasharray="${(c * f).toFixed(1)} ${c.toFixed(1)}"/></svg>
+      <div class="val">${text}</div><div class="lab">${label}</div></div>`;
+  }
+
+  function renderMood(mood) {
+    const a = mood.averages;
+    if (!a || !mood.tracks.length) {
+      $("gauges").innerHTML = "";
+      $("mood").innerHTML = `<div class="empty">Brak danych o nastroju — żaden ze słuchanych utworów nie występuje w eksporcie Spotify.</div>`;
+      return;
+    }
+    $("gauges").innerHTML = gauge("Energia", a.energy, Math.round(a.energy * 100) + "%") +
+      gauge("Taneczność", a.dance, Math.round(a.dance * 100) + "%") +
+      gauge("Walencja", a.valence, Math.round(a.valence * 100) + "%") +
+      gauge("Tempo", (a.tempo - 60) / 120, Math.round(a.tempo) + " BPM");
+
+    const W = 900, H = 520, pl = 46, pr = 16, pt = 14, pb = 40, pw = W - pl - pr, ph = H - pt - pb;
+    const x = (v) => pl + v * pw, y = (e) => pt + (1 - e) * ph;
+    const maxP = Math.max(...mood.tracks.map((m) => m.p));
+    const counts = { euforia: 0, napiecie: 0, spokoj: 0, melancholia: 0 };
+    const col = Object.fromEntries(Object.entries(MOOD).map(([k, m]) => [k, css(m.color)]));
+    let svg = `<defs><filter id="glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="3.5" result="b"/>
+               <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>`;
+    [["euforia", 0.5, 0], ["napiecie", 0, 0], ["spokoj", 0.5, 0.5], ["melancholia", 0, 0.5]].forEach(([k, vx, ey]) => {
+      svg += `<rect x="${x(vx)}" y="${pt + ey * ph}" width="${pw / 2}" height="${ph / 2}" fill="${col[k]}" fill-opacity="0.06" rx="10"/>`;
+    });
+    const grid = css("--border-hi"), muted = css("--text-muted");
+    svg += `<line x1="${x(0.5)}" y1="${pt}" x2="${x(0.5)}" y2="${pt + ph}" stroke="${grid}" stroke-dasharray="4 6"/>
+            <line x1="${pl}" y1="${y(0.5)}" x2="${pl + pw}" y2="${y(0.5)}" stroke="${grid}" stroke-dasharray="4 6"/>`;
+    const dots = mood.tracks.slice().sort((p, q) => p.p - q.p).map((m) => {
+      const k = quadrant(m.e, m.v); counts[k] += m.p;
+      const r = 3 + 11 * Math.sqrt(m.p / maxP);
+      return `<circle cx="${x(m.v).toFixed(1)}" cy="${y(m.e).toFixed(1)}" r="${r.toFixed(1)}" fill="${col[k]}" fill-opacity="0.55"
+                stroke="${col[k]}" stroke-opacity="0.9" ${m.p === maxP ? 'filter="url(#glow)"' : ""}
+                data-n="${esc(m.n)}" data-a="${esc(m.a)}" data-e="${m.e}" data-v="${m.v}" data-t="${m.t}" data-p="${m.p}"/>`;
+    }).join("");
+    svg += dots;
+    const lab = (k, tx, ty, anchor) => `<text x="${tx}" y="${ty}" text-anchor="${anchor}" font-family="Figtree" font-weight="600" letter-spacing="1.5" font-size="15" fill="${col[k]}">${MOOD[k].name.toUpperCase()}</text>`;
+    svg += lab("euforia", pl + pw - 10, pt + 24, "end") + lab("napiecie", pl + 12, pt + 24, "start") +
+           lab("spokoj", pl + pw - 10, pt + ph - 12, "end") + lab("melancholia", pl + 12, pt + ph - 12, "start");
+    svg += `<text x="${pl + pw / 2}" y="${H - 8}" text-anchor="middle" font-size="12" letter-spacing="1" fill="${muted}">WALENCJA (SMUTNY → RADOSNY)</text>
+            <text x="14" y="${pt + ph / 2}" text-anchor="middle" font-size="12" letter-spacing="1" fill="${muted}" transform="rotate(-90 14 ${pt + ph / 2})">ENERGIA →</text>`;
+    $("mood").innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Mapa nastroju: energia i walencja słuchanych utworów">${svg}</svg><div class="tooltip" hidden></div>`;
+    hover($("mood"), "circle", (c) => `<b>${c.dataset.n}</b><br>${c.dataset.a}<br>${c.dataset.p}× · energia ${Math.round(c.dataset.e * 100)}% · walencja ${Math.round(c.dataset.v * 100)}% · ${Math.round(c.dataset.t)} BPM`);
+    const total = Object.values(counts).reduce((s, n) => s + n, 0) || 1;
+    $("mood-legend").innerHTML = Object.entries(MOOD).map(([k, m]) =>
+      `<span><i style="background:${col[k]}"></i>${m.name} <b>${Math.round(counts[k] / total * 100)}%</b></span>`).join("");
+    if (mood.coverage < 0.95) {
+      $("mood-note").hidden = false;
+      $("mood-note").textContent = `Cechy nastroju pochodzą z eksportu Spotify, więc obejmują ${Math.round(mood.coverage * 100)}% Twoich odsłuchów — nowe odkrycia nie mają tych danych.`;
+    }
+  }
+
+  function renderBars(el, rows) {
+    if (!rows.length) { el.innerHTML = `<div class="empty">Brak danych o gatunkach.</div>`; return; }
+    const max = Math.max(...rows.map((r) => r[1]));
+    el.innerHTML = rows.map(([name, n], i) => `
+      <div class="bar-row"><span class="nm" title="${esc(name)}">${esc(name)}</span>
+        <div class="track-bg"><div class="fill" style="width:${(n / max * 100).toFixed(1)}%;animation-delay:${i * 40}ms"></div></div>
+        <span class="ct">${fmt(n)}</span></div>`).join("");
+  }
+
+  function renderDecades(decades) {
+    if (!decades.length) { $("decades").innerHTML = `<div class="empty">Brak danych o latach wydania.</div>`; return; }
+    const max = Math.max(...decades.map((d) => d[1]));
+    $("decades").innerHTML = decades.map(([dec, n], i) => `
+      <div class="decade"><span class="ct">${fmt(n)}</span>
+        <div class="col" style="height:${Math.max(3, n / max * 100)}%;animation-delay:${i * 60}ms"></div>
+        <span class="lab">${String(dec).slice(2)}'</span></div>`).join("");
+  }
+
+  function renderClock(clock) {
+    if (!clock) return;
+    $("clock-card").hidden = false;
+    const max = Math.max(1, ...clock.grid.flat());
+    let html = "<span></span>" + Array.from({ length: 24 }, (_, h) => `<span class="h">${h % 3 === 0 ? h : ""}</span>`).join("");
+    clock.grid.forEach((row, d) => {
+      html += `<span class="dl">${clock.days[d]}</span>` + row.map((n, h) => {
+        const a = n / max;
+        const color = `color-mix(in oklch, var(--accent-hi) ${Math.round(a * 100)}%, #14301f)`;
+        return `<span class="c" title="${clock.days[d]} ${h}:00 — ${n}" style="${n ? `background:${color};opacity:${(0.3 + a * 0.7).toFixed(2)}` : ""}"></span>`;
+      }).join("");
+    });
+    $("clock").innerHTML = html;
+  }
+
+  function renderDiscover(dc) {
+    if (!dc || !dc.downloaded) {
+      $("discover").innerHTML = `<div class="empty" style="grid-column:1/-1">Discover jeszcze niczego nie pobrał — pierwsze odkrycia pojawią się po najbliższym przebiegu.</div>`;
+      return;
+    }
+    const r = 70, c = 2 * Math.PI * r, other = Math.max(0, dc.downloaded - dc.liked - dc.trashed);
+    const seg = (n, color, off) => `<circle cx="90" cy="90" r="${r}" fill="none" stroke="${color}" stroke-width="18"
+        stroke-dasharray="${(c * n / dc.downloaded).toFixed(1)} ${c.toFixed(1)}" stroke-dashoffset="${(-c * off / dc.downloaded).toFixed(1)}"/>`;
+    const hit = dc.hit_rate == null ? "—" : Math.round(dc.hit_rate * 100) + "%";
+    $("discover").innerHTML = `
+      <div class="donut"><svg viewBox="0 0 180 180" aria-hidden="true">
+          <circle cx="90" cy="90" r="${r}" fill="none" stroke="${css("--surface-hi")}" stroke-width="18"/>
+          ${seg(dc.liked, css("--mood-spokoj"), 0)}${seg(dc.trashed, css("--mood-napiecie"), dc.liked)}${seg(other, css("--border-hi"), dc.liked + dc.trashed)}
+        </svg><div class="mid"><b>${hit}</b><span>trafień</span></div></div>
+      <div>
+        <div class="chips">
+          <span class="chip"><b>${fmt(dc.downloaded)}</b> pobranych</span>
+          <span class="chip" style="border-color:${css("--mood-spokoj")}"><b>${fmt(dc.liked)}</b> polubionych</span>
+          <span class="chip" style="border-color:${css("--mood-napiecie")}"><b>${fmt(dc.trashed)}</b> w koszu</span>
+        </div>
+        ${dc.recent_liked.length ? `<ol class="tracks" style="margin-top:14px">${dc.recent_liked.map((t, i) => `
+          <li class="track"><span class="no">♥</span><span class="t"><b>${esc(t.title)}</b><span>${esc(t.artist)}${t.via ? " · bo słuchasz: " + esc(t.via) : ""}</span></span><span></span></li>`).join("")}</ol>`
+          : `<p class="lead" style="margin-top:14px">Daj ★ albo posłuchaj odkrycia kilka razy, a pojawi się tutaj — i będzie więcej podobnych.</p>`}
+      </div>`;
+  }
+
+  function renderVs(data, base) {
+    $("vs-card").hidden = false;
+    $("vs-lead").textContent = `Porównanie z Twoimi polubionymi ze Spotify (${fmt(base.total_tracks)} utworów) — skąd przyszedłeś i dokąd zmierza Twój gust.`;
+    const nowA = data.top_artists.slice(0, 8).map((a) => a.name), thenA = base.top_artists.slice(0, 8).map((a) => a[0]);
+    const nowG = data.top_genres.slice(0, 8).map((g) => g[0]), thenG = base.top_genres.slice(0, 8).map((g) => g[0]);
+    const low = (list) => list.map((s) => s.toLowerCase());
+    const list = (items, other) => `<ol>${items.map((s) => `<li class="${low(other).includes(s.toLowerCase()) ? "" : "new"}">${esc(s)}</li>`).join("")}</ol>`;
+    $("vs").innerHTML = `
+      <div><h3>Wykonawcy — Spotify</h3><ol>${thenA.map((s) => `<li>${esc(s)}</li>`).join("")}</ol></div>
+      <div><h3>Wykonawcy — teraz</h3>${list(nowA, thenA)}</div>
+      <div><h3>Gatunki — Spotify</h3><ol>${thenG.map((s) => `<li>${esc(s)}</li>`).join("")}</ol></div>
+      <div><h3>Gatunki — teraz</h3>${list(nowG, thenG)}</div>`;
+    const a = data.mood.averages, b = base.averages;
+    if (a && b) {
+      const d = (label, now, then, scale, unit) => {
+        const diff = (now - then) * scale;
+        const cls = Math.abs(diff) < 2 ? "" : diff > 0 ? "up" : "down";
+        return `<span class="delta">${label}: <b class="${cls}">${!cls ? "•" : diff > 0 ? "▲" : "▼"} ${Math.abs(diff).toFixed(0)}${unit}</b></span>`;
+      };
+      $("deltas").innerHTML = d("Energia", a.energy, b.Energy, 100, " pp") + d("Taneczność", a.dance, b.Danceability, 100, " pp") +
+        d("Walencja", a.valence, b.Valence, 100, " pp") + d("Tempo", a.tempo, b.Tempo, 1, " BPM");
+    }
+  }
+
+  Promise.all([
+    fetch("data/taste.json", { cache: "no-cache" }).then((r) => r.json()),
+    fetch("data/spotify-baseline.json", { cache: "no-cache" }).then((r) => (r.ok ? r.json() : null)).catch(() => null),
+  ]).then(([data, baseline]) => {
+    if (data.version !== 2) throw new Error("panel czeka na pierwsze nocne odświeżenie");
+    render(data, baseline);
+  }).catch((err) => {
+    $("stamp").textContent = "";
+    document.querySelector(".hero").insertAdjacentHTML("afterend", `<p class="note">Nie udało się wczytać danych (${esc(err.message)}).</p>`);
+  });
+})();
+</script>
+</body>
+</html>

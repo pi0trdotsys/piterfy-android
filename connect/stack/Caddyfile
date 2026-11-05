@@ -1,0 +1,73 @@
+{
+	auto_https off
+}
+
+http://{$PITERFY_HOST:localhost} {
+	encode zstd gzip
+
+	# Panel gustu (statyczna strona; dane odświeża discover co noc o północy)
+	redir /gust /gust/
+	handle_path /gust/* {
+		root * /srv/gust
+		header Cache-Control "no-cache"
+		file_server
+	}
+
+	# Wygląd, logo i przycisk „Mój gust” dla Piterfy (Navidrome)
+	# piterfy-offline-routes
+	handle /app/piterfy-offline-sw.js {
+		root * /srv/piterfy-ui
+		rewrite * /offline-sw.js
+		header Content-Type application/javascript
+		header Cache-Control "no-cache"
+		file_server
+	}
+	handle /app/offline/* {
+		root * /srv/piterfy-ui
+		rewrite * /offline.html
+		header Cache-Control "no-cache"
+		file_server
+	}
+	handle_path /piterfy-ui/* {
+		root * /srv/piterfy-ui
+		header Cache-Control "no-cache"
+		file_server
+	}
+
+	# Zdjęcia profilowe (mały serwer w kontenerze discover — profile_api.py)
+	handle /piterfy-api/connect/* {
+		reverse_proxy piterfy-connect:8091
+	}
+
+	handle /piterfy-api/* {
+		reverse_proxy piterfy-discover:8090
+	}
+
+	# Nazwa i ikona aplikacji po instalacji na telefonie
+	handle /app/manifest.webmanifest {
+		root * /srv/piterfy-ui
+		rewrite * /manifest.webmanifest
+		header Content-Type application/manifest+json
+		header Cache-Control "no-cache"
+		file_server
+	}
+
+	handle {
+		# Do strony Navidrome (tylko HTML) dopisujemy w <head> skrypt, który:
+		#  - bez adresu w aplikacji (#/…) otwiera stronę startową #/start,
+		#  - ładuje piterfy.js (a ten piterfy.css) z wersją zmieniającą się co 10 minut — Cloudflare każe
+		#    przeglądarce trzymać .js/.css 4 godziny, a tak poprawki docierają najpóźniej po 10 minutach.
+		# Bez nawiasów klamrowych w JS — Caddy mógłby je wziąć za swoje {placeholdery}.
+		@navidrome_page path / /app /app/
+		replace @navidrome_page {
+			match {
+				header Content-Type text/html*
+			}
+			<title>Navidrome</title> `<title>Piterfy</title><script>location.hash.length>2||history.replaceState(null,"","#/start");var pfJs=document.createElement("script");pfJs.src="/piterfy-ui/piterfy.js?v="+Math.floor(Date.now()/6e5)+"-20261105-085945";document.head.appendChild(pfJs)</script>`
+		}
+		reverse_proxy piterfy-navidrome:4533 {
+			# replace działa tylko na nieskompresowanej treści; kompresuje potem Caddy (encode)
+			header_up Accept-Encoding identity
+		}
+	}
+}

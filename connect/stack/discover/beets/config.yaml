@@ -1,0 +1,27 @@
+# beets — porządkuje nowe pobrania ze slskd zanim trafią do Navidrome:
+# tagi z MusicBrainz (także kilku wykonawców jako osobne wpisy), ReplayGain, struktura Wykonawca/Album/Tytuł.
+# Działa tylko na nowych plikach z /incoming — istniejącej biblioteki nie rusza.
+
+directory: /music
+library: /config/library.db
+
+plugins: musicbrainz replaygain
+
+import:
+  move: yes                  # z /incoming do /music
+  write: yes                 # zapisz poprawione tagi do pliku
+  quiet: yes                 # bez pytań — działa w tle
+  quiet_fallback: asis       # bez pewnego dopasowania zostaw tagi z pliku, ale i tak przenieś do biblioteki
+  singletons: yes            # pobieramy pojedyncze utwory, nie całe albumy
+  duplicate_action: keep
+  resume: no
+  log: /config/import.log
+
+paths:
+  default: $albumartist/$album%aunique{}/$track $title
+  singleton: $artist/%if{$album,$album,Single}/$title
+  comp: Various Artists/$album%aunique{}/$track $title
+
+replaygain:
+  auto: yes
+  backend: ffmpeg
