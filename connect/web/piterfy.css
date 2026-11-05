@@ -290,7 +290,22 @@ html[data-pf-route="login"] :is(#pf-lyrics-button, #pf-connect-button) { display
 .pf-login-lean, .pf-login-creature { transform-box: fill-box; transform-origin: center bottom; }
 .pf-login-lean { transform: rotate(var(--lean, 0deg)); transition: transform .25s ease-out; }
 .pf-login-eyes { transform: translate(var(--look-x, 0px), var(--look-y, 0px)); transition: transform .16s ease-out; }
+.pf-login-blink {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: pf-login-blink calc(4.1s + var(--i) * .81s) linear infinite;
+  animation-delay: calc(var(--i) * -1.9s);
+}
+.pf-login-brows, .pf-login-grin, .pf-login-hush,
 .pf-login-cheer, .pf-login-frown { display: none; }
+.pf-login-scene[data-state="idle"][data-field="username"] :is(.pf-login-brows, .pf-login-grin),
+.pf-login-scene[data-state="idle"][data-field="password"] :is(.pf-login-brows, .pf-login-hush) { display: initial; }
+.pf-login-scene[data-state="idle"][data-field="password"] .pf-login-eyes ellipse { ry: 2.7px; }
+.pf-login-scene[data-state="idle"][data-field="password"] .pf-login-brows { transform: translateY(4px); }
+.pf-login-scene[data-state="idle"][data-field="username"] .pf-login-creature { translate: 0 -3px; }
+.pf-login-scene[data-state="idle"][data-field="password"] .pf-login-creature { translate: 0 2px; }
+.pf-login-scene[data-state="idle"]:is([data-field="username"], [data-field="password"]) .pf-login-smile { display: none; }
+.pf-login-creature { transition: translate .23s ease-out; }
 .pf-login-scene[data-state="success"] .pf-login-cheer,
 .pf-login-scene[data-state="denied"] .pf-login-frown,
 .pf-login-scene[data-state="unavailable"] .pf-login-frown { display: initial; }
@@ -299,12 +314,14 @@ html[data-pf-route="login"] :is(#pf-lyrics-button, #pf-connect-button) { display
 .pf-login-scene[data-state="unavailable"] .pf-login-smile { display: none; }
 .pf-login-scene[data-state="denied"] .pf-login-caption,
 .pf-login-scene[data-state="unavailable"] .pf-login-caption { color: #ffbfab; }
-.pf-login-scene[data-state="idle"] .pf-login-creature,
-.pf-login-scene[data-state="waiting"] .pf-login-creature {
-  animation: pf-login-bob 3.8s ease-in-out infinite;
-  animation-delay: calc(var(--i) * -.5s);
+.pf-login-scene[data-state="idle"] .pf-login-creature {
+  animation: pf-login-idle calc(5.2s + var(--i) * .69s) ease-in-out infinite;
+  animation-delay: calc(var(--i) * -1.6s);
 }
-.pf-login-scene[data-state="waiting"] .pf-login-creature { animation-duration: .75s; }
+.pf-login-scene[data-state="waiting"] .pf-login-creature {
+  animation: pf-login-bob .75s ease-in-out infinite;
+  animation-delay: calc(var(--i) * -.14s);
+}
 .pf-login-scene[data-state="denied"] .pf-login-creature { animation: pf-login-shake .44s ease-out both; }
 .pf-login-scene[data-state="success"] .pf-login-creature {
   animation: pf-login-cheer .75s cubic-bezier(.2,.8,.3,1) 2;
@@ -326,6 +343,13 @@ html[data-pf-route="login"] :is(#pf-lyrics-button, #pf-connect-button) { display
 .pf-login-finale svg { max-height: 96px; }
 
 @keyframes pf-login-enter { from { opacity: 0; transform: translateY(10px); } }
+@keyframes pf-login-blink { 0%, 78%, 84%, 100% { transform: scaleY(1); } 81% { transform: scaleY(.13); } }
+@keyframes pf-login-idle {
+  0%, 50%, 100% { transform: none; }
+  26% { transform: scale(1.013, 1.025); }
+  64% { transform: scale(1.035, .98); }
+  78% { transform: translateY(-4px) scale(.98, 1.045); }
+}
 @keyframes pf-login-bob { 50% { transform: translateY(-5px); } }
 @keyframes pf-login-shake { 20%, 60% { transform: translateX(-5px) rotate(-4deg); } 40%, 80% { transform: translateX(5px) rotate(4deg); } }
 @keyframes pf-login-cheer { 40% { transform: translateY(-14px) rotate(-4deg); } 75% { transform: scaleY(.95); } }

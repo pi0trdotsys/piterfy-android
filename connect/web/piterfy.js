@@ -140,8 +140,13 @@
           <g class="pf-login-creature" style="--i:${i}">
           <path d="${body}" fill="${color}"/>
           <g class="pf-login-face" transform="translate(${x} ${y})" fill="#062516" stroke="#062516">
-            <g class="pf-login-eyes"><circle cx="-10" r="4"/><circle cx="10" r="4"/></g>
+            <g class="pf-login-eyes">
+              <g class="pf-login-blink"><ellipse cx="-10" rx="4" ry="4"/><ellipse cx="10" rx="4" ry="4"/></g>
+              <path class="pf-login-brows" d="M-15-8q5-5 10 0m10 0q5-5 10 0" fill="none" stroke-width="2" stroke-linecap="round"/>
+            </g>
             <path class="pf-login-smile" d="M-4 10q4 5 8 0" fill="none" stroke-width="2.5" stroke-linecap="round"/>
+            <path class="pf-login-grin" d="M-7 9q7 2 14 0q-2 9-7 9t-7-9z"/>
+            <path class="pf-login-hush" d="M-2 8q-4 5 1 7q5-1 2-6z"/>
             <path class="pf-login-frown" d="M-4 13q4-5 8 0" fill="none" stroke-width="2.5" stroke-linecap="round"/>
             <path class="pf-login-cheer" d="M-6 10h12q-6 12-12 0z" stroke-linejoin="round"/>
           </g>
@@ -197,6 +202,13 @@
     }, { capture: true, passive: true, signal: listeners.signal });
     window.addEventListener("resize", scheduleAim, { signal: listeners.signal });
     window.addEventListener("scroll", scheduleAim, { passive: true, signal: listeners.signal });
+    function reactToField(field) {
+      scene.dataset.field = form.contains(field) && field.matches('input[name="username"], input[type="password"]')
+        ? (field.type === "password" ? "password" : "username") : "";
+    }
+    reactToField(document.activeElement);
+    form.addEventListener("focusin", ({ target }) => reactToField(target), { signal: listeners.signal });
+    form.addEventListener("focusout", ({ relatedTarget }) => reactToField(relatedTarget), { signal: listeners.signal });
     form.addEventListener("input", () => {
       if (["denied", "unavailable"].includes(scene.dataset.state)) state("idle");
     }, { signal: listeners.signal });
