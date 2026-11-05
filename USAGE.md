@@ -537,3 +537,8 @@ Android domyślnie synchronizuje **ulubione utwory** do pobierania przez połąc
 ### Ulubione offline w przeglądarce
 
 Otwórz [Piterfy](https://piterfy.prosinski.eu/app/) z dostępem do sieci w docelowej przeglądarce, zaloguj się i wybierz **Offline**. Poczekaj na zakończenie zapisu i komunikat o gotowym ekranie startowym. Możesz wtedy ponownie otworzyć ten sam adres `/app/` bez dostępu do sieci i odtworzyć zapisane utwory, także losowo. Synchronizacja nowych polubień działa podczas otwartej karty. Pliki są przechowywane osobno dla każdego konta i profilu przeglądarki; po cofnięciu polubienia pozostają dostępne. Wyczyszczenie danych witryny usuwa zapis.
+
+
+### Chromecast w pełnym odtwarzaczu
+
+W wariancie z usługami Google przycisk Cast w pełnym odtwarzaczu otwiera wybór odbiornika lub sterowanie aktywną sesją. Po połączeniu pasek wyjścia pokazuje **Chromecast · nazwa urządzenia**. Dla okładek z biblioteki Piterfy prosi serwer o obraz do 1024 px, aby lepiej wyglądał na dużym ekranie. Wygląd samego ekranu odbiornika nadal określa domyślny odtwarzacz Google.

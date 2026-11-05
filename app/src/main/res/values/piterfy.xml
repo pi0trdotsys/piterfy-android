@@ -33,4 +33,5 @@
  <string name="piterfy_q_lossless">Lossless</string>
  <string name="piterfy_quality_fake">%1$s · ≈ MP3 %2$s kbps (file claims better)</string>
  <string name="piterfy_quality_maybe">%1$s · uncertain</string>
+ <string name="piterfy_cast_output">Chromecast · %1$s</string>
 </resources>

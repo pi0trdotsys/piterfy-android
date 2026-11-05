@@ -133,12 +133,10 @@ public class PlayerControllerFragment extends Fragment {
         com.eddyizm.tempus.lan.LanRemoteSession.state().observe(getViewLifecycleOwner(), state -> refreshPlaybackDestination());
         com.eddyizm.tempus.lan.LanRemoteSession.queueState().observe(getViewLifecycleOwner(), queue -> refreshPlaybackDestination());
         bind.playerRemoteToggle.setOnClickListener(v -> com.eddyizm.tempus.connect.ConnectDevicePicker.show(requireActivity()));
-        outputMonitor = new com.eddyizm.tempus.util.PiterfyOutputMonitor(requireContext(), label -> {
-            if (bind != null && !com.eddyizm.tempus.lan.LanRemoteSession.isActive()) {
-                bind.playerRemoteToggle.setText(com.eddyizm.tempus.connect.ConnectSession.INSTANCE.getEnabled() ? com.eddyizm.tempus.connect.ConnectSession.INSTANCE.outputLabel() : label);
-                bind.playerRemoteToggle.setContentDescription(label);
-            }
-        });
+        com.eddyizm.tempus.util.Flavors.setUpPlayerCastButton(bind.playerCastButton);
+        localOutputTint = bind.playerRemoteToggle.getBackgroundTintList();
+        localOutputText = bind.playerRemoteToggle.getTextColors();
+        outputMonitor = new com.eddyizm.tempus.util.PiterfyOutputMonitor(requireContext(), label -> renderLocalOutput(label));
         qualityClient = new com.eddyizm.tempus.util.PiterfyQualityClient();
         initOverflowButton();
         initQuickActionView();
@@ -180,6 +178,25 @@ public class PlayerControllerFragment extends Fragment {
         bind = null;
     }
 
+    private android.content.res.ColorStateList localOutputTint, localOutputText;
+
+    private void renderLocalOutput(String label) {
+        if (bind == null || com.eddyizm.tempus.lan.LanRemoteSession.isActive()) return;
+        boolean casting = com.eddyizm.tempus.util.Flavors.castDeviceName() != null;
+        var output = bind.playerRemoteToggle;
+        String text = !casting && com.eddyizm.tempus.connect.ConnectSession.INSTANCE.getEnabled()
+                ? com.eddyizm.tempus.connect.ConnectSession.INSTANCE.outputLabel() : label;
+        output.setText(text);
+        output.setContentDescription(text);
+        output.setBackgroundTintList(casting ? android.content.res.ColorStateList.valueOf(
+                com.google.android.material.color.MaterialColors.getColor(output,
+                        com.google.android.material.R.attr.colorSecondaryContainer)) : localOutputTint);
+        output.setTextColor(casting ? android.content.res.ColorStateList.valueOf(
+                com.google.android.material.color.MaterialColors.getColor(output,
+                        com.google.android.material.R.attr.colorOnSecondaryContainer)) : localOutputText);
+        output.setSelected(casting);
+    }
+
     private com.eddyizm.tempus.util.PiterfyOutputMonitor outputMonitor;
     private com.eddyizm.tempus.util.PiterfyQualityClient qualityClient;
 
@@ -189,6 +206,8 @@ public class PlayerControllerFragment extends Fragment {
             remotePlayer.refresh();
             bind.nowPlayingMediaControllerView.setPlayer(remotePlayer);
             com.eddyizm.tempus.lan.LanRemoteState state = com.eddyizm.tempus.lan.LanRemoteSession.current();
+            bind.playerRemoteToggle.setBackgroundTintList(localOutputTint);
+            bind.playerRemoteToggle.setTextColor(localOutputText);
             bind.playerRemoteToggle.setText(com.eddyizm.tempus.lan.LanRemoteSession.isConnect() ? "Gra na: " + state.getName() : getString(R.string.lan_operating_on, state.getName()));
             bind.playerRemoteToggle.setContentDescription(getString(R.string.lan_controlling, state.getName()));
             bind.playerRemoteToggle.setSelected(true);
@@ -212,9 +231,7 @@ public class PlayerControllerFragment extends Fragment {
                 updateSleepTimerUI();
             } finally { renderingRemote = false; }
         } else {
-            bind.playerRemoteToggle.setText(outputMonitor != null ? outputMonitor.label() : getString(R.string.piterfy_device));
-            bind.playerRemoteToggle.setContentDescription(bind.playerRemoteToggle.getText());
-            bind.playerRemoteToggle.setSelected(false);
+            renderLocalOutput(outputMonitor != null ? outputMonitor.label() : getString(R.string.piterfy_device));
             buttonFavorite.setEnabled(true);
             MediaBrowser browser = getBrowser();
             if (browser != null) {

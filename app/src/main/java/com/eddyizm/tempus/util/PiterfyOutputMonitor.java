@@ -38,9 +38,13 @@ public final class PiterfyOutputMonitor {
     }
     public void stop() { running=false;main.removeCallbacks(tick);if(audio!=null)audio.unregisterAudioDeviceCallback(callback); }
     public String label() {
-        return context.getString(R.string.piterfy_output, destination());
+        String cast = Flavors.castDeviceName();
+        return cast != null ? context.getString(R.string.piterfy_cast_output, cast)
+            : context.getString(R.string.piterfy_output, destination());
     }
     public String destination() {
+        String cast = Flavors.castDeviceName();
+        if (cast != null) return cast;
         MediaRouter.RouteInfo route=MediaRouter.getInstance(context).getSelectedRoute();
         if(route!=null && route.getPlaybackType()==MediaRouter.RouteInfo.PLAYBACK_TYPE_REMOTE)
             return String.valueOf(route.getName());

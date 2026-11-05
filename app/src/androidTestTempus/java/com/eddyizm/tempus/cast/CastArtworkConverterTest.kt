@@ -83,6 +83,7 @@ class CastArtworkConverterTest {
         // Either scheme: the URL comes from the in-use server address, which is the local one when set.
         assertTrue("expected a scheme the receiver can fetch, was: $url", artwork.scheme == "http" || artwork.scheme == "https")
         assertTrue("expected a getCoverArt url, was: $url", url.contains("getCoverArt"))
+        assertEquals("1024", artwork.getQueryParameter("size"))
         assertTrue("expected the cover-art id to be carried over, was: $url", url.contains("al-123"))
     }
 }
