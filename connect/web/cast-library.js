@@ -15,6 +15,8 @@
     const headings = { lyrics: 'Tekst utworu', queue: 'Kolejka', playlists: 'Playlisty' };
     let view = '', playlistId = '', offset = 0, count = 0, senderId = '', requestId = 0;
     let timer, track, trackKey = '', lyrics = null, activeLine = -1, rowsKey = '';
+    let manualScroll = false;
+    content.addEventListener('blur', () => { manualScroll = false; });
 
     function setStatus(message) {
       if (status.textContent !== message) status.textContent = message;
@@ -97,6 +99,7 @@
       offset = count = 0;
       lyrics = null;
       activeLine = -1;
+      manualScroll = false;
       rowsKey = '';
       content.replaceChildren();
       content.scrollTop = 0;
@@ -123,13 +126,13 @@
       for (const [i, line] of lyrics.lines.entries()) {
         if (Number.isFinite(line.ms) && line.ms <= position) index = i;
       }
-      if (activeLine === index) return;
-      content.children[activeLine]?.classList.remove('current-line');
+      const changed = activeLine !== index;
+      if (changed) content.children[activeLine]?.classList.remove('current-line');
       activeLine = index;
       const line = content.children[index];
       if (line) {
         line.classList.add('current-line');
-        content.scrollTop = line.offsetTop - content.offsetTop - content.clientHeight / 3;
+        if (changed && !manualScroll) content.scrollTop = line.offsetTop - content.offsetTop - content.clientHeight / 3;
       }
     }
 
@@ -221,8 +224,9 @@
       } else if (!view && event.key === 'ArrowDown' && active.closest('#controls')) {
         tabs[0].focus();
         event.preventDefault();
-      } else if (!view && tabIndex >= 0 && event.key === 'ArrowUp' && !$('controls').hidden) {
-        $('play').focus();
+      } else if (tabIndex >= 0 && event.key === 'ArrowUp' && (view === 'lyrics' || (!view && !$('controls').hidden))) {
+        (view === 'lyrics' && active.dataset.view === 'lyrics' ? content :
+          $('controls').hidden ? $('library-back') : $('play')).focus({ preventScroll: true });
         event.preventDefault();
       } else if (view && event.key === 'Escape') {
         back();
@@ -231,12 +235,16 @@
         if (view === 'lyrics' && active === $('library-back') && event.key === 'ArrowUp' && !$('controls').hidden) {
           $('play').focus();
           event.preventDefault();
+          event.stopImmediatePropagation();
           return;
         }
         if (active === content && view === 'lyrics') {
           if (event.key === 'ArrowUp' && content.scrollTop === 0) $('library-back').focus();
           else if (event.key === 'ArrowDown' && content.scrollTop + content.clientHeight >= content.scrollHeight - 1) tabs[0].focus();
-          else content.scrollTop += event.key === 'ArrowDown' ? 100 : -100;
+          else {
+            manualScroll = true;
+            content.scrollTop += event.key === 'ArrowDown' ? 100 : -100;
+          }
         } else {
           const nodes = [$('library-back'), ...(view === 'lyrics' ? [content] : content.children),
             ...(!$('library-pages').hidden ? [$('library-prev'), $('library-next')].filter(button => !button.disabled) : []), ...navigation];
@@ -245,7 +253,8 @@
         }
         event.preventDefault();
       }
-    });
+      if (event.defaultPrevented) event.stopImmediatePropagation();
+    }, true);
 
     return {
       update(next) {

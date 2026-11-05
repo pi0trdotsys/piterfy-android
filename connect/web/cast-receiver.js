@@ -50,18 +50,26 @@
   const cover = $('cover'), backdrop = $('backdrop');
   const controls = $('controls');
   const seekRow = $('seek-row');
-  const oledToggle = $('oled-toggle');
-  function setOled(enabled) {
-    doc.body.classList.toggle('max-oled', enabled);
-    oledToggle.setAttribute('aria-pressed', String(enabled));
-    oledToggle.textContent = enabled ? 'Max OLED · wł.' : 'Max OLED';
+  const displayModes = { 'max-oled': $('oled-toggle'), ambiente: $('ambiente-toggle') };
+  let displayMode = 'standard';
+  function setDisplayMode(mode) {
+    displayMode = Object.prototype.hasOwnProperty.call(displayModes, mode) ? mode : 'standard';
+    for (const [name, button] of Object.entries(displayModes)) {
+      const enabled = name === displayMode;
+      doc.body.classList.toggle(name, enabled);
+      button.setAttribute('aria-pressed', String(enabled));
+    }
   }
-  try { setOled(root.localStorage.getItem('piterfy.cast.maxOled') === 'true'); } catch (_) {}
-  oledToggle.onclick = () => {
-    const enabled = oledToggle.getAttribute('aria-pressed') !== 'true';
-    setOled(enabled);
-    try { root.localStorage.setItem('piterfy.cast.maxOled', String(enabled)); } catch (_) {}
-  };
+  try {
+    setDisplayMode(root.localStorage.getItem('piterfy.cast.displayMode') ||
+      (root.localStorage.getItem('piterfy.cast.maxOled') === 'true' ? 'max-oled' : 'standard'));
+  } catch (_) {}
+  for (const [mode, button] of Object.entries(displayModes)) {
+    button.onclick = () => {
+      setDisplayMode(displayMode === mode ? 'standard' : mode);
+      try { root.localStorage.setItem('piterfy.cast.displayMode', displayMode); } catch (_) {}
+    };
+  }
   let current = null, coverURL = '', player, playbackError = false, library;
   const canMove = (index, length, step) =>
     Number.isInteger(index) && index >= 0 && index < length && index + step >= 0 && index + step < length;
@@ -77,24 +85,33 @@
   cover.onerror = () => { cover.hidden = true; backdrop.hidden = true; };
 
   const consumedKeys = new Set();
+  const main = doc.querySelector('main');
+  const lyricsContent = $('library-content');
+  const lyricsBack = $('library-back');
+  const firstTab = doc.querySelector('.library-nav button');
   root.addEventListener('keydown', event => {
-    if (controls.hidden || doc.querySelector('main').classList.contains('library-open')) return;
+    if (main.classList.contains('library-open')) return;
     const active = doc.activeElement;
-    if (active !== doc.body && !controls.contains(active)) return;
+    const lyricsOpen = main.classList.contains('lyrics-open');
     const inSeek = seekRow.contains(active);
     let next;
-    if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
+    if (lyricsOpen && (active === lyricsContent || active === lyricsBack) && event.key === 'ArrowLeft') {
+      next = controls.hidden ? firstTab : $('play');
+    } else if (controls.hidden || (active !== doc.body && !controls.contains(active))) {
+      return;
+    } else if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
       const row = inSeek ? seekRow : $('play').parentElement;
       const buttons = [...row.querySelectorAll('button')];
       const selected = buttons.indexOf(active);
       const step = event.key === 'ArrowLeft' ? -1 : 1;
-      next = selected < 0 ? $('play') : buttons[Math.max(0, Math.min(buttons.length - 1, selected + step))];
+      if (lyricsOpen && selected === buttons.length - 1 && step === 1) next = lyricsContent;
+      else next = selected < 0 ? $('play') : buttons[Math.max(0, Math.min(buttons.length - 1, selected + step))];
     } else if (event.key === 'ArrowDown' && !inSeek && !seekRow.hidden) {
       next = active === $('previous-track') ? $('rewind') : $('forward');
     } else if (event.key === 'ArrowUp' && inSeek) {
       next = active === $('rewind') ? $('previous-track') : $('next-track');
-    } else if (event.key === 'ArrowDown' && doc.querySelector('main').classList.contains('lyrics-open')) {
-      next = $('library-content');
+    } else if (event.key === 'ArrowDown') {
+      next = firstTab;
     } else {
       return;
     }
@@ -102,7 +119,7 @@
     consumedKeys.add(event.key);
     event.preventDefault();
     event.stopImmediatePropagation();
-    next.focus();
+    next.focus({ preventScroll: true });
   }, true);
   root.addEventListener('keyup', event => {
     if (!consumedKeys.delete(event.key)) return;
