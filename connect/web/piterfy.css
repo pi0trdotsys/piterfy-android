@@ -186,19 +186,6 @@ html:not([data-pf-light]) {
   & .audio-lists-panel-content .audio-item.playing svg { color: var(--pf-accent) !important; }
   & .audio-lists-panel-content .audio-item:hover { background: rgba(255, 255, 255, 0.08) !important; }
 
-  /* ── logowanie ── */
-  &[data-pf-route="login"] #root form > div {
-    background: radial-gradient(1100px 640px at 50% -10%, #1c3b2b, var(--pf-bg) 70%) !important;
-    box-shadow: none !important;
-  }
-  &[data-pf-route="login"] #root form .MuiCard-root {
-    background: var(--pf-panel) !important;
-    border: 0 !important;
-    border-radius: 12px !important;
-    box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6) !important;
-  }
-  &[data-pf-route="login"] img[alt="logo"] { width: 64px; height: 64px; }
-
   /* strona startowa w kolorach Noir: zielona poświata u góry jak w Spotify */
   &[data-pf-route="start"] #main-content {
     background: linear-gradient(180deg, #1f4a33 0, #15291e 180px, var(--pf-panel) 420px) !important;
@@ -210,6 +197,156 @@ html:not([data-pf-light]) {
 }
 
 /* ───── Poniżej elementy, które piterfy.js dokłada zawsze — więc działają też w jasnym motywie. ───── */
+
+/* Login uses the native Navidrome form. The illustration occupies its own grid cell. */
+#root form > .pf-login-layout {
+  box-sizing: border-box;
+  display: grid;
+  grid-template-columns: minmax(0, 520px) minmax(290px, 370px);
+  align-items: stretch;
+  align-content: center;
+  justify-content: center;
+  gap: clamp(12px, 2vw, 28px);
+  min-height: 100svh;
+  padding: clamp(16px, 4vw, 54px);
+  background: radial-gradient(ellipse at 38% 0%, #163526, #080e0a 66%) !important;
+}
+
+.pf-login-scene {
+  box-sizing: border-box;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  padding: clamp(22px, 4vw, 48px);
+  overflow: hidden;
+  border: 1px solid #4bd77a42;
+  border-radius: 28px;
+  color: #f3fff7;
+  background: radial-gradient(ellipse at 60% 76%, #195339, transparent 68%),
+    linear-gradient(155deg, #133824, #0b2218 62%);
+  box-shadow: 0 24px 80px #0006;
+  animation: pf-login-enter .55s ease-out both;
+}
+
+.pf-login-copy span, .pf-login-caption {
+  color: #b5ebcb;
+  font-size: .85rem;
+  font-weight: 600;
+}
+.pf-login-copy span { letter-spacing: .15em; }
+.pf-login-copy strong {
+  display: block;
+  margin-top: .3em;
+  font-size: clamp(2rem, 4vw, 3.6rem);
+  letter-spacing: -.055em;
+  line-height: .98;
+}
+.pf-login-scene svg { display: block; width: 100%; max-height: 245px; }
+.pf-login-caption { text-align: center; }
+
+#root .pf-login-card.MuiCard-root {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  width: 100%;
+  max-width: none;
+  min-width: 0;
+  margin: 0;
+  padding: clamp(14px, 2.5vw, 34px);
+  border: 1px solid #ffffff20 !important;
+  border-radius: 28px !important;
+  color: #f2fff6 !important;
+  background: #101b15 !important;
+  box-shadow: 0 24px 80px #0006 !important;
+  animation: pf-login-enter .45s ease-out both;
+}
+#root .pf-login-card img[alt="logo"] { width: 54px; height: 54px; }
+#root .pf-login-card > div { color: #b6cbbd; }
+#root .pf-login-card a { color: #eefbf2; }
+#root .pf-login-card .MuiInputBase-root { color: #f3fff6; }
+#root .pf-login-card label { color: #b6cbbd; }
+#root .pf-login-card label.Mui-focused { color: #75eba1; }
+#root .pf-login-card .MuiInput-underline::before { border-color: #a7c9b09c; }
+#root .pf-login-card .MuiInput-underline::after { border-color: #52e084; }
+#root .pf-login-card button[type="submit"]:not(:disabled) {
+  background: #52e084 !important;
+  color: #062516 !important;
+  font-weight: 700;
+  border-radius: 999px;
+  transition: background .2s, box-shadow .2s, transform .2s;
+}
+#root .pf-login-card button[type="submit"]:not(:disabled):hover {
+  background: #8bf2ad !important;
+  box-shadow: 0 5px 24px #2fdf7960;
+  transform: translateY(-2px);
+}
+#root .pf-login-card button[type="submit"] .MuiButton-label { color: inherit !important; }
+#root .pf-login-card button:focus-visible { outline: 2px solid #b5ffcb; outline-offset: 4px; }
+html[data-pf-route="login"] :is(#pf-lyrics-button, #pf-connect-button) { display: none !important; }
+
+.pf-login-creature { transform-box: fill-box; transform-origin: center bottom; }
+.pf-login-eyes { transform: translate(var(--look-x, 0px), var(--look-y, 0px)); transition: transform .16s ease-out; }
+.pf-login-closed, .pf-login-frown { display: none; }
+.pf-login-scene[data-private][data-state="idle"] .pf-login-eyes,
+.pf-login-scene[data-state="success"] .pf-login-eyes { display: none; }
+.pf-login-scene[data-private][data-state="idle"] .pf-login-closed,
+.pf-login-scene[data-state="success"] .pf-login-closed,
+.pf-login-scene[data-state="denied"] .pf-login-frown,
+.pf-login-scene[data-state="unavailable"] .pf-login-frown { display: initial; }
+.pf-login-scene[data-state="denied"] .pf-login-smile,
+.pf-login-scene[data-state="unavailable"] .pf-login-smile { display: none; }
+.pf-login-scene[data-state="denied"] .pf-login-caption,
+.pf-login-scene[data-state="unavailable"] .pf-login-caption { color: #ffbfab; }
+.pf-login-scene[data-state="idle"] .pf-login-creature,
+.pf-login-scene[data-state="waiting"] .pf-login-creature {
+  animation: pf-login-bob 3.8s ease-in-out infinite;
+  animation-delay: calc(var(--i) * -.5s);
+}
+.pf-login-scene[data-state="waiting"] .pf-login-creature { animation-duration: .75s; }
+.pf-login-scene[data-state="denied"] .pf-login-creature { animation: pf-login-shake .44s ease-out both; }
+.pf-login-scene[data-state="success"] .pf-login-creature {
+  animation: pf-login-cheer .75s cubic-bezier(.2,.8,.3,1) 2;
+  animation-delay: calc(var(--i) * .07s);
+}
+.pf-login-spark { animation: pf-login-twinkle 3.5s ease-in-out infinite alternate; }
+.pf-login-scene[data-state="success"] .pf-login-spark { animation-duration: .25s; }
+.pf-login-finale {
+  position: fixed;
+  z-index: 1500;
+  right: 14px;
+  bottom: 100px;
+  width: min(230px, calc(100vw - 28px));
+  padding: 10px 14px;
+  pointer-events: none;
+  animation: pf-login-finale 1.9s ease both;
+}
+.pf-login-finale .pf-login-copy { display: none; }
+.pf-login-finale svg { max-height: 96px; }
+
+@keyframes pf-login-enter { from { opacity: 0; transform: translateY(10px); } }
+@keyframes pf-login-bob { 50% { transform: translateY(-5px) rotate(2deg); } }
+@keyframes pf-login-shake { 20%, 60% { transform: translateX(-5px) rotate(-4deg); } 40%, 80% { transform: translateX(5px) rotate(4deg); } }
+@keyframes pf-login-cheer { 40% { transform: translateY(-14px) rotate(-4deg); } 75% { transform: scaleY(.95); } }
+@keyframes pf-login-twinkle { from { opacity: .25; } to { opacity: .95; } }
+@keyframes pf-login-finale { 0%, 100% { opacity: 0; transform: translateY(10px); } 12%, 84% { opacity: 1; transform: none; } }
+
+@media (max-width: 690px) {
+  #root form > .pf-login-layout { grid-template-columns: minmax(0, 410px); }
+  .pf-login-layout .pf-login-scene { padding: 14px 20px; border-radius: 22px; }
+  .pf-login-layout .pf-login-scene svg { max-height: 116px; }
+  .pf-login-copy strong { font-size: clamp(1.4rem, 6vw, 2rem); }
+  .pf-login-copy br { display: none; }
+  #root .pf-login-card.MuiCard-root { border-radius: 22px !important; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pf-login-scene, .pf-login-scene *, #root .pf-login-card, #root .pf-login-card * {
+    animation: none !important;
+    transition: none !important;
+  }
+}
 
 /* logo Piterfy i pozycja „Start” na górze panelu bocznego, nad menu Navidrome */
 .pf-brand {

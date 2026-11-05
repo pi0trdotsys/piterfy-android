@@ -117,8 +117,137 @@
     nodes.forEach((n) => { n.nodeValue = n.nodeValue.replace(/Navidrome/g, NAME); });
   }
 
+  let loginScene;
+
+  function mountLogin(card) {
+    const scene = document.createElement("div");
+    scene.className = "pf-login-scene";
+    scene.setAttribute("aria-hidden", "true");
+    scene.innerHTML = `<div class="pf-login-copy"><span>PITERFY · STUDIO</span>
+      <strong>Twoja muzyka.<br> Twoja ekipa.</strong></div>
+      <svg viewBox="0 0 380 235" focusable="false">
+        <ellipse cx="192" cy="217" rx="156" ry="13" fill="#02170c" opacity=".45"/>
+        <path class="pf-login-spark" d="M46 81v18m-9-9h18m278 4v22m-11-11h22m-35-67v14m-7-7h14"
+          fill="none" stroke="#afffd2" stroke-width="3" stroke-linecap="round"/>
+        ${[
+          ["#27c965", "M105 204l-8-116q-2-36 22-59t57-16l42 10-27 181z", 158, 70],
+          ["#0e8b50", "M168 204l13-114q3-23 25-24l55-2q20 0 17 23l-19 117z", 228, 108],
+          ["#b2f8a4", "M252 206l15-65q8-37 38-37 37 0 37 38 0 24-16 64z", 302, 146],
+          ["#66ed8e", "M36 208q1-43 32-66 28-22 67-17 49 5 65 41 10 23 2 42z", 122, 170],
+        ].map(([color, body, x, y], i) => `<g class="pf-login-creature" style="--i:${i}">
+          <path d="${body}" fill="${color}"/>
+          <g class="pf-login-face" transform="translate(${x} ${y})" fill="#062516" stroke="#062516">
+            <g class="pf-login-eyes"><circle cx="-10" r="4"/><circle cx="10" r="4"/></g>
+            <path class="pf-login-smile" d="M-4 10q4 5 8 0" fill="none" stroke-width="2.5" stroke-linecap="round"/>
+            <path class="pf-login-frown" d="M-4 13q4-5 8 0" fill="none" stroke-width="2.5" stroke-linecap="round"/>
+            <path class="pf-login-closed" d="M-14 1h8m12 0h8" stroke-width="2.5" stroke-linecap="round"/>
+          </g>
+        </g>`).join("")}
+      </svg><span class="pf-login-caption"></span>`;
+    const host = card.parentElement;
+    const form = card.closest("form");
+    host.classList.add("pf-login-layout");
+    card.classList.add("pf-login-card");
+    card.before(scene);
+
+    const labels = {
+      idle: "Wszyscy gotowi do słuchania.",
+      waiting: "Chwila, łączymy się…",
+      denied: "Nie tym razem. Spróbuj jeszcze raz.",
+      unavailable: "Coś przerwało połączenie.",
+      success: "Jesteś! Czas na muzykę.",
+    };
+    function state(value) {
+      scene.dataset.state = value;
+      scene.querySelector(".pf-login-caption").textContent = labels[value];
+    }
+    state("idle");
+    scene.toggleAttribute("data-private", form.contains(document.activeElement) &&
+      document.activeElement.matches('input[type="password"]'));
+
+    const motion = matchMedia("(prefers-reduced-motion: reduce)");
+    const eyes = [...scene.querySelectorAll(".pf-login-eyes")];
+    const listeners = new AbortController();
+    let frame = 0;
+    function resetEyes() {
+      cancelAnimationFrame(frame);
+      frame = 0;
+      eyes.forEach((eye) => { eye.style.removeProperty("--look-x"); eye.style.removeProperty("--look-y"); });
+    }
+    window.addEventListener("pointermove", ({ clientX, clientY, pointerType }) => {
+      if (pointerType !== "mouse" || motion.matches || scene.hasAttribute("data-private")) return;
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        eyes.forEach((eye) => {
+          const bounds = eye.getBoundingClientRect();
+          const x = clientX - bounds.x - bounds.width / 2;
+          const y = clientY - bounds.y - bounds.height / 2;
+          const distance = Math.max(65, Math.hypot(x, y));
+          eye.style.setProperty("--look-x", 5 * x / distance + "px");
+          eye.style.setProperty("--look-y", 5 * y / distance + "px");
+        });
+      });
+    }, { passive: true, signal: listeners.signal });
+    window.addEventListener("blur", resetEyes, { signal: listeners.signal });
+    form.addEventListener("focusin", ({ target }) => {
+      scene.toggleAttribute("data-private", target.matches('input[type="password"]'));
+      if (scene.hasAttribute("data-private")) resetEyes();
+    }, { signal: listeners.signal });
+    form.addEventListener("focusout", ({ relatedTarget }) => {
+      if (!relatedTarget?.matches?.('input[type="password"]')) scene.removeAttribute("data-private");
+    }, { signal: listeners.signal });
+    form.addEventListener("input", () => {
+      if (["denied", "unavailable"].includes(scene.dataset.state)) state("idle");
+    }, { signal: listeners.signal });
+
+    const nativeFetch = window.fetch;
+    let attempt = 0;
+    // Observe only the authentication result. The original request and response go to Navidrome unchanged.
+    function observeLogin(input, options) {
+      const response = nativeFetch.apply(this, arguments);
+      const request = input instanceof Request ? input : null;
+      const method = options?.method ?? request?.method;
+      if (String(method).toUpperCase() !== "POST" || !card.isConnected) return response;
+      let url;
+      try { url = new URL(request?.url ?? input, location.href); } catch (_) { return response; }
+      if (url.origin !== location.origin || !/\/auth\/(login|createAdmin)$/.test(url.pathname)) return response;
+      const current = ++attempt;
+      state("waiting");
+      response.then((result) => {
+        if (current !== attempt) return;
+        state(result.ok ? "success" : [401, 403].includes(result.status) ? "denied" : "unavailable");
+      }, () => { if (current === attempt) state("unavailable"); });
+      return response;
+    }
+    window.fetch = observeLogin;
+    return {
+      card,
+      dispose(celebrate) {
+        attempt++;
+        listeners.abort();
+        resetEyes();
+        if (window.fetch === observeLogin) window.fetch = nativeFetch;
+        host.classList.remove("pf-login-layout");
+        card.classList.remove("pf-login-card");
+        if (celebrate && scene.dataset.state === "success") {
+          scene.classList.add("pf-login-finale");
+          document.body.appendChild(scene);
+          setTimeout(() => scene.remove(), 1900);
+        } else scene.remove();
+      },
+    };
+  }
+
   function rebrandLogin() {
-    document.querySelectorAll('img[alt="logo"]').forEach((img) => setAttr(img, "src", UI + "logo.svg"));
+    const onLogin = root.dataset.pfRoute === "login";
+    const card = onLogin && document.querySelector('#root form input[name="password"]')?.closest(".MuiCard-root");
+    if (loginScene && loginScene.card !== card) {
+      loginScene.dispose(!onLogin);
+      loginScene = null;
+    }
+    if (!card) return;
+    setAttr(card.querySelector('img[alt="logo"]'), "src", UI + "logo.svg");
+    if (!loginScene) loginScene = mountLogin(card);
   }
 
   // ── panel boczny: logo i „Start” nad menu ──
