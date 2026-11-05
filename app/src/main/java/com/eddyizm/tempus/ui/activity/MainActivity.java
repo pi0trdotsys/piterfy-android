@@ -101,6 +101,7 @@ public class MainActivity extends BaseActivity {
     private BottomSheetController bottomSheetController;
     public BottomSheetBehavior bottomSheetBehavior;
     private boolean isLandscape = false;
+    private boolean isTelevision;
     private AssetLinkNavigator assetLinkNavigator;
     private AssetLinkUtil.AssetLink pendingAssetLink;
 
@@ -115,6 +116,13 @@ public class MainActivity extends BaseActivity {
     @Override
     public boolean dispatchKeyEvent(android.view.KeyEvent event) {
         if (com.eddyizm.tempus.lan.LanRemoteVolume.dispatch(event)) return true;
+        if (isTelevision && event.getKeyCode() == android.view.KeyEvent.KEYCODE_MENU
+                && bind != null && !isNavigationDrawerLocked() && bind.bottomNavigation.isShown()) {
+            if (event.getAction() == android.view.KeyEvent.ACTION_UP && !event.isCanceled()) {
+                bind.drawerLayout.openDrawer(bind.navView);
+            }
+            return true;
+        }
         return super.dispatchKeyEvent(event);
     }
 
@@ -156,6 +164,7 @@ public class MainActivity extends BaseActivity {
         bind = ActivityMainBinding.inflate(getLayoutInflater());
         View view = bind.getRoot();
         setContentView(view);
+        isTelevision = TvFocus.install(this);
 
         mainViewModel = new ViewModelProvider(this).get(MainViewModel.class);
         assetLinkNavigator = new AssetLinkNavigator(this);
@@ -163,7 +172,8 @@ public class MainActivity extends BaseActivity {
         connectivityStatusBroadcastReceiver = new ConnectivityStatusBroadcastReceiver(this);
         connectivityStatusReceiverManager(true);
 
-        isLandscape = (getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE);
+        isLandscape = !isTelevision
+                && getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE;
 
         init();
         checkConnectionType();
@@ -423,6 +433,15 @@ public class MainActivity extends BaseActivity {
 
     public void toggleBottomNavigationBarVisibilityOnOrientationChange() {
         float displayDensity = getResources().getDisplayMetrics().density;
+        if (isTelevision) {
+            var destination = navController.getCurrentDestination();
+            boolean showNavigation = destination != null && destination.getId() != R.id.loginFragment
+                    && destination.getId() != R.id.landingFragment;
+            bottomSheetController.setPeekHeight(showNavigation ? 136 : 56, displayDensity);
+            navigationController.setNavbarVisibility(showNavigation);
+            navigationController.setSystemBarsVisibility(this, false);
+            return;
+        }
         // Ignore orientation change, bottom navbar always hidden
         if (Preferences.getHideBottomNavbarOnPortrait()) {
             navigationController.setNavbarVisibility(false);

@@ -13,6 +13,7 @@ import androidx.viewpager2.adapter.FragmentStateAdapter
 import com.eddyizm.tempus.databinding.ActivityLoginBinding
 import com.eddyizm.tempus.R;
 import com.eddyizm.tempus.helper.ThemeHelper
+import com.eddyizm.tempus.ui.activity.TvFocus
 import com.google.android.material.tabs.TabLayoutMediator
 
 private const val GREETER_FRAGMENT: Int     = 0
@@ -33,6 +34,7 @@ class LoginActivity : AppCompatActivity() {
 
         binding = ActivityLoginBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        TvFocus.install(this)
 
         initIntentHandler()
         initEdgeToEdge()

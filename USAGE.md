@@ -1,5 +1,18 @@
 # Piterfy Usage Guide
 
+## Google TV
+
+Install the universal `app-tempus-release.apk` on the TV and open **Piterfy**
+from the Google TV app row. For ADB installation, run
+`adb -s TV_ADDRESS install -r app-tempus-release.apk` after authorizing the
+computer on the TV. Add your music server and sign in from Piterfy.
+
+Use the directional pad to move the green focus outline and OK to activate the
+highlighted control. Home, Library and Downloads are in the bottom bar. Open
+the mini player to reach the full playback controls and queue. Back closes the
+current screen or player. On remotes that send a Menu key, it opens the app drawer.
+Playback takes place on the TV using the same native app and server account.
+
 ## Piterfy discovery and podcasts
 
 Home â†’ Music shows the latest server **Odkrywaj** playlists. Each card opens the playlist and offers play/download actions. **MĂłj gust** opens the configured serverâ€™s `/gust/` page in your browser.
