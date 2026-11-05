@@ -162,6 +162,7 @@
             <path class="pf-login-frown" d="M-4 13q4-5 8 0" fill="none" stroke-width="2.5" stroke-linecap="round"/>
             <path class="pf-login-cheer" d="M-6 10h12q-6 12-12 0z" stroke-linejoin="round"/>
             <path class="pf-login-hum" d="M-2 11q-4 5 1 7q5-1 2-6z"/>
+            <ellipse class="pf-login-yawn" cy="16" rx="5" ry="6"/>
             <path class="pf-login-note" d="M18-14v-12l9-3v12m-9 3q-7-3-8 2 1 4 8-2m9-3q-7-3-8 2 1 4 8-2"
               fill="none" stroke="#e7ffbd" stroke-width="2" stroke-linecap="round"/>
           </g>
@@ -192,23 +193,30 @@
     const listeners = new AbortController();
     let gestureTimer;
     let gestureIndex = 0;
-    let activeMascot;
-    const gestures = [[0, "stretch"], [2, "wink"], [1, "hum"], [3, "stretch"]];
+    const gestures = [
+      [[0, "stretch"]],
+      [[2, "wink"], [3, "nod"]],
+      [[1, "hum"]],
+      [[3, "hop"]],
+      [[0, "peek"], [1, "nod"]],
+      [[2, "yawn"]],
+      [[1, "sway"]],
+    ];
+    function clearGestures() {
+      for (const { body } of creatures) delete body.dataset.gesture;
+    }
     function nextGesture() {
-      if (activeMascot) delete activeMascot.dataset.gesture;
-      activeMascot = null;
       if (!document.hidden && scene.dataset.state === "idle") {
-        const [index, gesture] = gestures[gestureIndex++ % gestures.length];
-        activeMascot = creatures[index].body;
-        activeMascot.dataset.gesture = gesture;
+        for (const [index, gesture] of gestures[gestureIndex++ % gestures.length]) {
+          creatures[index].body.dataset.gesture = gesture;
+        }
       }
       gestureTimer = setTimeout(() => {
-        if (activeMascot) delete activeMascot.dataset.gesture;
-        activeMascot = null;
-        gestureTimer = setTimeout(nextGesture, 1700);
-      }, 1050);
+        clearGestures();
+        gestureTimer = setTimeout(nextGesture, 650 + Math.random() * 750);
+      }, 1600);
     }
-    gestureTimer = setTimeout(nextGesture, 950);
+    gestureTimer = setTimeout(nextGesture, 650);
     let frame = 0;
     let pointer;
     function aim() {
@@ -274,7 +282,7 @@
         listeners.abort();
         cancelAnimationFrame(frame);
         clearTimeout(gestureTimer);
-        if (activeMascot) delete activeMascot.dataset.gesture;
+        clearGestures();
         if (window.fetch === observeLogin) window.fetch = nativeFetch;
         host.classList.remove("pf-login-layout");
         card.classList.remove("pf-login-card");
