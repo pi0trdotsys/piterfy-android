@@ -204,12 +204,40 @@ footer { color: var(--muted); font-size: clamp(12px, 1.2vw, 22px); }
   gap: .85em;
 }
 
-.library-nav button[aria-expanded="true"] {
+.library-nav button[aria-expanded="true"],
+.library-nav button[aria-pressed="true"] {
   color: #132f23;
   background: var(--accent);
 }
 
 .library-open .layout { display: none; }
+.lyrics-open .player-workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
+  align-items: center;
+  gap: 4vw;
+}
+.lyrics-open .layout { grid-template-columns: minmax(0, 1fr); gap: 2vh; }
+.lyrics-open .cover { width: min(17vw, 23vh); }
+.lyrics-open h1 { font-size: clamp(24px, 3.2vw, 60px); }
+.lyrics-open .library {
+  padding: clamp(12px, 2vw, 32px);
+  border: 1px solid #d0ecde33;
+  border-radius: 1em;
+  background: #10181480;
+}
+.lyrics-open .library-content { max-height: 43vh; }
+.lyrics-open .lyric-line { font-size: clamp(18px, 2.4vw, 48px); }
+
+body.max-oled { background: #000; color: #bdbdbd; --accent: #a6c7b4; --muted: #979797; }
+.max-oled .cover, .max-oled .backdrop { display: none; }
+.max-oled .layout { grid-template-columns: minmax(0, 1fr); }
+.max-oled .artist, .max-oled .badge, .max-oled .eyebrow { color: var(--muted); }
+.max-oled .lyrics-open .library { background: #000; border-color: #343434; }
+.max-oled button { background: #0c0c0c; border-color: #565656; color: #bdbdbd; }
+.max-oled button.primary, .max-oled .library-nav button[aria-pressed="true"],
+.max-oled .library-nav button[aria-expanded="true"] { background: #151c18; color: var(--accent); }
+.max-oled button:focus { outline-color: #bdbdbd; }
 .library { min-width: 0; }
 .library header { gap: 1em; }
 .library h2 { margin: 0; font-size: clamp(25px, 3.8vw, 65px); overflow-wrap: anywhere; }
@@ -237,10 +265,16 @@ button.library-row {
 .lyric-line { margin: 0 0 .55em; color: var(--muted); font-size: clamp(20px, 3vw, 58px); font-weight: 650; }
 .lyric-line.current-line { color: var(--accent); }
 
+@media (max-height: 800px) and (orientation: landscape) {
+  .lyrics-open .cover { display: none; }
+}
+
 @media (max-width: 600px) and (orientation: portrait) {
   main { padding: 5vw; }
   .layout { grid-template-columns: 1fr; gap: 3vh; }
   .cover { width: min(56vw, 35vh); justify-self: center; }
   .track { text-align: center; }
   .eyebrow, .transport-row { justify-content: center; }
+  .lyrics-open .player-workspace { grid-template-columns: minmax(0, 1fr); }
+  .lyrics-open .cover { display: none; }
 }

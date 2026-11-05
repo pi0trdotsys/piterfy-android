@@ -50,6 +50,18 @@
   const cover = $('cover'), backdrop = $('backdrop');
   const controls = $('controls');
   const seekRow = $('seek-row');
+  const oledToggle = $('oled-toggle');
+  function setOled(enabled) {
+    doc.body.classList.toggle('max-oled', enabled);
+    oledToggle.setAttribute('aria-pressed', String(enabled));
+    oledToggle.textContent = enabled ? 'Max OLED · wł.' : 'Max OLED';
+  }
+  try { setOled(root.localStorage.getItem('piterfy.cast.maxOled') === 'true'); } catch (_) {}
+  oledToggle.onclick = () => {
+    const enabled = oledToggle.getAttribute('aria-pressed') !== 'true';
+    setOled(enabled);
+    try { root.localStorage.setItem('piterfy.cast.maxOled', String(enabled)); } catch (_) {}
+  };
   let current = null, coverURL = '', player, playbackError = false, library;
   const canMove = (index, length, step) =>
     Number.isInteger(index) && index >= 0 && index < length && index + step >= 0 && index + step < length;
@@ -81,6 +93,8 @@
       next = active === $('previous-track') ? $('rewind') : $('forward');
     } else if (event.key === 'ArrowUp' && inSeek) {
       next = active === $('rewind') ? $('previous-track') : $('next-track');
+    } else if (event.key === 'ArrowDown' && doc.querySelector('main').classList.contains('lyrics-open')) {
+      next = $('library-content');
     } else {
       return;
     }

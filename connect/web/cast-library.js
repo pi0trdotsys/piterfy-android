@@ -8,7 +8,8 @@
     const $ = id => doc.getElementById(id);
     const panel = $('library');
     const content = $('library-content');
-    const tabs = [...doc.querySelectorAll('.library-nav button')];
+    const navigation = [...doc.querySelectorAll('.library-nav button')];
+    const tabs = navigation.filter(button => button.dataset.view);
     const title = $('library-title');
     const status = $('library-status');
     const headings = { lyrics: 'Tekst utworu', queue: 'Kolejka', playlists: 'Playlisty' };
@@ -102,7 +103,9 @@
       $('library-pages').hidden = true;
       title.textContent = headings[next];
       panel.hidden = !next;
-      doc.querySelector('main').classList.toggle('library-open', !!next);
+      const main = doc.querySelector('main');
+      main.classList.toggle('library-open', !!next && next !== 'lyrics');
+      main.classList.toggle('lyrics-open', next === 'lyrics');
       tabs.forEach(tab => tab.setAttribute('aria-expanded', String(tab.dataset.view === next)));
       if (next) {
         load();
@@ -210,10 +213,10 @@
     $('library-next').onclick = () => { if (offset + pageSize < count) { offset += pageSize; content.scrollTop = 0; load(); } };
     doc.addEventListener('keydown', event => {
       const active = doc.activeElement;
-      const tabIndex = tabs.indexOf(active);
+      const tabIndex = navigation.indexOf(active);
       if (tabIndex >= 0 && ['ArrowLeft', 'ArrowRight'].includes(event.key)) {
         const index = tabIndex + (event.key === 'ArrowLeft' ? -1 : 1);
-        tabs[Math.max(0, Math.min(tabs.length - 1, index))].focus();
+        navigation[Math.max(0, Math.min(navigation.length - 1, index))].focus();
         event.preventDefault();
       } else if (!view && event.key === 'ArrowDown' && active.closest('#controls')) {
         tabs[0].focus();
@@ -225,11 +228,18 @@
         back();
         event.preventDefault();
       } else if (view && ['ArrowUp', 'ArrowDown'].includes(event.key)) {
+        if (view === 'lyrics' && active === $('library-back') && event.key === 'ArrowUp' && !$('controls').hidden) {
+          $('play').focus();
+          event.preventDefault();
+          return;
+        }
         if (active === content && view === 'lyrics') {
-          content.scrollTop += event.key === 'ArrowDown' ? 100 : -100;
+          if (event.key === 'ArrowUp' && content.scrollTop === 0) $('library-back').focus();
+          else if (event.key === 'ArrowDown' && content.scrollTop + content.clientHeight >= content.scrollHeight - 1) tabs[0].focus();
+          else content.scrollTop += event.key === 'ArrowDown' ? 100 : -100;
         } else {
           const nodes = [$('library-back'), ...(view === 'lyrics' ? [content] : content.children),
-            ...(!$('library-pages').hidden ? [$('library-prev'), $('library-next')].filter(button => !button.disabled) : []), ...tabs];
+            ...(!$('library-pages').hidden ? [$('library-prev'), $('library-next')].filter(button => !button.disabled) : []), ...navigation];
           const index = nodes.indexOf(active) + (event.key === 'ArrowDown' ? 1 : -1);
           nodes[Math.max(0, Math.min(nodes.length - 1, index))].focus();
         }

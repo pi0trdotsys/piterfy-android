@@ -5,15 +5,16 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <title>Piterfy TV</title>
-  <link rel="stylesheet" href="cast-receiver.css?v=5">
-  <script defer src="cast-library.js?v=3"></script>
-  <script defer src="cast-receiver.js?v=5"></script>
+  <link rel="stylesheet" href="cast-receiver.css?v=7">
+  <script defer src="cast-library.js?v=6"></script>
+  <script defer src="cast-receiver.js?v=6"></script>
 </head>
 <body data-state="idle">
   <audio id="cast-audio" class="castMediaElement" aria-hidden="true"></audio>
   <img id="backdrop" class="backdrop" hidden alt="" referrerpolicy="no-referrer">
   <main>
     <header><span class="brand"><svg viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="20"/><path d="M10 18v4m5-8v12m5-16v20m5-16v12m5-8v4"/></svg> Piterfy</span><span class="badge">Google Cast</span></header>
+    <div class="player-workspace">
     <section class="layout" aria-label="Teraz odtwarzane">
       <div class="cover"><span class="fallback" aria-hidden="true">♫</span><img id="cover" hidden alt="" referrerpolicy="no-referrer"></div>
       <div class="track">
@@ -49,10 +50,12 @@
         <button id="library-next" type="button">Następna</button>
       </div>
     </section>
+    </div>
     <nav class="library-nav" aria-label="Widoki odtwarzacza">
       <button type="button" data-view="lyrics" aria-controls="library" aria-expanded="false">Tekst utworu</button>
       <button type="button" data-view="queue" aria-controls="library" aria-expanded="false">Kolejka</button>
       <button type="button" data-view="playlists" aria-controls="library" aria-expanded="false">Playlisty</button>
+      <button id="oled-toggle" type="button" aria-pressed="false">Max OLED</button>
     </nav>
     <footer id="hint">Strzałki wybierają przycisk. OK uruchamia akcję.</footer>
   </main>
