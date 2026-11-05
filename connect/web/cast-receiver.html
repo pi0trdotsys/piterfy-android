@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <title>Piterfy TV</title>
+  <link rel="stylesheet" href="cast-receiver.css?v=1">
+  <script defer src="cast-receiver.js?v=1"></script>
+</head>
+<body data-state="idle">
+  <audio id="cast-audio" class="castMediaElement" aria-hidden="true"></audio>
+  <main>
+    <header><span class="brand"><i aria-hidden="true">▥</i> Piterfy</span><span class="badge">Chromecast</span></header>
+    <section class="layout" aria-label="Teraz odtwarzane">
+      <div class="cover"><span class="fallback" aria-hidden="true">♫</span><img id="cover" hidden alt="" referrerpolicy="no-referrer"></div>
+      <div class="track">
+        <p class="eyebrow" id="state" role="status">Gotowe do przesyłania</p>
+        <h1 id="title">Piterfy na TV</h1>
+        <p class="artist" id="artist">Wybierz utwór w aplikacji Piterfy.</p>
+        <p class="album" id="album"></p>
+        <div class="timeline" id="timeline" hidden>
+          <progress id="progress" value="0" max="1" aria-label="Postęp odtwarzania"></progress>
+          <div class="times"><span id="elapsed">0:00</span><span id="duration">0:00</span></div>
+        </div>
+        <div class="controls" id="controls" hidden>
+          <button id="rewind" type="button" aria-label="Cofnij o 15 sekund">−15 s</button>
+          <button class="primary" id="play" type="button">Pauza</button>
+          <button id="forward" type="button" aria-label="Przewiń o 15 sekund">+15 s</button>
+        </div>
+      </div>
+    </section>
+    <footer id="hint">Muzyką i kolejką możesz sterować z telefonu.</footer>
+  </main>
+</body>
+</html>

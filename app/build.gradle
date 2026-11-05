@@ -8,6 +8,10 @@ plugins {
 def piterfySigning = new Properties()
 def piterfySigningFile = rootProject.file('.signing/keystore.properties')
 if (piterfySigningFile.exists()) piterfySigningFile.withInputStream { piterfySigning.load(it) }
+def piterfyCastReceiverId = providers.gradleProperty('piterfyCastReceiverId').orElse('').get().trim()
+if (piterfyCastReceiverId && !(piterfyCastReceiverId ==~ /[a-fA-F0-9]{8}/)) {
+    throw new GradleException('piterfyCastReceiverId must be the eight-character Google Cast Application ID.')
+}
 
 android {
     signingConfigs {
@@ -71,6 +75,7 @@ android {
         tempus {
             dimension = "default"
             applicationId = 'eu.prosinski.piterfy'
+            buildConfigField 'String', 'PITERFY_CAST_RECEIVER_ID', '"' + piterfyCastReceiverId + '"'
         }
 
         degoogled {

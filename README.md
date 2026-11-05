@@ -21,6 +21,12 @@ Piterfy łączy natywną aplikację Android z odtwarzaczem webowym opartym na Na
 
 ![Piterfy Web: zapisane ulubione i ekran startowy gotowy do działania bez sieci](docs/screenshots/web-offline-current.jpg)
 
+**Piterfy TV · podgląd własnego odbiornika Chromecast**
+
+![Podgląd Piterfy TV: stała okładka, tytuł, wykonawca, pasek postępu i sterowanie](docs/screenshots/piterfy-tv-preview.jpg)
+
+[Otwórz interaktywny podgląd TV](https://piterfy.prosinski.eu/piterfy-ui/cast-receiver.html?preview=1) · [Konfiguracja odbiornika](connect/README.md#piterfy-tv-chromecast)
+
 ## Co oferuje Piterfy
 
 | Funkcja | Jak działa |
