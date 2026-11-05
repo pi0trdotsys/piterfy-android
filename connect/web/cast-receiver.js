@@ -15,6 +15,7 @@
     if (state === 'IDLE') return null;
     const metadata = media?.metadata;
     const track = metadata ? {
+      identity: media.entity || media.contentId || '',
       title: metadata.title || 'Utwór bez tytułu',
       artist: metadata.artist || metadata.albumArtist || metadata.subtitle || '',
       album: metadata.albumName || '',
@@ -48,7 +49,7 @@
   const doc = root.document, $ = id => doc.getElementById(id);
   const cover = $('cover'), backdrop = $('backdrop');
   const controls = $('controls');
-  let current = null, coverURL = '', player, playbackError = false;
+  let current = null, coverURL = '', player, playbackError = false, library;
   const text = (id, value) => { if ($(id).textContent !== value) $(id).textContent = value; };
 
   backdrop.onload = () => { backdrop.hidden = !coverURL || backdrop.src !== coverURL; };
@@ -101,9 +102,11 @@
     if (track && focusedSeek && !track.seekable) $('play').focus();
     for (const button of controls.querySelectorAll('button')) button.setAttribute('aria-disabled', String(!playable));
     text('play', track?.state === 'PAUSED' ? '▶  Odtwórz' : playable ? 'Ⅱ  Pauza' : 'Oczekiwanie');
+    library?.update(track);
   }
 
   if (new URLSearchParams(root.location.search).get('preview') === '1') {
+    library = root.PiterfyCastLibrary?.init(null);
     const sample = { metadata: { title: 'Nocna panorama', artist: 'Piterfy Sessions',
       albumName: 'W drodze', images: [{ url: new URL('cast-preview-art.svg', root.location.href).href }] } };
     let state = 'PLAYING', time = 92;
@@ -129,6 +132,7 @@
   sdk.onerror = () => text('state', 'Nie udało się uruchomić Google Cast.');
   sdk.onload = () => {
     const framework = root.cast.framework, context = framework.CastReceiverContext.getInstance();
+    library = root.PiterfyCastLibrary?.init(context);
     player = context.getPlayerManager();
     player.setMediaElement($('cast-audio'));
     const events = framework.events.EventType;

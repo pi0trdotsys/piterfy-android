@@ -5,8 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <title>Piterfy TV</title>
-  <link rel="stylesheet" href="cast-receiver.css?v=2">
-  <script defer src="cast-receiver.js?v=2"></script>
+  <link rel="stylesheet" href="cast-receiver.css?v=3">
+  <script defer src="cast-library.js?v=3"></script>
+  <script defer src="cast-receiver.js?v=3"></script>
 </head>
 <body data-state="idle">
   <audio id="cast-audio" class="castMediaElement" aria-hidden="true"></audio>
@@ -31,6 +32,21 @@
         </div>
       </div>
     </section>
+    <section class="library" id="library" hidden aria-label="Biblioteka Piterfy">
+      <header><h2 id="library-title"></h2><button id="library-back" type="button">Wróć</button></header>
+      <p id="library-status" role="status"></p>
+      <div id="library-content" class="library-content" tabindex="0"></div>
+      <div class="library-pages" id="library-pages" hidden>
+        <button id="library-prev" type="button">Poprzednia</button>
+        <span id="library-page"></span>
+        <button id="library-next" type="button">Następna</button>
+      </div>
+    </section>
+    <nav class="library-nav" aria-label="Widoki odtwarzacza">
+      <button type="button" data-view="lyrics" aria-controls="library" aria-expanded="false">Tekst utworu</button>
+      <button type="button" data-view="queue" aria-controls="library" aria-expanded="false">Kolejka</button>
+      <button type="button" data-view="playlists" aria-controls="library" aria-expanded="false">Playlisty</button>
+    </nav>
     <footer id="hint">Użyj strzałek i OK na pilocie. Kolejką steruj w Piterfy na telefonie.</footer>
   </main>
 </body>

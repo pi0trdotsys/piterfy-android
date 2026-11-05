@@ -194,6 +194,46 @@ button[aria-disabled="true"] { opacity: .68; cursor: default; }
 
 footer { color: var(--muted); font-size: clamp(12px, 1.2vw, 22px); }
 
+.library-nav, .library-pages {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: .85em;
+}
+
+.library-nav button[aria-expanded="true"] {
+  color: #132f23;
+  background: var(--accent);
+}
+
+.library-open .layout { display: none; }
+.library { min-width: 0; }
+.library header { gap: 1em; }
+.library h2 { margin: 0; font-size: clamp(25px, 3.8vw, 65px); overflow-wrap: anywhere; }
+#library-status { color: var(--muted); font-size: clamp(14px, 1.5vw, 25px); }
+.library-content { max-height: 48vh; overflow: auto; padding: .45em; }
+.library-content:focus { outline: 2px solid #e0eee6; }
+.library-pages { margin-top: .8em; color: var(--muted); }
+.library-pages button:disabled { opacity: .4; }
+
+button.library-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1em;
+  width: 100%;
+  min-height: 3em;
+  margin-bottom: .35em;
+  border-radius: .6em;
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+
+.library-row span { color: var(--muted); text-align: right; }
+.library-row[aria-current="true"] { border-color: var(--accent); color: var(--accent); }
+.lyric-line { margin: 0 0 .55em; color: var(--muted); font-size: clamp(20px, 3vw, 58px); font-weight: 650; }
+.lyric-line.current-line { color: var(--accent); }
+
 @media (max-width: 600px) and (orientation: portrait) {
   main { padding: 5vw; }
   .layout { grid-template-columns: 1fr; gap: 3vh; }

@@ -90,7 +90,9 @@ Physical Android verification confirmed lyric loading, active-line highlighting 
 
 The custom Google Cast receiver keeps album art, title, artist and playback position visible on the TV. Playback, transport and queue messages still use Google's Cast Application Framework. The interactive preview uses sample metadata and plays no audio.
 
-1. Publish `web/cast-receiver.html`, `web/cast-receiver.js`, `web/cast-receiver.css` and `web/cast-preview-art.svg` in the same HTTPS directory. The Piterfy deployment already serves them from `/piterfy-ui/`.
+1. Publish `web/cast-receiver.html`, `web/cast-receiver.js`, `web/cast-library.js`, `web/cast-receiver.css` and `web/cast-preview-art.svg` in the same HTTPS directory. The Piterfy deployment already serves them from `/piterfy-ui/`.
 2. In the [Google Cast SDK Developer Console](https://cast.google.com/publish/), register a **Custom Receiver** with the URL `https://piterfy.prosinski.eu/piterfy-ui/cast-receiver.html` (no preview parameter). Register a test device for a private receiver, or publish the receiver in the console when ready. See [Google's registration guide](https://developers.google.com/cast/docs/registration).
 3. Build the Cast-enabled Android variant with `./gradlew assembleTempusRelease -PpiterfyCastReceiverId=YOUR_APP_ID`, replacing the placeholder with the eight-character ID. An ordinary build continues to use the existing Media3 receiver. The flavor without Google services does not use this option.
 4. Install on the phone, start a fresh Cast session and check an actual song change, a pause/resume, a missing cover and a return to local playback. The receiver must be able to reach the media and artwork URLs from its network.
+
+The TV tabs for lyrics, queue and playlists require the updated Android sender. The phone looks up data for its active account and sends it to the attached receiver. Playlist navigation uses pages of 20. Starting a long playlist on TV loads a queue of up to 200 tracks around the selection.
