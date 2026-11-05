@@ -49,6 +49,7 @@
   const doc = root.document, $ = id => doc.getElementById(id);
   const cover = $('cover'), backdrop = $('backdrop');
   const controls = $('controls');
+  const seekRow = $('seek-row');
   let current = null, coverURL = '', player, playbackError = false, library;
   const canMove = (index, length, step) =>
     Number.isInteger(index) && index >= 0 && index < length && index + step >= 0 && index + step < length;
@@ -63,16 +64,38 @@
   };
   cover.onerror = () => { cover.hidden = true; backdrop.hidden = true; };
 
-  doc.addEventListener('keydown', event => {
-    if (controls.hidden || !['ArrowLeft', 'ArrowRight'].includes(event.key)) return;
-    if (doc.activeElement !== doc.body && !controls.contains(doc.activeElement)) return;
-    const buttons = [...controls.querySelectorAll('button')].filter(button => !button.hidden);
-    const selected = buttons.indexOf(doc.activeElement);
-    const step = event.key === 'ArrowLeft' ? -1 : 1;
-    const next = selected < 0 ? $('play') : buttons[Math.max(0, Math.min(buttons.length - 1, selected + step))];
+  const consumedKeys = new Set();
+  root.addEventListener('keydown', event => {
+    if (controls.hidden || doc.querySelector('main').classList.contains('library-open')) return;
+    const active = doc.activeElement;
+    if (active !== doc.body && !controls.contains(active)) return;
+    const inSeek = seekRow.contains(active);
+    let next;
+    if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
+      const row = inSeek ? seekRow : $('play').parentElement;
+      const buttons = [...row.querySelectorAll('button')];
+      const selected = buttons.indexOf(active);
+      const step = event.key === 'ArrowLeft' ? -1 : 1;
+      next = selected < 0 ? $('play') : buttons[Math.max(0, Math.min(buttons.length - 1, selected + step))];
+    } else if (event.key === 'ArrowDown' && !inSeek && !seekRow.hidden) {
+      next = active === $('previous-track') ? $('rewind') : $('forward');
+    } else if (event.key === 'ArrowUp' && inSeek) {
+      next = active === $('rewind') ? $('previous-track') : $('next-track');
+    } else {
+      return;
+    }
+    // Claim directional keys before the Cast SDK can treat them as transport shortcuts.
+    consumedKeys.add(event.key);
     event.preventDefault();
+    event.stopImmediatePropagation();
     next.focus();
-  });
+  }, true);
+  root.addEventListener('keyup', event => {
+    if (!consumedKeys.delete(event.key)) return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+  }, true);
+  root.addEventListener('blur', () => consumedKeys.clear());
 
   function draw(track, message) {
     current = track;
@@ -100,7 +123,7 @@
     const playable = track?.state === 'PLAYING' || track?.state === 'PAUSED';
     controls.hidden = !track;
     const focusedSeek = [$('rewind'), $('forward')].includes(doc.activeElement);
-    $('rewind').hidden = $('forward').hidden = !track?.seekable;
+    seekRow.hidden = !track?.seekable;
     if (track && focusedSeek && !track.seekable) $('play').focus();
     for (const button of controls.querySelectorAll('button')) button.setAttribute('aria-disabled', String(!playable));
     for (const [id, step] of [['previous-track', -1], ['next-track', 1]]) {

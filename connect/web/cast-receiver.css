@@ -173,7 +173,10 @@ progress::-webkit-progress-value { background: var(--accent); border-radius: 99p
   font-variant-numeric: tabular-nums;
 }
 
-.controls { display: flex; flex-wrap: wrap; gap: .85em; margin-top: clamp(14px, 3vh, 30px); }
+.controls { display: grid; gap: .65em; margin-top: clamp(12px, 2.4vh, 25px); }
+.transport-row { display: flex; align-items: center; flex-wrap: wrap; gap: .65em; }
+.seek-row { color: var(--muted); font-size: clamp(13px, 1.25vw, 22px); }
+.seek-row button { padding: .35em .85em; font-size: inherit; }
 
 button {
   min-height: 44px;
@@ -239,5 +242,5 @@ button.library-row {
   .layout { grid-template-columns: 1fr; gap: 3vh; }
   .cover { width: min(56vw, 35vh); justify-self: center; }
   .track { text-align: center; }
-  .eyebrow, .controls { justify-content: center; }
+  .eyebrow, .transport-row { justify-content: center; }
 }
