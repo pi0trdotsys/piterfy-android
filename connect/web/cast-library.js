@@ -14,7 +14,7 @@
     const status = $('library-status');
     const headings = { lyrics: 'Tekst utworu', queue: 'Kolejka', playlists: 'Playlisty' };
     let view = '', playlistId = '', offset = 0, count = 0, senderId = '', requestId = 0;
-    let timer, track, trackKey = '', lyrics = null, activeLine = -1, rowsKey = '';
+    let timer, retryTimer, pendingReply, track, trackKey = '', lyrics = null, activeLine = -1, rowsKey = '';
     let manualScroll = false;
     content.addEventListener('blur', () => { manualScroll = false; });
 
@@ -24,12 +24,12 @@
 
     function preview(type, options) {
       const sample = [
-        { id: 'night', title: 'Nocna panorama', subtitle: 'Piterfy Sessions', index: 0, playing: true },
+        { id: 'night', title: 'Nocna panorama', subtitle: 'Piterfy Sessions', index: 0 },
         { id: 'lights', title: 'Światła miasta', subtitle: 'Piterfy Sessions', index: 1 },
         { id: 'dawn', title: 'Przed świtem', subtitle: 'Piterfy Sessions', index: 2 },
       ];
       if (type === 'lyrics') return { synced: true, lines: [
-        { ms: 80000, text: 'Nad miastem zapalają się światła' },
+        { ms: 0, text: ['Nad miastem zapalają się światła', 'Światła miasta migoczą w szybach', 'Przed świtem ulice znów milkną'][track?.queueIndex ?? 0] },
         { ms: 90000, text: 'Noc prowadzi nas przez puste ulice' },
         { ms: 100000, text: 'Jeszcze chwila, zanim wstanie dzień' },
       ] };
@@ -38,16 +38,18 @@
         { id: 'quiet', title: 'Spokojny wieczór', subtitle: '3 utwory' },
       ] };
       if (type === 'playlist') return { title: options.playlistId === 'drive' ? 'W drodze' : 'Spokojny wieczór', count: 3, rows: sample };
-      if (type === 'queue') return { count: 3, rows: sample };
+      if (type === 'queue') return { count: 3, rows: sample.slice(options.offset || 0).map(row => ({
+        ...row, playing: row.index === track?.queueIndex,
+      })) };
       return { previewOnly: true };
     }
 
-    function request(type, options = {}, quiet = false) {
+    function request(type, options = {}, quiet = false, reply = data => apply(type, data)) {
       const id = ++requestId;
       root.clearTimeout(timer);
       if (!quiet) setStatus('Wczytuję…');
       if (!context) {
-        apply(type, preview(type, options));
+        reply(preview(type, options));
         return;
       }
       const senders = context.getSenders();
@@ -57,18 +59,22 @@
         setStatus('Połącz Piterfy na telefonie.');
         return;
       }
-      pendingType = type;
+      pendingReply = reply;
       try {
-        context.sendCustomMessage(namespace, sender, { ...options, type, requestId: id });
         timer = root.setTimeout(() => {
-          if (id === requestId) setStatus('Telefon nie odpowiedział. Otwórz aktualne Piterfy i spróbuj ponownie.');
+          if (id === requestId) {
+            pendingReply = null;
+            setStatus('Telefon nie odpowiedział. Otwórz aktualne Piterfy i spróbuj ponownie.');
+          }
         }, 18000);
+        context.sendCustomMessage(namespace, sender, { ...options, type, requestId: id });
       } catch (_) {
+        root.clearTimeout(timer);
+        pendingReply = null;
         setStatus('Brak połączenia z telefonem.');
       }
     }
 
-    let pendingType = '';
     context?.addCustomMessageListener(namespace, event => {
       let data = event.data;
       if (typeof data === 'string') {
@@ -80,13 +86,47 @@
         if (view) load();
       } else if (data?.requestId === requestId && (!senderId || senderId === event.senderId)) {
         root.clearTimeout(timer);
-        apply(pendingType, data);
+        const reply = pendingReply;
+        pendingReply = null;
+        reply?.(data);
       }
     });
 
+    function loadLyrics(attempt = 0) {
+      const expected = track;
+      const key = trackKey;
+      const index = expected.queueIndex;
+      const normalize = value => (value || '').trim().normalize('NFC').toLowerCase();
+      const matches = row => row && (expected.mediaId ? row.id === expected.mediaId :
+        normalize(row.title) === normalize(expected.title.slice(0, 160)) &&
+        (!row.subtitle || !expected.artist || normalize(row.subtitle) === normalize(expected.artist.slice(0, 160))));
+      const probe = callback => request('queue', {
+        offset: Number.isInteger(index) && index >= 0 ? Math.floor(index / pageSize) * pageSize : 0,
+      }, true, data => callback(data.rows?.find(row => row.playing)));
+      const retry = () => {
+        if (view !== 'lyrics' || key !== trackKey) return;
+        if (attempt < 12) retryTimer = root.setTimeout(() => loadLyrics(attempt + 1), 400);
+        else setStatus('Nie udało się dopasować tekstu do bieżącego utworu. Otwórz tekst ponownie.');
+      };
+
+      // Cast can advance before Android updates its player. Check the song on both
+      // sides of the lyric request so a stale reply never replaces the current text.
+      probe(before => {
+        if (!matches(before)) return retry();
+        request('lyrics', {}, true, data => {
+          probe(after => {
+            if (!matches(after) || before.id !== after.id || before.index !== after.index) return retry();
+            apply('lyrics', data);
+          });
+        });
+      });
+    }
+
     function load(quiet = false) {
-      if (view === 'lyrics' && !track) {
-        setStatus('Uruchom utwór, aby wyświetlić tekst.');
+      root.clearTimeout(retryTimer);
+      if (view === 'lyrics') {
+        setStatus(track ? 'Dopasowuję tekst do bieżącego utworu…' : 'Uruchom utwór, aby wyświetlić tekst.');
+        if (track) loadLyrics();
         return;
       }
       const type = view === 'playlists' && playlistId ? 'playlist' : view;
@@ -94,6 +134,7 @@
     }
 
     function open(next) {
+      root.clearTimeout(retryTimer);
       view = next;
       playlistId = '';
       offset = count = 0;
@@ -259,14 +300,17 @@
     return {
       update(next) {
         track = next;
-        const key = next ? next.identity || [next.title, next.artist, next.album].join('\u0000') : '';
+        const key = next ? JSON.stringify([next.mediaId || next.identity, next.queueIndex, next.title, next.artist, next.album]) : '';
         if (key !== trackKey) {
           trackKey = key;
           if (view === 'lyrics') {
             requestId++;
             root.clearTimeout(timer);
             lyrics = null;
+            activeLine = -1;
+            manualScroll = false;
             content.replaceChildren();
+            content.scrollTop = 0;
             load();
           } else if (view === 'queue') load(true);
         }

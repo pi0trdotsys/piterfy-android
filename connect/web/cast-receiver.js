@@ -16,6 +16,7 @@
     const metadata = media?.metadata;
     const track = metadata ? {
       identity: media.entity || media.contentId || '',
+      mediaId: typeof media.customData?.mediaId === 'string' ? media.customData.mediaId : '',
       title: metadata.title || 'Utwór bez tytułu',
       artist: metadata.artist || metadata.albumArtist || metadata.subtitle || '',
       album: metadata.albumName || '',
@@ -90,8 +91,18 @@
   const lyricsBack = $('library-back');
   const firstTab = doc.querySelector('.library-nav button');
   root.addEventListener('keydown', event => {
-    if (main.classList.contains('library-open')) return;
     const active = doc.activeElement;
+    const confirm = ['Enter', ' ', 'Spacebar', 'Select', 'Accept'].includes(event.key) ||
+      (event.key === 'Unidentified' && event.keyCode === 23);
+    if (confirm && (active?.matches('button') || active === lyricsContent || consumedKeys.has(event.key))) {
+      const firstPress = !event.repeat && !consumedKeys.has(event.key);
+      consumedKeys.add(event.key);
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      if (firstPress && active?.matches('button:not(:disabled):not([aria-disabled="true"])')) active.click();
+      return;
+    }
+    if (main.classList.contains('library-open')) return;
     const lyricsOpen = main.classList.contains('lyrics-open');
     const inSeek = seekRow.contains(active);
     let next;

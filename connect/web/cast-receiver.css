@@ -187,6 +187,20 @@ progress::-webkit-progress-value { background: var(--accent); border-radius: 99p
 
 .controls { display: grid; gap: .65em; margin-top: clamp(12px, 2.4vh, 25px); }
 .transport-row { display: flex; align-items: center; flex-wrap: wrap; gap: .65em; }
+.track-actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: clamp(4px, .8vw, 14px);
+  width: 100%;
+  max-width: 43rem;
+}
+.track-actions > button {
+  min-width: 0;
+  padding-inline: clamp(4px, .9vw, 16px);
+  font-size: clamp(11px, 1.4vw, 24px);
+  white-space: nowrap;
+}
+.track-actions > button.primary { min-width: 0; }
 .seek-row { color: var(--muted); font-size: clamp(13px, 1.25vw, 22px); }
 .seek-row button { padding: .35em .85em; font-size: inherit; }
 

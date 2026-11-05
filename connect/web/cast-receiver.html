@@ -5,9 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <title>Piterfy TV</title>
-  <link rel="stylesheet" href="cast-receiver.css?v=8">
-  <script defer src="cast-library.js?v=8"></script>
-  <script defer src="cast-receiver.js?v=8"></script>
+  <link rel="stylesheet" href="cast-receiver.css?v=9">
+  <script defer src="cast-library.js?v=9"></script>
+  <script defer src="cast-receiver.js?v=9"></script>
 </head>
 <body data-state="idle">
   <audio id="cast-audio" class="castMediaElement" aria-hidden="true"></audio>
@@ -27,7 +27,7 @@
           <div class="times"><span id="elapsed">0:00</span><span id="duration">0:00</span></div>
         </div>
         <div class="controls" id="controls" role="group" aria-label="Sterowanie odtwarzaniem" hidden>
-          <div class="transport-row" role="group" aria-label="Zmiana utworu i pauza">
+          <div class="transport-row track-actions" role="group" aria-label="Zmiana utworu i pauza">
             <button id="previous-track" type="button" aria-label="Poprzedni utwór"><span aria-hidden="true">⏮</span> Poprzedni</button>
             <button class="primary" id="play" type="button">Pauza</button>
             <button id="next-track" type="button" aria-label="Następny utwór">Następny <span aria-hidden="true">⏭</span></button>
