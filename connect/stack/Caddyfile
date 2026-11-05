@@ -63,7 +63,7 @@ http://{$PITERFY_HOST:localhost} {
 			match {
 				header Content-Type text/html*
 			}
-			<title>Navidrome</title> `<title>Piterfy</title><script>location.hash.length>2||history.replaceState(null,"","#/start");var pfJs=document.createElement("script");pfJs.src="/piterfy-ui/piterfy.js?v="+Math.floor(Date.now()/6e5)+"-login-expressions-4";document.head.appendChild(pfJs)</script>`
+			<title>Navidrome</title> `<title>Piterfy</title><script>location.hash.length>2||history.replaceState(null,"","#/start");var pfJs=document.createElement("script");pfJs.src="/piterfy-ui/piterfy.js?v="+Math.floor(Date.now()/6e5)+"-login-creatures-5";document.head.appendChild(pfJs)</script>`
 		}
 		reverse_proxy piterfy-navidrome:4533 {
 			# replace działa tylko na nieskompresowanej treści; kompresuje potem Caddy (encode)

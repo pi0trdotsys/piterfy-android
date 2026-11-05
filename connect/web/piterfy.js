@@ -140,15 +140,30 @@
           <g class="pf-login-creature" style="--i:${i}">
           <path d="${body}" fill="${color}"/>
           <g class="pf-login-face" transform="translate(${x} ${y})" fill="#062516" stroke="#062516">
+            ${[
+              '<path d="M1 0Q7 0 19 8Q21 10 17 11L1 6Z" fill="#158148" stroke="none"/>',
+              '<path d="M-3-35q-15-3-14-14 13 0 16 12 6-11 17-10-1 11-19 12z" fill="#a4f6a6" stroke="none"/>',
+              '<path d="M-21 9h1m2-3h1m2 4h1m28 0h1m2-4h1m2 3h1" fill="none" stroke="#448451" stroke-width="2" stroke-linecap="round"/>',
+              '<path d="M-24 7q6-4 9 1m30 0q4-4 9-1" fill="none" stroke="#e9a89f" stroke-width="4" stroke-linecap="round"/>',
+            ][i]}
             <g class="pf-login-eyes">
-              <g class="pf-login-blink"><ellipse cx="-10" rx="4" ry="4"/><ellipse cx="10" rx="4" ry="4"/></g>
-              <path class="pf-login-brows" d="M-15-8q5-5 10 0m10 0q5-5 10 0" fill="none" stroke-width="2" stroke-linecap="round"/>
+              <g class="pf-login-blink" stroke="none">
+                ${[-11, 11].map((eye, side) => `<g class="pf-login-eye${side ? " pf-login-eye-right" : ""}">
+                  <ellipse cx="${eye}" rx="6.7" ry="7.3" fill="#f4ffdf"/>
+                  <ellipse cx="${eye + .5}" cy=".5" rx="3.8" ry="4.8"/>
+                  <circle cx="${eye + 1.8}" cy="-1.4" r="1.55" fill="white"/>
+                </g>`).join("")}
+              </g>
             </g>
-            <path class="pf-login-smile" d="M-4 10q4 5 8 0" fill="none" stroke-width="2.5" stroke-linecap="round"/>
+            <path class="pf-login-brows" d="M-17-10q5-5 10-2m14 0q5-3 10 2" fill="none" stroke-width="1.8" stroke-linecap="round"/>
+            <path class="pf-login-smile" d="M-5 12q5 5 10 0" fill="none" stroke-width="2" stroke-linecap="round"/>
             <path class="pf-login-grin" d="M-7 9q7 2 14 0q-2 9-7 9t-7-9z"/>
             <path class="pf-login-hush" d="M-2 8q-4 5 1 7q5-1 2-6z"/>
             <path class="pf-login-frown" d="M-4 13q4-5 8 0" fill="none" stroke-width="2.5" stroke-linecap="round"/>
             <path class="pf-login-cheer" d="M-6 10h12q-6 12-12 0z" stroke-linejoin="round"/>
+            <path class="pf-login-hum" d="M-2 11q-4 5 1 7q5-1 2-6z"/>
+            <path class="pf-login-note" d="M18-14v-12l9-3v12m-9 3q-7-3-8 2 1 4 8-2m9-3q-7-3-8 2 1 4 8-2"
+              fill="none" stroke="#e7ffbd" stroke-width="2" stroke-linecap="round"/>
           </g>
         </g></g>`).join("")}
       </svg><span class="pf-login-caption"></span>`;
@@ -175,6 +190,25 @@
       body, x: Number(body.dataset.x), y: Number(body.dataset.y),
     }));
     const listeners = new AbortController();
+    let gestureTimer;
+    let gestureIndex = 0;
+    let activeMascot;
+    const gestures = [[0, "stretch"], [2, "wink"], [1, "hum"], [3, "stretch"]];
+    function nextGesture() {
+      if (activeMascot) delete activeMascot.dataset.gesture;
+      activeMascot = null;
+      if (!document.hidden && scene.dataset.state === "idle") {
+        const [index, gesture] = gestures[gestureIndex++ % gestures.length];
+        activeMascot = creatures[index].body;
+        activeMascot.dataset.gesture = gesture;
+      }
+      gestureTimer = setTimeout(() => {
+        if (activeMascot) delete activeMascot.dataset.gesture;
+        activeMascot = null;
+        gestureTimer = setTimeout(nextGesture, 1700);
+      }, 1050);
+    }
+    gestureTimer = setTimeout(nextGesture, 950);
     let frame = 0;
     let pointer;
     function aim() {
@@ -187,8 +221,8 @@
         const dx = point.x - x;
         const dy = point.y - y;
         const distance = Math.max(38, Math.hypot(dx, dy));
-        body.style.setProperty("--look-x", 12 * dx / distance + "px");
-        body.style.setProperty("--look-y", 12 * dy / distance + "px");
+        body.style.setProperty("--look-x", 5 * dx / distance + "px");
+        body.style.setProperty("--look-y", 5 * dy / distance + "px");
         body.style.setProperty("--lean", 11 * dx / distance + "deg");
       });
     }
@@ -239,6 +273,8 @@
         attempt++;
         listeners.abort();
         cancelAnimationFrame(frame);
+        clearTimeout(gestureTimer);
+        if (activeMascot) delete activeMascot.dataset.gesture;
         if (window.fetch === observeLogin) window.fetch = nativeFetch;
         host.classList.remove("pf-login-layout");
         card.classList.remove("pf-login-card");
