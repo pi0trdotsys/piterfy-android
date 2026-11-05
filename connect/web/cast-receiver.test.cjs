@@ -3,10 +3,14 @@ const assert = require('node:assert/strict');
 const { snapshot, formatTime } = require('./cast-receiver.js');
 
 test('metadata stays visible through pause and temporary buffering, then clears on idle', () => {
-  const playing = snapshot(null, { state: 'PLAYING', media: { metadata: { title: 'Song', artist: 'Artist' } }, time: 25, duration: 90 });
-  const paused = snapshot(playing, { state: 'PAUSED', time: 25, duration: 90 });
+  const playing = snapshot(null, { state: 'PLAYING', media: { metadata: { title: 'Song', artist: 'Artist' } }, time: 25, duration: 90, seekable: true });
+  const paused = snapshot(playing, { state: 'PAUSED', time: 25, duration: 90, seekable: true });
   assert.equal(paused.title, 'Song');
-  assert.equal(snapshot(paused, { state: 'BUFFERING' }).artist, 'Artist');
+  const buffering = snapshot(paused, { state: 'BUFFERING', time: 0, duration: NaN, seekable: false });
+  assert.equal(buffering.artist, 'Artist');
+  assert.equal(buffering.position, 25);
+  assert.equal(buffering.duration, 90);
+  assert.equal(buffering.seekable, true);
   assert.equal(snapshot(paused, { state: 'IDLE' }), null);
 });
 

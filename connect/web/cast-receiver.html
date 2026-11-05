@@ -5,13 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <title>Piterfy TV</title>
-  <link rel="stylesheet" href="cast-receiver.css?v=1">
-  <script defer src="cast-receiver.js?v=1"></script>
+  <link rel="stylesheet" href="cast-receiver.css?v=2">
+  <script defer src="cast-receiver.js?v=2"></script>
 </head>
 <body data-state="idle">
   <audio id="cast-audio" class="castMediaElement" aria-hidden="true"></audio>
+  <img id="backdrop" class="backdrop" hidden alt="" referrerpolicy="no-referrer">
   <main>
-    <header><span class="brand"><i aria-hidden="true">▥</i> Piterfy</span><span class="badge">Chromecast</span></header>
+    <header><span class="brand"><svg viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="20"/><path d="M10 18v4m5-8v12m5-16v20m5-16v12m5-8v4"/></svg> Piterfy</span><span class="badge">Google Cast</span></header>
     <section class="layout" aria-label="Teraz odtwarzane">
       <div class="cover"><span class="fallback" aria-hidden="true">♫</span><img id="cover" hidden alt="" referrerpolicy="no-referrer"></div>
       <div class="track">
@@ -23,14 +24,14 @@
           <progress id="progress" value="0" max="1" aria-label="Postęp odtwarzania"></progress>
           <div class="times"><span id="elapsed">0:00</span><span id="duration">0:00</span></div>
         </div>
-        <div class="controls" id="controls" hidden>
-          <button id="rewind" type="button" aria-label="Cofnij o 15 sekund">−15 s</button>
+        <div class="controls" id="controls" role="group" aria-label="Sterowanie odtwarzaniem" hidden>
+          <button id="rewind" type="button" aria-label="Cofnij o 15 sekund"><span aria-hidden="true">↶</span> 15 s</button>
           <button class="primary" id="play" type="button">Pauza</button>
-          <button id="forward" type="button" aria-label="Przewiń o 15 sekund">+15 s</button>
+          <button id="forward" type="button" aria-label="Przewiń o 15 sekund">15 s <span aria-hidden="true">↷</span></button>
         </div>
       </div>
     </section>
-    <footer id="hint">Muzyką i kolejką możesz sterować z telefonu.</footer>
+    <footer id="hint">Użyj strzałek i OK na pilocie. Kolejką steruj w Piterfy na telefonie.</footer>
   </main>
 </body>
 </html>
