@@ -341,7 +341,6 @@ html[data-pf-route="login"] :is(#pf-lyrics-button, #pf-connect-button) { display
   #root .pf-login-card.MuiCard-root { border-radius: 22px !important; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .pf-login-lean, .pf-login-eyes { transform: none; }
   .pf-login-scene, .pf-login-scene *, #root .pf-login-card, #root .pf-login-card * {
     animation: none !important;
     transition: none !important;

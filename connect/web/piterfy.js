@@ -165,7 +165,6 @@
       scene.querySelector(".pf-login-caption").textContent = labels[value];
     }
     state("idle");
-    const motion = matchMedia("(prefers-reduced-motion: reduce)");
     const svg = scene.querySelector("svg");
     const creatures = [...svg.querySelectorAll(".pf-login-lean")].map(body => ({
       body, x: Number(body.dataset.x), y: Number(body.dataset.y),
@@ -175,7 +174,7 @@
     let pointer;
     function aim() {
       frame = 0;
-      if (!pointer || motion.matches) return;
+      if (!pointer) return;
       const matrix = svg.getScreenCTM();
       if (!matrix) return;
       const point = pointer.matrixTransform(matrix.inverse());
@@ -183,22 +182,21 @@
         const dx = point.x - x;
         const dy = point.y - y;
         const distance = Math.max(38, Math.hypot(dx, dy));
-        body.style.setProperty("--look-x", 8 * dx / distance + "px");
-        body.style.setProperty("--look-y", 8 * dy / distance + "px");
-        body.style.setProperty("--lean", 9 * dx / distance + "deg");
+        body.style.setProperty("--look-x", 12 * dx / distance + "px");
+        body.style.setProperty("--look-y", 12 * dy / distance + "px");
+        body.style.setProperty("--lean", 11 * dx / distance + "deg");
       });
     }
     function scheduleAim() {
-      if (!frame && !motion.matches) frame = requestAnimationFrame(aim);
+      if (!frame) frame = requestAnimationFrame(aim);
     }
     window.addEventListener("pointermove", ({ clientX, clientY, pointerType }) => {
       if (pointerType !== "mouse" && pointerType !== "pen") return;
       pointer = new DOMPoint(clientX, clientY);
       scheduleAim();
-    }, { passive: true, signal: listeners.signal });
+    }, { capture: true, passive: true, signal: listeners.signal });
     window.addEventListener("resize", scheduleAim, { signal: listeners.signal });
     window.addEventListener("scroll", scheduleAim, { passive: true, signal: listeners.signal });
-    motion.addEventListener("change", scheduleAim, { signal: listeners.signal });
     form.addEventListener("input", () => {
       if (["denied", "unavailable"].includes(scene.dataset.state)) state("idle");
     }, { signal: listeners.signal });
