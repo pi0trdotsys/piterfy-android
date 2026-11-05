@@ -7,7 +7,7 @@
   <title>Piterfy TV</title>
   <link rel="stylesheet" href="cast-receiver.css?v=3">
   <script defer src="cast-library.js?v=3"></script>
-  <script defer src="cast-receiver.js?v=3"></script>
+  <script defer src="cast-receiver.js?v=4"></script>
 </head>
 <body data-state="idle">
   <audio id="cast-audio" class="castMediaElement" aria-hidden="true"></audio>
@@ -26,9 +26,11 @@
           <div class="times"><span id="elapsed">0:00</span><span id="duration">0:00</span></div>
         </div>
         <div class="controls" id="controls" role="group" aria-label="Sterowanie odtwarzaniem" hidden>
+          <button id="previous-track" type="button" aria-label="Poprzedni utwór" title="Poprzedni utwór">⏮</button>
           <button id="rewind" type="button" aria-label="Cofnij o 15 sekund"><span aria-hidden="true">↶</span> 15 s</button>
           <button class="primary" id="play" type="button">Pauza</button>
           <button id="forward" type="button" aria-label="Przewiń o 15 sekund">15 s <span aria-hidden="true">↷</span></button>
+          <button id="next-track" type="button" aria-label="Następny utwór" title="Następny utwór">⏭</button>
         </div>
       </div>
     </section>

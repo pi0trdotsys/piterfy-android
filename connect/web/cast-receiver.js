@@ -50,6 +50,8 @@
   const cover = $('cover'), backdrop = $('backdrop');
   const controls = $('controls');
   let current = null, coverURL = '', player, playbackError = false, library;
+  const canMove = (index, length, step) =>
+    Number.isInteger(index) && index >= 0 && index < length && index + step >= 0 && index + step < length;
   const text = (id, value) => { if ($(id).textContent !== value) $(id).textContent = value; };
 
   backdrop.onload = () => { backdrop.hidden = !coverURL || backdrop.src !== coverURL; };
@@ -101,6 +103,9 @@
     $('rewind').hidden = $('forward').hidden = !track?.seekable;
     if (track && focusedSeek && !track.seekable) $('play').focus();
     for (const button of controls.querySelectorAll('button')) button.setAttribute('aria-disabled', String(!playable));
+    for (const [id, step] of [['previous-track', -1], ['next-track', 1]]) {
+      $(id).setAttribute('aria-disabled', String(!playable || !canMove(track?.queueIndex, track?.queueLength, step)));
+    }
     text('play', track?.state === 'PAUSED' ? '▶  Odtwórz' : playable ? 'Ⅱ  Pauza' : 'Oczekiwanie');
     library?.update(track);
   }
@@ -109,8 +114,21 @@
     library = root.PiterfyCastLibrary?.init(null);
     const sample = { metadata: { title: 'Nocna panorama', artist: 'Piterfy Sessions',
       albumName: 'W drodze', images: [{ url: new URL('cast-preview-art.svg', root.location.href).href }] } };
-    let state = 'PLAYING', time = 92;
-    const update = () => draw(snapshot(current, { media: sample, state, time, duration: 246, seekable: true }));
+    const titles = ['Nocna panorama', 'Światła miasta', 'Przed świtem'];
+    let state = 'PLAYING', time = 92, index = 0;
+    const update = () => {
+      sample.metadata.title = titles[index];
+      draw({ ...snapshot(current, { media: sample, state, time, duration: 246, seekable: true }),
+        queueIndex: index, queueLength: titles.length });
+    };
+    const move = step => {
+      if (!canMove(index, titles.length, step)) return;
+      index += step;
+      time = 0;
+      update();
+    };
+    $('previous-track').onclick = () => move(-1);
+    $('next-track').onclick = () => move(1);
     $('hint').textContent = 'Podgląd · przykładowy utwór, bez przesyłania dźwięku';
     $('play').onclick = () => { state = state === 'PLAYING' ? 'PAUSED' : 'PLAYING'; update(); };
     $('rewind').onclick = () => { time = Math.max(0, time - 15); update(); };
@@ -124,6 +142,11 @@
     const track = snapshot(current, { media: player.getMediaInformation(), state,
       time: player.getCurrentTimeSec(), duration: player.getDurationSec(),
       seekable: player.getCurrentSupportedMediaCommands() & root.cast.framework.messages.Command.SEEK });
+    if (track) {
+      const queue = player.getQueueManager();
+      track.queueIndex = queue?.getCurrentItemIndex();
+      track.queueLength = queue?.getItems().length;
+    }
     draw(track, playbackError ? 'Nie udało się odtworzyć. Wybierz utwór ponownie na telefonie.' : '');
   }
 
@@ -140,6 +163,16 @@
     if (events.PLAYER_LOAD_COMPLETE) player.addEventListener(events.PLAYER_LOAD_COMPLETE, () => { playbackError = false; refresh(); });
     player.addEventListener(events.PLAYING, () => { playbackError = false; refresh(); });
     $('play').onclick = () => { if (current?.state === 'PAUSED') player.play(); else if (current?.state === 'PLAYING') player.pause(); };
+    for (const [id, step] of [['previous-track', -1], ['next-track', 1]]) {
+      $(id).onclick = () => {
+        if ($(id).getAttribute('aria-disabled') === 'true') return;
+        const queue = player.getQueueManager();
+        if (!canMove(queue?.getCurrentItemIndex(), queue?.getItems().length, step)) return;
+        const request = new framework.messages.QueueUpdateRequestData();
+        request.jump = step;
+        player.sendLocalMediaRequest(request);
+      };
+    }
     for (const [id, offset] of [['rewind', -15], ['forward', 15]]) {
       $(id).onclick = () => { if (current?.seekable && ['PLAYING', 'PAUSED'].includes(current.state)) player.seek(Math.max(0, Math.min(current.duration, player.getCurrentTimeSec() + offset))); };
     }
