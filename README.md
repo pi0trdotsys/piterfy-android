@@ -13,14 +13,13 @@ Piterfy łączy natywną aplikację Android z odtwarzaczem webowym opartym na Na
 
 ## Zobacz Piterfy
 
-<p align="center">
-  <img src="docs/screenshots/android-podcasty.png" alt="Piterfy na Androidzie: osobna zakładka Podcasty i pasek odtwarzania" width="230">
-  <img src="docs/screenshots/web-dj.jpg" alt="Piterfy DJ w przeglądarce: gotowe bloki, zmiana klimatu i oceny rekomendacji" width="282">
-</p>
+![Piterfy Web: strona startowa z biblioteką, playlistami Odkrywaj i paskiem odtwarzania](docs/screenshots/web-biblioteka.jpg)
 
-**Android: katalog podcastów** · **Web: Piterfy DJ w widoku mobilnym**
+| Android · osobny katalog podcastów | Web · Piterfy DJ |
+| :---: | :---: |
+| <img src="docs/screenshots/android-podcasty.png" alt="Piterfy na Androidzie: zakładka Podcasty i pasek odtwarzania" width="210"> | <img src="docs/screenshots/web-dj-current.jpg" alt="Piterfy DJ: gotowe bloki, zmiana klimatu i oceny rekomendacji" width="420"> |
 
-![Piterfy Web: ekran ulubionych offline z postępem zapisu i odtwarzaniem lokalnym](docs/screenshots/web-offline.png)
+![Piterfy Web: zapisane ulubione i ekran startowy gotowy do działania bez sieci](docs/screenshots/web-offline-current.jpg)
 
 ## Co oferuje Piterfy
 
