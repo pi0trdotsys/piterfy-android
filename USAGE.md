@@ -2,9 +2,9 @@
 
 ## Piterfy discovery and podcasts
 
-Home → Music shows the latest server **Odkrywaj** playlists. Each card opens the playlist and offers play/download actions. **Mój gust** opens the configured server’s `/gust/` page in your browser.
+Home â†’ Music shows the latest server **Odkrywaj** playlists. Each card opens the playlist and offers play/download actions. **MĂłj gust** opens the configured serverâ€™s `/gust/` page in your browser.
 
-Home → Podcasts is a separate catalogue of albums tagged `Podcast`. Pull to refresh or retry a failed request; a cached catalogue remains visible while refreshing. **Downloaded** shows episodes available locally. Played episodes resume from their saved position, and **Continue episode** provides direct access to unfinished listening.
+Home â†’ Podcasts is a separate catalogue of albums tagged `Podcast`. Pull to refresh or retry a failed request; a cached catalogue remains visible while refreshing. **Downloaded** shows episodes available locally. Played episodes resume from their saved position, and **Continue episode** provides direct access to unfinished listening.
 
 The expanded player displays the current audio route and device name when Android exposes it. The source-analysis label comes from the optional Piterfy server extension; the existing codec/bitrate details describe the playback stream.
 
@@ -13,14 +13,14 @@ Search suggestions wait briefly while typing, stale requests are cancelled, and 
 
 ## Experimental local-network playback
 
-Local-network playback adds **Settings → Remote player** as a
-standalone entry and **Play on…** in the player's overflow menu. Two Tempus phones
+Local-network playback adds **Settings â†’ Remote player** as a
+standalone entry and **Play onâ€¦** in the player's overflow menu. Two Tempus phones
 can pair by comparing a code, then choose music and control playback
 over the LAN. The receiver resolves track IDs using its own server account;
 both phones must use the same server address. The receiving service is opt-in,
 has a visible notification and can be stopped or have controller access revoked.
 
-The mini player has a two-phone device icon, and the expanded player has a **Play on…** button with the same icon. The overflow entry also opens the device selector. Select an already paired receiver to
+The mini player has a two-phone device icon, and the expanded player has a **Play onâ€¦** button with the same icon. The overflow entry also opens the device selector. Select an already paired receiver to
 control its existing playback without transferring or replacing either queue.
 The main player and mini player show the receiver's title, artwork, position and
 playback state. Updates arrive on playback events and about once per second.
@@ -79,7 +79,7 @@ not process termination. On a brief interruption commands are disabled and the
 controller retries the same endpoint; if the receiver restarts or changes network
 address, release control and select it again. Failed remote actions never fall
 back to local playback. Use compatible LAN playback versions on both phones.
-In Settings → Remote player, discovering/selecting a phone checks pairing and
+In Settings â†’ Remote player, discovering/selecting a phone checks pairing and
 opens the normal player once pairing is confirmed. Previously approved certificates do not
 require another pairing code; new identities still require approval.
 English and Italian labels are included.
@@ -187,11 +187,11 @@ If your Subsonic-compatible server exposes the folder tree **or** provides an ar
     <img src="mockup/usage/music_folders_playback.png" width=317>
 </p>
 
-- The **Library ▸ Music folders** screen shows each top-level folder with a play icon only after you drill into it. The root entry remains a simple navigator.
+- The **Library â–¸ Music folders** screen shows each top-level folder with a play icon only after you drill into it. The root entry remains a simple navigator.
 - When viewing **inner folders** **or artist index entries**, tap the new play button to immediately enqueue every audio track inside that folder/index and all nested subfolders.
 - Video files are excluded automatically, so only playable audio ends up in the queue.
 
-No extra config is needed—Tempus adjusts based on the connected backend.
+No extra config is neededâ€”Tempus adjusts based on the connected backend.
 
 ### Now Playing Screen
 
@@ -297,7 +297,7 @@ Two things to know:
 
 ### Language
 
-Select **Settings → UI → Language** to choose an app language. Swedish is available as **Swedish** (or **Svenska**, depending on the current language). Select **System language** to follow your device language.
+Select **Settings â†’ UI â†’ Language** to choose an app language. Swedish is available as **Swedish** (or **Svenska**, depending on the current language). Select **System language** to follow your device language.
 
 ## Android Auto
 
@@ -450,57 +450,57 @@ Shortcuts are displayed only if the function is selected from root level:
 
 In desktop Chrome/Edge, click the small window icon beside the queue to open the floating mini player. Drag its edges to resize, or use its size button to switch between compact and cover views. It includes play/pause, previous/next, seeking and volume. Keep the original Piterfy tab open; closing only the mini player does not stop the music.
 
-To keep it on all Windows virtual desktops, use **Win+Tab → right-click the window → Show this window on all desktops**, if your browser exposes that option. The help button inside the mini player also explains this limitation.
+To keep it on all Windows virtual desktops, use **Win+Tab â†’ right-click the window â†’ Show this window on all desktops**, if your browser exposes that option. The help button inside the mini player also explains this limitation.
 
 ### Piterfy discovery, podcasts and playback (Piterfy 6)
 
-**Odkrywaj** is available in the web header and on Android's music home screen. **Więcej takich / Mniej takich** changes future suggestions and intelligent playback. **Poziom eksperymentowania** ranges from familiar music to new sounds; settings and reactions follow the signed-in account between the browser and phone. Deliberate early skips (after three seconds, within the first thirty seconds and first 30% of the song) lower its recommendation score. Pausing, buffering and seeking within a track do not count as skips.
+**Odkrywaj** is available in the web header and on Android's music home screen. **WiÄ™cej takich / Mniej takich** changes future suggestions and intelligent playback. **Poziom eksperymentowania** ranges from familiar music to new sounds; settings and reactions follow the signed-in account between the browser and phone. Deliberate early skips (after three seconds, within the first thirty seconds and first 30% of the song) lower its recommendation score. Pausing, buffering and seeking within a track do not count as skips.
 
-Music and podcasts have separate saved queues. In the browser's discovery panel, choose **Kolejka muzyki / Kolejka podcastów**; the podcast page also offers queue shortcuts and **Kontynuuj słuchanie**. On Android, use the player's overflow menu to return to either queue. Each saved queue retains its selected item and position. Radio remains independent of these library queues.
+Music and podcasts have separate saved queues. In the browser's discovery panel, choose **Kolejka muzyki / Kolejka podcastĂłw**; the podcast page also offers queue shortcuts and **Kontynuuj sĹ‚uchanie**. On Android, use the player's overflow menu to return to either queue. Each saved queue retains its selected item and position. Radio remains independent of these library queues.
 
-On Android's **Podcasty** tab choose **Subskrypcje**, or use **Podcast · automatyczne pobieranie** from a playing episode's menu. Subscriptions sync with the web album's **Subskrybuj** button. The phone checks hourly over an unmetered connection and can run later when Android schedules background work. Enabling a show queues at most its three newest episodes initially; subsequent refreshes queue new episodes. Existing completed/requested downloads are retained and deduplicated. The **Pobrane** podcast filter and the bottom **Pobrane** destination provide offline access. A playlist's toolbar download button queues its missing songs; **Keep synced** remains available from its menu.
+On Android's **Podcasty** tab choose **Subskrypcje**, or use **Podcast Â· automatyczne pobieranie** from a playing episode's menu. Subscriptions sync with the web album's **Subskrybuj** button. The phone checks hourly over an unmetered connection and can run later when Android schedules background work. Enabling a show queues at most its three newest episodes initially; subsequent refreshes queue new episodes. Existing completed/requested downloads are retained and deduplicated. The **Pobrane** podcast filter and the bottom **Pobrane** destination provide offline access. A playlist's toolbar download button queues its missing songs; **Keep synced** remains available from its menu.
 
 Podcast positions sync while online, periodically and when pausing. Older device revisions cannot overwrite a newer server position. Android also retains its existing local resume points for offline playback. The web's automatic podcast downloads are performed by the Android app.
 
-Android **Settings → Piterfy · odtwarzanie i odkrywanie** now contains **Płynne przejścia** and a 1–10 second duration (default: five seconds). Crossfade applies to music playing locally on the phone. Podcasts, radio, remote receivers, repeat-one and an active sleep timer use normal transitions. Both outgoing and incoming buffers must be ready; otherwise normal playback takes priority. The web has its separate per-browser crossfade setting on the player.
+Android **Settings â†’ Piterfy Â· odtwarzanie i odkrywanie** now contains **PĹ‚ynne przejĹ›cia** and a 1â€“10 second duration (default: five seconds). Crossfade applies to music playing locally on the phone. Podcasts, radio, remote receivers, repeat-one and an active sleep timer use normal transitions. Both outgoing and incoming buffers must be ready; otherwise normal playback takes priority. The web has its separate per-browser crossfade setting on the player.
 
 The desktop web player uses a full-width timeline with controls above it. On a narrow web screen, a bottom mini player provides the current track, cover and play/pause; tap its title to open the full player. Android's timeline has a larger touch target in portrait, landscape and tablet layouts. Both use dark surfaces and restrained cover-color accents.
 
 ### Piterfy web crossfade
 
-Click **Przejście · 5 s** on the browser player to configure **Płynne przejścia**. Crossfade is enabled by default at five seconds; choose 1–10 seconds or turn it off. The setting is saved per account in this browser. It starts the next track under the fading end of the current one, so its quiet introduction overlaps existing music. It does not detect silence or cut a fixed number of seconds from recordings.
+Click **PrzejĹ›cie Â· 5 s** on the browser player to configure **PĹ‚ynne przejĹ›cia**. Crossfade is enabled by default at five seconds; choose 1â€“10 seconds or turn it off. The setting is saved per account in this browser. It starts the next track under the fading end of the current one, so its quiet introduction overlaps existing music. It does not detect silence or cut a fixed number of seconds from recordings.
 
 Applies to local library music, including shuffled queues and repeat-all. Podcasts, radio, repeat-one and the end of a non-repeating queue play normally. The next track is prepared near the end of the current track; if it is not buffered, normal playback takes priority. Pause, seeking, queue changes and Connect transfer cancel the overlap. This feature is web-only; it does not change Android playback.
 
 ### Piterfy DJ and on-demand discoveries
 
-The main DJ button starts a ready session, pauses the current one or resumes it. **Zmień klimat** stays alongside it. Voice, exploration and summary options are under **Ustawienia audycji**. The current and prepared blocks appear first; **Zobacz utwory** expands individual songs and **Historia bloków** reveals earlier blocks with their ratings. Expanded content survives ordinary state refreshes. Android uses the same hierarchy and mint accent as the web, with larger player controls and a more visible seek thumb. Mobile web adds a next-track button to the compact player; native web player controls also support Enter/Space and descriptive accessibility labels.
+The main DJ button starts a ready session, pauses the current one or resumes it. **ZmieĹ„ klimat** stays alongside it. Voice, exploration and summary options are under **Ustawienia audycji**. The current and prepared blocks appear first; **Zobacz utwory** expands individual songs and **Historia blokĂłw** reveals earlier blocks with their ratings. Expanded content survives ordinary state refreshes. Android uses the same hierarchy and mint accent as the web, with larger player controls and a more visible seek thumb. Mobile web adds a next-track button to the compact player; native web player controls also support Enter/Space and descriptive accessibility labels.
 
-DJ and interactive discovery prepare a silent, account-scoped start reserve as the app opens. Two ready blocks and one alternative are kept ahead; **Zmień klimat** selects the ready alternative. **Uruchom** consumes an already prepared block when available, while a separate worker continues acquiring discoveries. If acquisition is slow, indexed library tracks provide the prepared fallback. A background job never grants playback permission. The ready-block count excludes the playing block. New feedback replaces unheard reserves without changing the current music.
+DJ and interactive discovery prepare a silent, account-scoped start reserve as the app opens. Two ready blocks and one alternative are kept ahead; **ZmieĹ„ klimat** selects the ready alternative. **Uruchom** consumes an already prepared block when available, while a separate worker continues acquiring discoveries. If acquisition is slow, indexed library tracks provide the prepared fallback. A background job never grants playback permission. The ready-block count excludes the playing block. New feedback replaces unheard reserves without changing the current music.
 
 Reserves expire after 24 hours and preparation expires after two inactive hours. Android preloads a limited audio prefix into the existing streaming cache and caches voice clips (12 MB/24 hours) on unmetered networks. Disabling streaming cache disables prefix caching. Web caches queue metadata/voice clips in memory and attempts a bounded next-track range preload. Browser cache policies and network conditions affect this optimization. These buffers do not mark tracks as downloaded or provide a complete offline session.
 
 **Uruchom** pauses the current music and selects a complete ready block, preparing a library fallback if no reserve exists yet. The indicator shows the ready reserve count or background matching/search/download/index/voice progress. Missing new files do not hold up a complete library block. Opening DJ, refreshing recommendations or receiving background blocks never starts music on its own. Android keeps an explicit start request while the dialog is closed. A cold library fallback can begin with a short cached greeting while richer per-song introductions are prepared in the background. With narration enabled, crossfade is suspended so speech finishes before the next song. **DJ / Odkrywaj** labels identify the active source on the playback bar and now-playing view.
 
-In the browser, open **DJ** or **Odkrywaj → Piterfy DJ**. On Android, choose **Piterfy DJ · Twoja audycja** on the home screen. Start a session, adjust exploration, and use **Zmień klimat** to request another block. Each block lists its songs and can be played directly. **Więcej takich / Mniej takich** records feedback about the current song. Voice can be disabled independently of music.
+In the browser, open **DJ** or **Odkrywaj â†’ Piterfy DJ**. On Android, choose **Piterfy DJ Â· Twoja audycja** on the home screen. Start a session, adjust exploration, and use **ZmieĹ„ klimat** to request another block. Each block lists its songs and can be played directly. **WiÄ™cej takich / Mniej takich** records feedback about the current song. Voice can be disabled independently of music.
 
-The animated DJ symbol moves during music/announcements and rests on pause. **Pomiń zapowiedź** moves straight to the music. More upbeat multilingual introductions still finish before music starts. **Podsumowania e-mail / Telegram** independently toggle a short report after an auditioned block ends or is left. **Blok OK / Nie mój klimat** evaluates the whole block; these soft preferences guide future DJ and interactive discoveries. The report's **Oceń ten blok** link opens a confirmation page with an undo option and expires after 30 days. Reports use the server's existing recipient account; other accounts cannot send music summaries to that recipient. An internet connection is required for delivery and new voice synthesis.
+The animated DJ symbol moves during music/announcements and rests on pause. **PomiĹ„ zapowiedĹş** moves straight to the music. More upbeat multilingual introductions still finish before music starts. **Podsumowania e-mail / Telegram** independently toggle a short report after an auditioned block ends or is left. **Blok OK / Nie mĂłj klimat** evaluates the whole block; these soft preferences guide future DJ and interactive discoveries. The report's **OceĹ„ ten blok** link opens a confirmation page with an undo option and expires after 30 days. Reports use the server's existing recipient account; other accounts cannot send music summaries to that recipient. An internet connection is required for delivery and new voice synthesis.
 
 Introductions use a multilingual voice for mixed Polish/English names and titles. Their text is synthesized through Microsoft's speech service and cached on your server. They name the opening artist/song and, when supported by the selected tracks, the explored genre. The introduction plays before the music starts. Speech is not a library song or a scrobble. Connect receivers claim an introduction once; a transfer will not replay an already claimed introduction. If voice generation or delivery fails, music takes priority.
 
-**Odkrywaj → Nowe utwory · pobieranie** opens an independent acquisition session. Refreshing interactive discovery also requests its own background batch. DJ and interactive discovery have separate sessions and never run the daily discovery mailer. They reuse the existing acquisition/import adapters, avoid duplicate interactive searches, and only queue new music after it is indexed in Navidrome. Until then, library music is available as fallback.
+**Odkrywaj â†’ Nowe utwory Â· pobieranie** opens an independent acquisition session. Refreshing interactive discovery also requests its own background batch. DJ and interactive discovery have separate sessions and never run the daily discovery mailer. They reuse the existing acquisition/import adapters, avoid duplicate interactive searches, and only queue new music after it is indexed in Navidrome. Until then, library music is available as fallback.
 
 Each account may request eight acquisition batches per hour, with up to five new acquisitions per batch and a shared check for at most two active downloader transfers. Source availability and import delays affect results. During a pause, bounded preparation may finish filling the reserve; no further work is scheduled when it is full. Stopping a session cancels queued work. Transfers already submitted to the downloader may finish. Imported music stays in the library; there is no automatic deletion of these discoveries.
 
 ### Piterfy lyrics
 
-Open the full Android player and select the lyrics icon. In the browser, use **♫ Tekst**. Timed lyrics highlight the current line and follow playback. Tap a line to seek, scroll to read ahead, then use **Wróć do tekstu** to resume following. The timing button adjusts synchronization in half-second steps and remembers the correction for that song.
+Open the full Android player and select the lyrics icon. In the browser, use **â™« Tekst**. Timed lyrics highlight the current line and follow playback. Tap a line to seek, scroll to read ahead, then use **WrĂłÄ‡ do tekstu** to resume following. The timing button adjusts synchronization in half-second steps and remembers the correction for that song.
 
 **Offline** saves lyrics on Android. Library lyrics are preferred; if missing, Piterfy looks up the exact recording on LRCLIB using song metadata. Availability and timing depend on the source. Plain lyrics are displayed without invented timestamps.
 
 ### Piterfy Connect preview
 
-Enable **Piterfy Connect** in the device picker/settings on Android and in the browser's Connect panel. Use the same server account on both. Select a destination or **Przenieś tutaj** to transfer the queue and position. The receiving browser must remain open. The preview supports library music queues up to 500 tracks; radio transfer and shared shuffle order are not yet supported. See `connect/README.md` for deployment and testing details.
+Enable **Piterfy Connect** in the device picker/settings on Android and in the browser's Connect panel. Use the same server account on both. Select a destination or **PrzenieĹ› tutaj** to transfer the queue and position. The receiving browser must remain open. The preview supports library music queues up to 500 tracks; radio transfer and shared shuffle order are not yet supported. See `connect/README.md` for deployment and testing details.
 
 ### Airsonic Distorted Playback
 
@@ -520,15 +520,20 @@ For additional help:
 
 ### Kolejka, reakcje i pobieranie Piterfy
 
-W webie otwórz **Odkrywaj → Edytuj kolejkę**; w mobilnym pasku służy do tego przycisk kolejki. Na Androidzie użyj menu przy utworze. Przypięcie zachowuje nadchodzący utwór po zmianie klimatu DJ-a. Usunięcie można cofnąć, dopóki kolejka nie uległa dalszej zmianie (lokalnie oraz w Connect; starszy protokół odbiornika LAN zachowuje dotychczasowe operacje).
+W webie otwĂłrz **Odkrywaj â†’ Edytuj kolejkÄ™**; w mobilnym pasku sĹ‚uĹĽy do tego przycisk kolejki. Na Androidzie uĹĽyj menu przy utworze. PrzypiÄ™cie zachowuje nadchodzÄ…cy utwĂłr po zmianie klimatu DJ-a. UsuniÄ™cie moĹĽna cofnÄ…Ä‡, dopĂłki kolejka nie ulegĹ‚a dalszej zmianie (lokalnie oraz w Connect; starszy protokĂłĹ‚ odbiornika LAN zachowuje dotychczasowe operacje).
 
-Przy **Mniej takich** możesz wskazać powód. **Ile mówi DJ** w ustawieniach audycji wybiera zapowiedź na początku bloku, co drugi utwór albo każdy utwór. Pamięć zapowiedzi jest oddzielna dla kont i trwa między sesjami.
+Przy **Mniej takich** moĹĽesz wskazaÄ‡ powĂłd. **Ile mĂłwi DJ** w ustawieniach audycji wybiera zapowiedĹş na poczÄ…tku bloku, co drugi utwĂłr albo kaĹĽdy utwĂłr. PamiÄ™Ä‡ zapowiedzi jest oddzielna dla kont i trwa miÄ™dzy sesjami.
 
-Na Androidzie **Pobrane → Centrum pobierania** pokazuje postęp i błędy oraz pozwala ponowić, wstrzymać lub wznowić pobieranie. Limit pamięci wewnętrznej zatrzymuje pobieranie po osiągnięciu progu; nie usuwa muzyki. Opcjonalne sprzątanie po 24 godzinach obejmuje ukończone podcasty z pobrań, których konto jest rozpoznane, z ochroną przypiętych i aktualnie odtwarzanych odcinków. Nie usuwa plików w folderach zewnętrznych. W webie panel **Pobieranie i gotowe bloki** pokazuje postęp przygotowania na serwerze; pamięć offline telefonu jest zarządzana na telefonie.
+Na Androidzie **Pobrane â†’ Centrum pobierania** pokazuje postÄ™p i bĹ‚Ä™dy oraz pozwala ponowiÄ‡, wstrzymaÄ‡ lub wznowiÄ‡ pobieranie. Limit pamiÄ™ci wewnÄ™trznej zatrzymuje pobieranie po osiÄ…gniÄ™ciu progu; nie usuwa muzyki. Opcjonalne sprzÄ…tanie po 24 godzinach obejmuje ukoĹ„czone podcasty z pobraĹ„, ktĂłrych konto jest rozpoznane, z ochronÄ… przypiÄ™tych i aktualnie odtwarzanych odcinkĂłw. Nie usuwa plikĂłw w folderach zewnÄ™trznych. W webie panel **Pobieranie i gotowe bloki** pokazuje postÄ™p przygotowania na serwerze; pamiÄ™Ä‡ offline telefonu jest zarzÄ…dzana na telefonie.
 
 
 ### Ulubione offline i oddzielne podcasty
 
-Android domy�lnie synchronizuje **ulubione utwory** do pobierania przez po��czenie bez naliczania op�at (zwykle Wi-Fi). Obejmuje obecne i kolejne polubienia, tak�e z webu; albumy oznaczone sercem nie s� pobierane w ca�o�ci. Nowe polubienie na telefonie zleca sprawdzenie, a okresowa synchronizacja wychwytuje pozosta�e. Android mo�e op�ni� prac� w tle. W **Pobrane** sta�y przycisk pod paskiem tytu�u otwiera **Centrum pobierania** z prze��cznikiem automatycznych ulubionych, stanem i przyciskiem �Sprawd� ulubione teraz�. Istniej�ce pliki s� pomijane, cofni�cie polubienia ich nie usuwa, a limit offline wstrzymuje kolejne pobrania. Pobieranie respektuje og�lne ustawienia sieci pobierania aplikacji.
+Android domyślnie synchronizuje **ulubione utwory** do pobierania przez połączenie bez naliczania opłat (zwykle Wi-Fi). Obejmuje obecne i kolejne polubienia, także z webu; albumy oznaczone sercem nie są pobierane w całości. Nowe polubienie na telefonie zleca sprawdzenie, a okresowa synchronizacja wychwytuje pozostałe. Android może opóźnić pracę w tle. W **Pobrane** stały przycisk pod paskiem tytułu otwiera **Centrum pobierania** z przełącznikiem automatycznych ulubionych, stanem i przyciskiem „Sprawdź ulubione teraz”. Istniejące pliki są pomijane, cofnięcie polubienia ich nie usuwa, a limit offline wstrzymuje kolejne pobrania. Pobieranie respektuje ogólne ustawienia sieci pobierania aplikacji.
 
-**Utwory** zawieraj� muzyk�; podcasty maj� w�asn� kategori� i kolejk�. Odcinki s� rozpoznawane po typie, gatunku oraz folderach `Podcast`, `Podcasts` lub `Podcasty`, r�wnie� gdy brakuje tag�w. Tytu� ani wsp�lny wykonawca nie decyduj� o klasyfikacji. Webowy katalog Utwor�w, jego wyszukiwanie, odtwarzanie i tasowanie u�ywaj� listy muzycznej. Podcasty z pustym gatunkiem s� dost�pne w katalogu Podcasty. Connect odrzuca pr�b� po��czenia odcink�w i muzyki w jedn� kolejk�.
+**Utwory** zawierają muzykę; podcasty mają własną kategorię i kolejkę. Odcinki są rozpoznawane po typie, gatunku oraz folderach `Podcast`, `Podcasts` lub `Podcasty`, również gdy brakuje tagów. Tytuł ani wspólny wykonawca nie decydują o klasyfikacji. Webowy katalog Utworów, jego wyszukiwanie, odtwarzanie i tasowanie używają listy muzycznej. Podcasty z pustym gatunkiem są dostępne w katalogu Podcasty. Connect odrzuca próbę połączenia odcinków i muzyki w jedną kolejkę.
+
+
+### Ulubione offline w przeglądarce
+
+Otwórz [Piterfy](https://piterfy.prosinski.eu/app/) z dostępem do sieci w docelowej przeglądarce, zaloguj się i wybierz **Offline**. Poczekaj na zakończenie zapisu i komunikat o gotowym ekranie startowym. Możesz wtedy ponownie otworzyć ten sam adres `/app/` bez dostępu do sieci i odtworzyć zapisane utwory, także losowo. Synchronizacja nowych polubień działa podczas otwartej karty. Pliki są przechowywane osobno dla każdego konta i profilu przeglądarki; po cofnięciu polubienia pozostają dostępne. Wyczyszczenie danych witryny usuwa zapis.

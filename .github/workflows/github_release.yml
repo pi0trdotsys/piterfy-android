@@ -35,6 +35,7 @@ jobs:
           node --test connect/web/dj-preroll.test.cjs
           node --test connect/web/queue-protection.test.cjs
           node --test connect/web/media-kind-core.test.cjs
+          node --test connect/web/offline-core.test.cjs connect/web/offline-sw.test.cjs
       - name: Restore release signing
         env:
           KEYSTORE: ${{ secrets.KEYSTORE_BASE64 }}
