@@ -312,6 +312,8 @@ public class MainActivity extends BaseActivity {
         OnBackPressedCallback callback = new OnBackPressedCallback(bottomSheetBehavior.getState() == BottomSheetBehavior.STATE_EXPANDED) {
             @Override
             public void handleOnBackPressed() {
+                if (isTelevision && getSupportFragmentManager().findFragmentByTag("PlayerBottomSheet")
+                        instanceof PlayerBottomSheetFragment player && player.closeTvPlayerPanel()) return;
                 collapseBottomSheetDelayed();
             }
         };
@@ -379,9 +381,15 @@ public class MainActivity extends BaseActivity {
 
                     switch (state) {
                         case BottomSheetBehavior.STATE_HIDDEN:
+                            if (isTelevision) {
+                                bind.navHostFragment.setDescendantFocusability(android.view.ViewGroup.FOCUS_AFTER_DESCENDANTS);
+                            }
                             resetMusicSession(); // I can't put the callback inside BottomSheetHelper because of this line
                             break;
                         case BottomSheetBehavior.STATE_COLLAPSED:
+                            if (isTelevision) {
+                                bind.navHostFragment.setDescendantFocusability(android.view.ViewGroup.FOCUS_AFTER_DESCENDANTS);
+                            }
                             animateBottomSheet(0.0f);
                             if (!isLandscape) {
                                 animateBottomNavigation(0.0f, navigationHeight);
@@ -390,6 +398,11 @@ public class MainActivity extends BaseActivity {
                                 playerBottomSheetFragment.goBackToFirstPage();
                             break;
                         case BottomSheetBehavior.STATE_EXPANDED:
+                            if (isTelevision) {
+                                bind.navHostFragment.setDescendantFocusability(android.view.ViewGroup.FOCUS_BLOCK_DESCENDANTS);
+                                View play = bind.playerBottomSheet.findViewById(androidx.media3.ui.R.id.exo_play_pause);
+                                if (play != null) play.requestFocus();
+                            }
                             animateBottomSheet(1.0f);
                             if (!isLandscape) {
                                 animateBottomNavigation(1.0f, navigationHeight);

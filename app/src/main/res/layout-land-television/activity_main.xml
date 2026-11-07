@@ -42,6 +42,7 @@
             android:paddingEnd="8dp"
             android:elevation="0dp"
             style="@style/PiterfyBottomNav"
+            app:labelVisibilityMode="labeled"
             app:menu="@menu/bottom_nav_menu" />
 
         <TextView

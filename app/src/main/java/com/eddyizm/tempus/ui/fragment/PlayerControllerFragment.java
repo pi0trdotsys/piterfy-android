@@ -110,6 +110,9 @@ public class PlayerControllerFragment extends Fragment {
     private Chip playerSongLinkChip;
     private Chip playerAlbumLinkChip;
     private Chip playerArtistLinkChip;
+    private android.widget.ImageView tvBackdrop;
+    private android.net.Uri tvArtwork;
+    private boolean tvOled;
 
     private MainActivity activity;
     private PlayerBottomSheetViewModel playerBottomSheetViewModel;
@@ -129,6 +132,7 @@ public class PlayerControllerFragment extends Fragment {
         ratingViewModel = new ViewModelProvider(requireActivity()).get(RatingViewModel.class);
 
         init();
+        initTvPlayer();
         remotePlayer = new com.eddyizm.tempus.lan.LanPlayerAdapter();
         com.eddyizm.tempus.lan.LanRemoteSession.state().observe(getViewLifecycleOwner(), state -> refreshPlaybackDestination());
         com.eddyizm.tempus.lan.LanRemoteSession.queueState().observe(getViewLifecycleOwner(), queue -> refreshPlaybackDestination());
@@ -168,6 +172,9 @@ public class PlayerControllerFragment extends Fragment {
 
     @Override
     public void onDestroyView() {
+        if (tvBackdrop != null) com.bumptech.glide.Glide.with(this).clear(tvBackdrop);
+        tvBackdrop = null;
+        tvArtwork = null;
         if (qualityClient != null) qualityClient.close();
         qualityClient = null;
         outputMonitor = null;
@@ -339,7 +346,8 @@ public class PlayerControllerFragment extends Fragment {
     }
 
     private void initQuickActionView() {
-        playerQuickActionView.setVisibility(Preferences.getQuickActionVisible() ? View.VISIBLE : View.GONE);
+        playerQuickActionView.setVisibility(tvBackdrop != null || Preferences.getQuickActionVisible()
+                ? View.VISIBLE : View.GONE);
 
         playerOpenQueueButton.setOnClickListener(view -> {
             PlayerBottomSheetFragment playerBottomSheetFragment = (PlayerBottomSheetFragment) requireActivity()
@@ -356,6 +364,56 @@ public class PlayerControllerFragment extends Fragment {
                 playerMediaCoverViewPager.setCurrentItem(0, true);
             }
         });
+    }
+
+    private void initTvPlayer() {
+        tvBackdrop = bind.getRoot().findViewById(R.id.tv_player_backdrop);
+        if (tvBackdrop == null) return;
+
+        if (android.os.Build.VERSION.SDK_INT >= 31) {
+            tvBackdrop.setRenderEffect(android.graphics.RenderEffect.createBlurEffect(
+                    30f, 30f, android.graphics.Shader.TileMode.CLAMP));
+        }
+        var preferences = requireContext().getSharedPreferences("piterfy_tv", android.content.Context.MODE_PRIVATE);
+        tvOled = preferences.getBoolean("oled", false);
+        Button displayMode = bind.getRoot().findViewById(R.id.tv_player_display_mode);
+        displayMode.setOnClickListener(v -> {
+            tvOled = !tvOled;
+            preferences.edit().putBoolean("oled", tvOled).apply();
+            renderTvMode(displayMode);
+        });
+        renderTvMode(displayMode);
+
+        bind.getRoot().findViewById(R.id.tv_player_playlists).setOnClickListener(v -> {
+            activity.collapseBottomSheetDelayed();
+            activity.getNavigationController().getNavController().navigate(R.id.playlistCatalogueFragment);
+        });
+    }
+
+    private void renderTvMode(Button displayMode) {
+        displayMode.setText(tvOled ? R.string.piterfy_tv_oled : R.string.piterfy_tv_ambient);
+        tvBackdrop.setVisibility(tvOled ? View.GONE : View.VISIBLE);
+        bind.getRoot().findViewById(R.id.tv_player_shade).setVisibility(tvOled ? View.GONE : View.VISIBLE);
+        ((View) tvBackdrop.getParent()).setBackgroundColor(tvOled ? 0xff000000 : 0xff080d0b);
+        bind.getRoot().setBackgroundColor(tvOled ? 0xff000000 : 0xff080d0b);
+    }
+
+    private void updateTvMetadata(MediaMetadata metadata) {
+        if (tvBackdrop == null) return;
+        TextView album = bind.getRoot().findViewById(R.id.tv_player_album);
+        album.setText(metadata.albumTitle);
+        album.setVisibility(TextUtils.isEmpty(metadata.albumTitle) ? View.GONE : View.VISIBLE);
+        if (!Objects.equals(tvArtwork, metadata.artworkUri)) {
+            tvArtwork = metadata.artworkUri;
+            com.bumptech.glide.Glide.with(this).load(tvArtwork).override(320, 180).into(tvBackdrop);
+        }
+    }
+
+    boolean closeTvLyrics() {
+        if (tvBackdrop == null || playerMediaCoverViewPager.getCurrentItem() != 1) return false;
+        playerMediaCoverViewPager.setCurrentItem(0, false);
+        playerOpenLyricsButton.requestFocus();
+        return true;
     }
 
     private void initializeBrowser() {
@@ -437,6 +495,8 @@ public class PlayerControllerFragment extends Fragment {
     }
 
     private void setMetadata(MediaMetadata mediaMetadata) {
+        if (bind == null || (com.eddyizm.tempus.lan.LanRemoteSession.isActive() && !renderingRemote)) return;
+        updateTvMetadata(mediaMetadata);
         String mode = mediaMetadata.extras != null ? mediaMetadata.extras.getString("piterfySource", "") : "";
         if (mode.isEmpty()) mode = com.eddyizm.tempus.service.PiterfyDJSession.sourceLabel(mediaMetadata.extras != null ? mediaMetadata.extras.getString("id") : null);
         TextView badge = bind.getRoot().findViewById(R.id.piterfy_playback_mode);
@@ -445,7 +505,6 @@ public class PlayerControllerFragment extends Fragment {
             badge.setContentDescription("Tryb odtwarzania: " + mode);
             badge.setVisibility(mode.isEmpty() ? View.GONE : View.VISIBLE);
         }
-        if (bind == null || (com.eddyizm.tempus.lan.LanRemoteSession.isActive() && !renderingRemote)) return;
         tintModeButtons(Preferences.isShuffleModeEnabled(), Preferences.getRepeatMode());
         String type = mediaMetadata.extras != null ? mediaMetadata.extras.getString("type") : null;
 
@@ -655,6 +714,7 @@ public class PlayerControllerFragment extends Fragment {
     }
 
     private boolean toggleQuickActionVisiblity() {
+        if (tvBackdrop != null) return true;
         ViewGroup parent = (ViewGroup) playerQuickActionView.getParent();
 
         TransitionSet transition = new TransitionSet()

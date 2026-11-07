@@ -1,0 +1,27 @@
+<resources>
+    <string name="piterfy_tv_now_playing">NOW PLAYING</string>
+    <string name="piterfy_tv_previous">Previous track</string>
+    <string name="piterfy_tv_next">Next track</string>
+    <string name="piterfy_tv_lyrics">Lyrics</string>
+    <string name="piterfy_tv_queue">Queue</string>
+    <string name="piterfy_tv_ambient">Ambiente</string>
+    <string name="piterfy_tv_oled">Max OLED</string>
+    <string name="piterfy_tv_shuffle">Shuffle</string>
+    <string name="piterfy_tv_repeat">Repeat</string>
+    <string name="piterfy_tv_favorite">Favorite</string>
+    <string name="piterfy_tv_options">Playback options</string>
+    <string name="piterfy_tv_stream_info">Stream information</string>
+    <string name="piterfy_tv_skip_silence">Skip silence</string>
+    <string name="piterfy_tv_sleep">Sleep timer</string>
+    <style name="PiterfyTvIconButton">
+        <item name="android:background">@drawable/piterfy_tv_secondary</item>
+        <item name="android:padding">9dp</item>
+        <item name="android:scaleType">fitCenter</item>
+        <item name="android:tint">#F3FFF7</item>
+    </style>
+    <style name="PiterfyTvTextButton" parent="Widget.Material3.Button.TonalButton">
+        <item name="android:backgroundTint">#283D32</item>
+        <item name="android:textColor">#F3FFF7</item>
+        <item name="android:textSize">16sp</item>
+    </style>
+</resources>

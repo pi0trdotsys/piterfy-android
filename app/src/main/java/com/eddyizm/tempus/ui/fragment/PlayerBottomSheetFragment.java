@@ -454,6 +454,24 @@ public class PlayerBottomSheetFragment extends Fragment {
         bind.playerBodyLayout.playerBodyBottomSheetViewPager.setCurrentItem(1, true);
     }
 
+    public boolean closeTvPlayerPanel() {
+        if (bind == null) return false;
+        ViewPager2 pager = bind.playerBodyLayout.playerBodyBottomSheetViewPager;
+        if (pager.getCurrentItem() != 0) {
+            pager.setCurrentItem(0, false);
+            pager.post(() -> {
+                View queue = pager.findViewById(R.id.player_open_queue_button);
+                if (queue != null) queue.requestFocus();
+            });
+            return true;
+        }
+        if (pager.getAdapter() instanceof PlayerControllerVerticalPager adapter
+                && adapter.getRegisteredFragment(0) instanceof PlayerControllerFragment controller) {
+            return controller.closeTvLyrics();
+        }
+        return false;
+    }
+
     public void setPlayerControllerVerticalPagerDraggableState(Boolean isDraggable) {
         ViewPager2 playerControllerVerticalPager = (ViewPager2) bind.playerBodyLayout.playerBodyBottomSheetViewPager;
         playerControllerVerticalPager.setUserInputEnabled(isDraggable);
