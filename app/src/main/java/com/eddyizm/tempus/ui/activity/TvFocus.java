@@ -54,6 +54,21 @@ public final class TvFocus {
                 || view instanceof android.widget.CompoundButton;
     }
 
+    /** Znacznik ustawiany w XML (android:tag) albo w kodzie przez {@link #markOwnFocus(View)}. */
+    public static final String OWN_FOCUS_TAG = "tv_own_focus";
+
+    private static boolean ownsFocusLook(View view) {
+        return OWN_FOCUS_TAG.equals(view.getTag());
+    }
+
+    public static void markOwnFocus(View view) {
+        view.setTag(OWN_FOCUS_TAG);
+    }
+
+    public static boolean isTelevision(android.content.Context context) {
+        return context.getPackageManager().hasSystemFeature(PackageManager.FEATURE_LEANBACK);
+    }
+
     public static boolean install(Activity activity) {
         if (!activity.getPackageManager().hasSystemFeature(PackageManager.FEATURE_LEANBACK)) {
             return false;
@@ -64,7 +79,9 @@ public final class TvFocus {
 
     private void update() {
         View focused = decor.findFocus();
-        if (focused == null || focused == decor || !focused.isShown()) {
+        // Widoki z wlasnym, wyraznym stanem fokusu (karty, pigulki, przyciski odtwarzacza) nie dostaja
+        // drugiej ramki - dwie obwodki naraz wygladaja nieczysto, a ramka nie podaza za skalowaniem karty.
+        if (focused == null || focused == decor || !focused.isShown() || ownsFocusLook(focused)) {
             outline.setVisible(false, false);
             return;
         }

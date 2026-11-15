@@ -116,6 +116,11 @@ public class MainActivity extends BaseActivity {
     @Override
     public boolean dispatchKeyEvent(android.view.KeyEvent event) {
         if (com.eddyizm.tempus.lan.LanRemoteVolume.dispatch(event)) return true;
+        if (isTelevision && isBottomSheetExpanded()
+                && getSupportFragmentManager().findFragmentByTag("PlayerBottomSheet") instanceof PlayerBottomSheetFragment player
+                && player.handleTvKey(event)) {
+            return true;
+        }
         if (isTelevision && event.getKeyCode() == android.view.KeyEvent.KEYCODE_MENU
                 && bind != null && !isNavigationDrawerLocked() && bind.bottomNavigation.isShown()) {
             if (event.getAction() == android.view.KeyEvent.ACTION_UP && !event.isCanceled()) {
@@ -383,12 +388,14 @@ public class MainActivity extends BaseActivity {
                         case BottomSheetBehavior.STATE_HIDDEN:
                             if (isTelevision) {
                                 bind.navHostFragment.setDescendantFocusability(android.view.ViewGroup.FOCUS_AFTER_DESCENDANTS);
+                                setTvRailFocusable(true);
                             }
                             resetMusicSession(); // I can't put the callback inside BottomSheetHelper because of this line
                             break;
                         case BottomSheetBehavior.STATE_COLLAPSED:
                             if (isTelevision) {
                                 bind.navHostFragment.setDescendantFocusability(android.view.ViewGroup.FOCUS_AFTER_DESCENDANTS);
+                                setTvRailFocusable(true);
                             }
                             animateBottomSheet(0.0f);
                             if (!isLandscape) {
@@ -400,6 +407,7 @@ public class MainActivity extends BaseActivity {
                         case BottomSheetBehavior.STATE_EXPANDED:
                             if (isTelevision) {
                                 bind.navHostFragment.setDescendantFocusability(android.view.ViewGroup.FOCUS_BLOCK_DESCENDANTS);
+                                setTvRailFocusable(false);
                                 View play = bind.playerBottomSheet.findViewById(androidx.media3.ui.R.id.exo_play_pause);
                                 if (play != null) play.requestFocus();
                             }
@@ -424,12 +432,36 @@ public class MainActivity extends BaseActivity {
                 }
             };
 
+    /** TV: gdy pelny odtwarzacz jest otwarty, boczny pasek jest poza ekranem i nie moze przejac fokusu. */
+    private void setTvRailFocusable(boolean focusable) {
+        if (bind == null || !(bind.bottomNavigation instanceof android.view.ViewGroup rail)) return;
+        rail.setDescendantFocusability(focusable
+                ? android.view.ViewGroup.FOCUS_AFTER_DESCENDANTS : android.view.ViewGroup.FOCUS_BLOCK_DESCENDANTS);
+    }
+
+    /** TV: pelnoekranowe tlo za cala aplikacja (np. gradient w kolorze fokusowanej okladki). */
+    public void setTvBackdrop(@Nullable android.graphics.drawable.Drawable drawable) {
+        if (bind == null || !isTelevision) return;
+        bind.drawerLayout.setBackground(drawable != null ? drawable
+                : new android.graphics.drawable.ColorDrawable(com.eddyizm.tempus.util.TvTheme.SURFACE));
+    }
+
+    public boolean isTelevision() {
+        return isTelevision;
+    }
+
     private void animateBottomSheet(float slideOffset) {
         bottomSheetController.animate(slideOffset);
     }
 
     private void animateBottomNavigation(float slideOffset, int navigationHeight) {
         if (slideOffset < 0) return;
+
+        if (isTelevision) {
+            // Boczny pasek wyjezdza w lewo razem z wysuwanym odtwarzaczem.
+            bind.bottomNavigation.setTranslationX(-bind.bottomNavigation.getWidth() * Math.min(1f, slideOffset));
+            return;
+        }
 
         if (navigationHeight == 0) {
             navigationHeight = bind.bottomNavigation.getHeight();
@@ -450,7 +482,7 @@ public class MainActivity extends BaseActivity {
             var destination = navController.getCurrentDestination();
             boolean showNavigation = destination != null && destination.getId() != R.id.loginFragment
                     && destination.getId() != R.id.landingFragment;
-            bottomSheetController.setPeekHeight(showNavigation ? 136 : 56, displayDensity);
+            bottomSheetController.setPeekHeight(56, displayDensity);
             navigationController.setNavbarVisibility(showNavigation);
             navigationController.setSystemBarsVisibility(this, false);
             return;

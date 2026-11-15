@@ -117,6 +117,8 @@ public class PlayerControllerFragment extends Fragment {
     private Chip playerArtistLinkChip;
     private android.widget.ImageView tvBackdrop;
     private View tvPlayerShade;
+    private View tvGlow;
+    private View tvCoverFrame;
     private android.net.Uri tvArtwork;
     private boolean tvOled;
 
@@ -179,6 +181,11 @@ public class PlayerControllerFragment extends Fragment {
     @Override
     public void onDestroyView() {
         if (tvBackdrop != null) com.bumptech.glide.Glide.with(this).clear(tvBackdrop);
+        tvIdleHandler.removeCallbacks(tvEnterImmersive);
+        tvImmersive = false;
+        tvGlow = null;
+        tvCoverFrame = null;
+        tvPlayerShade = null;
         tvBackdrop = null;
         tvArtwork = null;
         if (qualityClient != null) qualityClient.close();
@@ -376,6 +383,8 @@ public class PlayerControllerFragment extends Fragment {
         tvBackdrop = bind.getRoot().findViewById(R.id.tv_player_backdrop);
         if (tvBackdrop == null) return;
         tvPlayerShade = bind.getRoot().findViewById(R.id.tv_player_shade);
+        tvGlow = bind.getRoot().findViewById(R.id.tv_player_glow);
+        tvCoverFrame = bind.getRoot().findViewById(R.id.tv_player_cover_frame);
 
         if (android.os.Build.VERSION.SDK_INT >= 31) {
             tvBackdrop.setRenderEffect(android.graphics.RenderEffect.createBlurEffect(
@@ -383,7 +392,7 @@ public class PlayerControllerFragment extends Fragment {
         }
         var preferences = requireContext().getSharedPreferences("piterfy_tv", android.content.Context.MODE_PRIVATE);
         tvOled = preferences.getBoolean("oled", false);
-        Button displayMode = bind.getRoot().findViewById(R.id.tv_player_display_mode);
+        TextView displayMode = bind.getRoot().findViewById(R.id.tv_player_display_mode);
         displayMode.setOnClickListener(v -> {
             tvOled = !tvOled;
             preferences.edit().putBoolean("oled", tvOled).apply();
@@ -395,14 +404,20 @@ public class PlayerControllerFragment extends Fragment {
             activity.collapseBottomSheetDelayed();
             activity.getNavigationController().getNavController().navigate(R.id.playlistCatalogueFragment);
         });
+
+        // Jeden zrodlowy kolor okladki (PiterfyAmbient) zasila mini-odtwarzacz, ten ekran i strony albumow;
+        // observe() sam plynnie przechodzi od poprzedniego koloru do nowego przy zmianie utworu.
+        com.eddyizm.tempus.util.PiterfyAmbient.observe(getViewLifecycleOwner(), this::applyTvArtworkGradient);
+        scheduleTvImmersive();
     }
 
-    private void renderTvMode(Button displayMode) {
+    private void renderTvMode(TextView displayMode) {
         displayMode.setText(tvOled ? R.string.piterfy_tv_oled : R.string.piterfy_tv_ambient);
-        tvBackdrop.setVisibility(tvOled ? View.GONE : View.VISIBLE);
-        if (tvPlayerShade != null) tvPlayerShade.setVisibility(tvOled ? View.GONE : View.VISIBLE);
-        ((View) tvBackdrop.getParent()).setBackgroundColor(tvOled ? 0xff000000 : 0xff080d0b);
-        bind.getRoot().setBackgroundColor(tvOled ? 0xff000000 : 0xff080d0b);
+        int visibility = tvOled ? View.GONE : View.VISIBLE;
+        tvBackdrop.setVisibility(visibility);
+        if (tvPlayerShade != null) tvPlayerShade.setVisibility(visibility);
+        if (tvGlow != null) tvGlow.setVisibility(visibility);
+        bind.getRoot().setBackgroundColor(tvOled ? 0xff000000 : com.eddyizm.tempus.util.TvTheme.SURFACE);
     }
 
     private void updateTvMetadata(MediaMetadata metadata) {
@@ -413,59 +428,108 @@ public class PlayerControllerFragment extends Fragment {
         if (!Objects.equals(tvArtwork, metadata.artworkUri)) {
             tvArtwork = metadata.artworkUri;
             com.bumptech.glide.Glide.with(this).load(tvArtwork).override(320, 180).into(tvBackdrop);
-            final android.net.Uri requestedArtwork = tvArtwork;
-            // The artwork itself remains a soft, atmospheric backdrop.  A sampled
-            // palette gives each song a distinct TV-sized gradient, including on
-            // Android versions where RenderEffect blur is unavailable.
-            com.bumptech.glide.Glide.with(this).asBitmap().load(requestedArtwork).override(48, 48)
-                    .into(new CustomTarget<Bitmap>() {
-                        @Override public void onResourceReady(@NonNull Bitmap bitmap, Transition<? super Bitmap> transition) {
-                            if (bind != null && Objects.equals(tvArtwork, requestedArtwork)) {
-                                applyTvArtworkGradient(dominantArtworkColor(bitmap));
-                            }
-                        }
+        }
+        refreshTvNextUp();
+        tvUserActivity(); // nowy utwor zawsze na chwile pokazuje pelne informacje
+    }
 
-                        @Override public void onLoadCleared(android.graphics.drawable.Drawable placeholder) { }
-                    });
+    /** Gradient w kolorze okladki: jasny rog, gleboki srodek, czern - plus miekka poswiata za okladka. */
+    private void applyTvArtworkGradient(int ambient) {
+        if (tvPlayerShade == null) return;
+        tvPlayerShade.setBackground(com.eddyizm.tempus.util.TvTheme.playerGradient(ambient));
+        if (tvGlow != null) {
+            int vivid = com.eddyizm.tempus.util.TvTheme.vivid(ambient);
+            GradientDrawable glow = new GradientDrawable();
+            glow.setGradientType(GradientDrawable.RADIAL_GRADIENT);
+            glow.setGradientRadius(260f * getResources().getDisplayMetrics().density);
+            glow.setColors(new int[]{com.eddyizm.tempus.util.TvTheme.withAlpha(vivid, 0x8C),
+                    com.eddyizm.tempus.util.TvTheme.withAlpha(vivid, 0x00)});
+            tvGlow.setBackground(glow);
         }
     }
 
-    private void applyTvArtworkGradient(int color) {
-        if (tvPlayerShade == null) return;
-        float[] hsv = new float[3];
-        Color.colorToHSV(color, hsv);
-        hsv[1] = Math.max(.38f, hsv[1]);
-        hsv[2] = Math.max(.32f, Math.min(.72f, hsv[2]));
-        int vivid = Color.HSVToColor(hsv);
-        hsv[2] = Math.max(.08f, hsv[2] * .34f);
-        int shadow = Color.HSVToColor(hsv);
-        GradientDrawable gradient = new GradientDrawable(GradientDrawable.Orientation.TL_BR,
-                new int[]{Color.argb(205, Color.red(vivid), Color.green(vivid), Color.blue(vivid)),
-                        Color.argb(238, Color.red(shadow), Color.green(shadow), Color.blue(shadow)),
-                        0xff080d0b});
-        gradient.setCornerRadius(0f);
-        tvPlayerShade.setBackground(gradient);
-    }
-
-    /** Extracts a stable, reasonably vibrant colour without adding another dependency. */
-    private int dominantArtworkColor(Bitmap bitmap) {
-        long red = 0, green = 0, blue = 0, weightTotal = 0;
-        float[] hsv = new float[3];
-        for (int y = 0; y < bitmap.getHeight(); y += 2) {
-            for (int x = 0; x < bitmap.getWidth(); x += 2) {
-                int pixel = bitmap.getPixel(x, y);
-                Color.colorToHSV(pixel, hsv);
-                if (hsv[1] < .16f || hsv[2] < .12f) continue;
-                int weight = Math.max(1, Math.round(hsv[1] * hsv[2] * 100));
-                red += Color.red(pixel) * (long) weight;
-                green += Color.green(pixel) * (long) weight;
-                blue += Color.blue(pixel) * (long) weight;
-                weightTotal += weight;
+    /** "Dalej: ..." - co zagra nastepne, zeby nie trzeba bylo otwierac kolejki pilotem. */
+    private void refreshTvNextUp() {
+        if (bind == null || tvBackdrop == null) return;
+        TextView nextUp = bind.getRoot().findViewById(R.id.tv_player_next_up);
+        if (nextUp == null) return;
+        String text = "";
+        MediaBrowser browser = getBrowser();
+        if (browser != null && browser.hasNextMediaItem()) {
+            int index = browser.getNextMediaItemIndex();
+            if (index != androidx.media3.common.C.INDEX_UNSET) {
+                CharSequence title = browser.getMediaItemAt(index).mediaMetadata.title;
+                if (!TextUtils.isEmpty(title)) text = getString(R.string.piterfy_tv_next_up, title);
             }
         }
-        if (weightTotal == 0) return 0xff278355;
-        return Color.rgb((int) (red / weightTotal), (int) (green / weightTotal),
-                (int) (blue / weightTotal));
+        nextUp.setText(text);
+        nextUp.setVisibility(text.isEmpty() ? View.GONE : View.VISIBLE);
+    }
+
+    // ---- Tryb immersyjny: po chwili bez pilota znika wszystko poza okladka, tytulem, postepem i transportem.
+
+    private static final long TV_IDLE_MS = 15_000L;
+    private final android.os.Handler tvIdleHandler = new android.os.Handler(android.os.Looper.getMainLooper());
+    private final Runnable tvEnterImmersive = new Runnable() {
+        @Override public void run() {
+            if (bind == null || tvBackdrop == null) return;
+            MediaBrowser browser = getBrowser();
+            boolean sheetOpen = activity != null && activity.isBottomSheetExpanded();
+            boolean onCover = playerMediaCoverViewPager != null && playerMediaCoverViewPager.getCurrentItem() == 0;
+            if (sheetOpen && onCover && browser != null && browser.isPlaying()
+                    && bind.getRoot().hasWindowFocus()) {
+                setTvImmersive(true);
+            } else {
+                scheduleTvImmersive();
+            }
+        }
+    };
+    private boolean tvImmersive;
+
+    private void scheduleTvImmersive() {
+        tvIdleHandler.removeCallbacks(tvEnterImmersive);
+        tvIdleHandler.postDelayed(tvEnterImmersive, TV_IDLE_MS);
+    }
+
+    /** Wolane przy kazdym klawiszu pilota (MainActivity) i przy nowym utworze. */
+    void tvUserActivity() {
+        if (bind == null || tvBackdrop == null) return;
+        if (tvImmersive) setTvImmersive(false);
+        scheduleTvImmersive();
+    }
+
+    /** Pierwszy klawisz kierunkowy w trybie immersyjnym tylko budzi ekran, zeby fokus nie "uciekl" w ukryty rzad. */
+    boolean consumeTvWakeKey(android.view.KeyEvent event) {
+        if (!tvImmersive) return false;
+        int code = event.getKeyCode();
+        boolean dpad = code == android.view.KeyEvent.KEYCODE_DPAD_UP || code == android.view.KeyEvent.KEYCODE_DPAD_DOWN
+                || code == android.view.KeyEvent.KEYCODE_DPAD_LEFT || code == android.view.KeyEvent.KEYCODE_DPAD_RIGHT;
+        if (event.getAction() == android.view.KeyEvent.ACTION_DOWN) tvUserActivity();
+        return dpad;
+    }
+
+    private void setTvImmersive(boolean immersive) {
+        if (bind == null || tvImmersive == immersive) return;
+        tvImmersive = immersive;
+        View secondary = bind.getRoot().findViewById(R.id.tv_player_secondary_group);
+        View labels = bind.getRoot().findViewById(R.id.tv_player_label_group);
+        for (View group : new View[]{secondary, labels}) {
+            if (group == null) continue;
+            group.animate().cancel();
+            if (immersive) {
+                group.animate().alpha(0f).setDuration(450L).withEndAction(() -> group.setVisibility(View.INVISIBLE)).start();
+            } else {
+                group.setVisibility(View.VISIBLE);
+                group.animate().alpha(1f).setDuration(220L).start();
+            }
+        }
+        if (tvCoverFrame != null) {
+            tvCoverFrame.animate().cancel();
+            tvCoverFrame.animate().scaleX(immersive ? 1.1f : 1f).scaleY(immersive ? 1.1f : 1f)
+                    .setDuration(immersive ? 700L : 250L).start();
+        }
+        View top = bind.playerRemoteToggle;
+        top.animate().alpha(immersive ? 0f : 1f).setDuration(immersive ? 450L : 220L).start();
     }
 
     boolean closeTvLyrics() {
@@ -533,12 +597,25 @@ public class PlayerControllerFragment extends Fragment {
             public void onShuffleModeEnabledChanged(boolean shuffleModeEnabled) {
                 Preferences.setShuffleModeEnabled(shuffleModeEnabled);
                 tintModeButtons(shuffleModeEnabled, Preferences.getRepeatMode());
+                refreshTvNextUp();
             }
 
             @Override
             public void onRepeatModeChanged(int repeatMode) {
                 Preferences.setRepeatMode(repeatMode);
                 tintModeButtons(Preferences.isShuffleModeEnabled(), repeatMode);
+                refreshTvNextUp();
+            }
+
+            @Override
+            public void onTimelineChanged(@NonNull androidx.media3.common.Timeline timeline, int reason) {
+                refreshTvNextUp();
+            }
+
+            @Override
+            public void onIsPlayingChanged(boolean isPlaying) {
+                // Pauza zawsze wybudza ekran z trybu immersyjnego.
+                if (!isPlaying) tvUserActivity();
             }
         });
     }

@@ -7,15 +7,26 @@ from the Google TV app row. For ADB installation, run
 `adb -s TV_ADDRESS install -r app-tempus-release.apk` after authorizing the
 computer on the TV. Add your music server and sign in from Piterfy.
 
-Use the directional pad to move the animated mint focus spotlight and OK to
-activate the highlighted control. Home, Library and Downloads are in the bottom
-bar. Open the mini player to reach the dedicated TV player: previous, pause and
-next are deliberately grouped in one row, followed by labelled **Lyrics**,
-**Queue** and **Playlists** actions.
+Piterfy on a TV is a remote-first experience. A side rail on the left holds Home,
+Search, Library, Downloads and Settings; press Left from any list to reach it.
+Home opens with a greeting and quick actions (shuffle everything, jump back to
+Now playing, Favorites, Search), followed by rows of large cover cards: last
+played, playlists, most played, recently added, new releases and starred items.
+OK opens a card (or plays a track); hold OK for its options. The background
+takes on the colour of whichever cover is focused, and the Music / Podcast / Radio
+tabs sit above the rows. The mini player at the bottom can be reached with Down;
+OK opens the full player.
 
-Ambiente derives a dark, readable gradient from every current cover; **Max OLED**
-removes that illumination for a true-black screen. Back returns from the queue
-or lyrics to the player before closing it. On remotes that send a Menu key, it
+The full-screen **Now playing** screen paints a gradient from the cover colour that
+cross-fades between tracks, with a large cover, big title and artist, a progress bar
+you can scrub with Left / Right, a transport row (shuffle, previous, play/pause,
+next, repeat) and labelled **Lyrics**, **Queue**, **Playlists** and **Ambient**
+actions. A line shows what plays next. After about 15 seconds without remote input
+the secondary controls fade away for an immersive view; any key brings them back
+(the first arrow key only wakes the screen).
+
+**Max OLED** removes the illumination for a true-black screen. Back returns from the
+queue or lyrics to the player before closing it. On remotes that send a Menu key, it
 opens the app drawer.
 Playback takes place on the TV using the same native app and server account.
 

@@ -35,12 +35,19 @@ public class HomeFragment extends Fragment {
     private MaterialToolbar materialToolbar;
     private AppBarLayout appBarLayout;
     private TabLayout tabLayout;
+    private boolean television;
+    private final java.util.List<android.widget.TextView> tvTabs = new java.util.ArrayList<>();
 
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         activity = (MainActivity) getActivity();
         navigationController = activity.getNavigationController();
+        television = com.eddyizm.tempus.ui.activity.TvFocus.isTelevision(requireContext());
+        if (television) {
+            // Piterfy TV: dedykowany ekran glowny zamiast mobilnego paska narzedzi i ViewPagera.
+            return inflater.inflate(R.layout.piterfy_tv_home_host, container, false);
+        }
         bind = FragmentHomeBinding.inflate(inflater, container, false);
         return bind.getRoot();
     }
@@ -49,6 +56,10 @@ public class HomeFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
+        if (television) {
+            initTvHome(view);
+            return;
+        }
         initAppBar();
         initHomePager();
     }
@@ -65,6 +76,69 @@ public class HomeFragment extends Fragment {
     public void onDestroyView() {
         super.onDestroyView();
         bind = null;
+    }
+
+    /** TV: zakladki Muzyka / Podcasty / Radio jako duze pigulki + tresc wybranej zakladki pod nimi. */
+    private void initTvHome(View root) {
+        android.widget.LinearLayout tabs = root.findViewById(R.id.tv_home_tabs);
+        tvTabs.clear();
+        addTvTab(tabs, R.string.home_section_music, 0);
+        addTvTab(tabs, R.string.home_section_podcast, 1);
+        if (Preferences.isRadioSectionVisible()) addTvTab(tabs, R.string.home_section_radio, 2);
+        androidx.fragment.app.Fragment current = getChildFragmentManager().findFragmentById(R.id.tv_home_container);
+        if (current == null) {
+            showTvTab(0, true);
+        } else {
+            int index = current instanceof HomeTabPiterfyPodcastFragment ? 1 : current instanceof HomeTabRadioFragment ? 2 : 0;
+            markTvTab(index);
+        }
+    }
+
+    private void addTvTab(android.widget.LinearLayout tabs, int title, int index) {
+        androidx.appcompat.widget.AppCompatButton tab = new androidx.appcompat.widget.AppCompatButton(
+                new android.view.ContextThemeWrapper(requireContext(), R.style.PiterfyTvPill), null, 0);
+        tab.setText(title);
+        tab.setAllCaps(false);
+        tab.setBackgroundResource(R.drawable.piterfy_tv_focus_pill);
+        tab.setTextColor(0xFFFFFFFF);
+        tab.setTextSize(15);
+        tab.setTypeface(tab.getTypeface(), android.graphics.Typeface.BOLD);
+        float density = getResources().getDisplayMetrics().density;
+        tab.setPadding(Math.round(22 * density), 0, Math.round(22 * density), 0);
+        tab.setMinWidth(0);
+        tab.setMinHeight(0);
+        tab.setFocusable(true);
+        com.eddyizm.tempus.ui.activity.TvFocus.markOwnFocus(tab);
+        android.widget.LinearLayout.LayoutParams params = new android.widget.LinearLayout.LayoutParams(
+                android.view.ViewGroup.LayoutParams.WRAP_CONTENT, Math.round(44 * density));
+        params.setMarginEnd(Math.round(10 * density));
+        tab.setLayoutParams(params);
+        tab.setOnClickListener(v -> showTvTab(index, true));
+        // Przesuniecie fokusu na zakladke od razu pokazuje jej tresc - szybciej niz klikanie OK.
+        tab.setOnFocusChangeListener((v, focused) -> {
+            if (focused && tvTabs.indexOf(v) != currentTvTab) showTvTab(index, false);
+        });
+        tabs.addView(tab);
+        tvTabs.add(tab);
+    }
+
+    private int currentTvTab = -1;
+
+    private void showTvTab(int index, boolean grabFocus) {
+        if (!isAdded() || index == currentTvTab) return;
+        androidx.fragment.app.Fragment fragment = index == 1 ? new HomeTabPiterfyPodcastFragment()
+                : index == 2 ? new HomeTabRadioFragment() : new TvHomeFragment();
+        // Fokus przesuniety na zakladke nie moze zostac "porwany" przez nowa tresc.
+        Bundle args = new Bundle();
+        args.putBoolean(TvHomeFragment.ARG_GRAB_FOCUS, grabFocus);
+        fragment.setArguments(args);
+        getChildFragmentManager().beginTransaction().replace(R.id.tv_home_container, fragment).commitAllowingStateLoss();
+        markTvTab(index);
+    }
+
+    private void markTvTab(int index) {
+        currentTvTab = index;
+        for (int i = 0; i < tvTabs.size(); i++) tvTabs.get(i).setSelected(i == index);
     }
 
     private void initAppBar() {

@@ -68,6 +68,7 @@ public class PlayerBottomSheetFragment extends Fragment {
         playerBottomSheetViewModel = new ViewModelProvider(requireActivity()).get(PlayerBottomSheetViewModel.class);
 
         customizeBottomSheetAction();
+        initTvMiniPlayer();
         initViewPager();
         // Piterfy: kolor z okladki jak w Spotify - karta mini-odtwarzacza i gradient pelnego odtwarzacza
         com.eddyizm.tempus.util.PiterfyAmbient.observe(getViewLifecycleOwner(), color -> {
@@ -128,13 +129,31 @@ public class PlayerBottomSheetFragment extends Fragment {
     private void paintAmbient() {
         if (bind == null) return;
         float density = getResources().getDisplayMetrics().density;
+        boolean tv = com.eddyizm.tempus.ui.activity.TvFocus.isTelevision(requireContext());
+        // TV: boczny pasek zaslania lewa czesc ekranu, wiec karta mini-odtwarzacza zaczyna sie za nim.
+        int leftInset = Math.round(8 * density) + (tv ? getResources().getDimensionPixelSize(R.dimen.piterfy_tv_rail_width) : 0);
         android.graphics.drawable.GradientDrawable card = new android.graphics.drawable.GradientDrawable();
         card.setColor(ambient);
         card.setCornerRadius(8 * density);
         android.graphics.drawable.ColorDrawable base = new android.graphics.drawable.ColorDrawable(com.eddyizm.tempus.util.PiterfyAmbient.SURFACE);
-        bind.playerHeaderLayout.getRoot().setBackground(new android.graphics.drawable.LayerDrawable(new android.graphics.drawable.Drawable[]{
+        android.graphics.drawable.Drawable normal = new android.graphics.drawable.LayerDrawable(new android.graphics.drawable.Drawable[]{
                 base,
-                new android.graphics.drawable.InsetDrawable(card, Math.round(8 * density), Math.round(4 * density), Math.round(8 * density), Math.round(4 * density))}));
+                new android.graphics.drawable.InsetDrawable(card, leftInset, Math.round(4 * density), Math.round(8 * density), Math.round(4 * density))});
+        if (tv) {
+            // Fokus pilota: ta sama karta z gruba biala obwodka.
+            android.graphics.drawable.GradientDrawable focusedCard = new android.graphics.drawable.GradientDrawable();
+            focusedCard.setColor(ambient);
+            focusedCard.setCornerRadius(8 * density);
+            focusedCard.setStroke(Math.round(3 * density), 0xFFFFFFFF);
+            android.graphics.drawable.StateListDrawable states = new android.graphics.drawable.StateListDrawable();
+            states.addState(new int[]{android.R.attr.state_focused}, new android.graphics.drawable.LayerDrawable(new android.graphics.drawable.Drawable[]{
+                    new android.graphics.drawable.ColorDrawable(com.eddyizm.tempus.util.PiterfyAmbient.SURFACE),
+                    new android.graphics.drawable.InsetDrawable(focusedCard, leftInset, Math.round(4 * density), Math.round(8 * density), Math.round(4 * density))}));
+            states.addState(new int[]{}, normal);
+            bind.playerHeaderLayout.getRoot().setBackground(states);
+        } else {
+            bind.playerHeaderLayout.getRoot().setBackground(normal);
+        }
 
         View body = bind.getRoot().findViewById(R.id.player_body_layout);  // id z <include> nadpisuje id korzenia
         if (body != null) {
@@ -142,6 +161,15 @@ public class PlayerBottomSheetFragment extends Fragment {
                     android.graphics.drawable.GradientDrawable.Orientation.TOP_BOTTOM,
                     new int[]{ambient, com.eddyizm.tempus.util.PiterfyAmbient.SURFACE, com.eddyizm.tempus.util.PiterfyAmbient.SURFACE}));
         }
+    }
+
+    /** TV: mini-odtwarzacz jest osiagalny pilotem (strzalka w dol z listy), OK otwiera pelny ekran. */
+    private void initTvMiniPlayer() {
+        if (!com.eddyizm.tempus.ui.activity.TvFocus.isTelevision(requireContext())) return;
+        View header = bind.playerHeaderLayout.getRoot();
+        header.setFocusable(true);
+        com.eddyizm.tempus.ui.activity.TvFocus.markOwnFocus(header);
+        header.setPaddingRelative(getResources().getDimensionPixelSize(R.dimen.piterfy_tv_rail_width), 0, 0, 0);
     }
 
     private void customizeBottomSheetAction() {
@@ -452,6 +480,20 @@ public class PlayerBottomSheetFragment extends Fragment {
     public void goToQueuePage() {
         if (getContext() == null || !isAdded() || getView() == null) return;
         bind.playerBodyLayout.playerBodyBottomSheetViewPager.setCurrentItem(1, true);
+    }
+
+    /**
+     * TV: kazdy klawisz pilota wybudza ekran z trybu immersyjnego; zwraca true, gdy klawisz kierunkowy
+     * mial tylko obudzic ekran i nie powinien przesunac fokusu.
+     */
+    public boolean handleTvKey(android.view.KeyEvent event) {
+        if (bind == null) return false;
+        ViewPager2 pager = bind.playerBodyLayout.playerBodyBottomSheetViewPager;
+        if (pager.getAdapter() instanceof PlayerControllerVerticalPager adapter
+                && adapter.getRegisteredFragment(0) instanceof PlayerControllerFragment controller) {
+            return controller.consumeTvWakeKey(event);
+        }
+        return false;
     }
 
     public boolean closeTvPlayerPanel() {

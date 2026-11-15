@@ -4,7 +4,7 @@
     <string name="piterfy_tv_next">Next track</string>
     <string name="piterfy_tv_lyrics">Lyrics</string>
     <string name="piterfy_tv_queue">Queue</string>
-    <string name="piterfy_tv_ambient">Ambiente</string>
+    <string name="piterfy_tv_ambient">Ambient</string>
     <string name="piterfy_tv_oled">Max OLED</string>
     <string name="piterfy_tv_shuffle">Shuffle</string>
     <string name="piterfy_tv_repeat">Repeat</string>
@@ -13,15 +13,68 @@
     <string name="piterfy_tv_stream_info">Stream information</string>
     <string name="piterfy_tv_skip_silence">Skip silence</string>
     <string name="piterfy_tv_sleep">Sleep timer</string>
+    <string name="piterfy_tv_next_up">Up next: %1$s</string>
+    <string name="piterfy_tv_greeting_morning">Good morning</string>
+    <string name="piterfy_tv_greeting_afternoon">Good afternoon</string>
+    <string name="piterfy_tv_greeting_evening">Good evening</string>
+    <string name="piterfy_tv_greeting_night">Good night</string>
+    <string name="piterfy_tv_hint_home">What shall we play?</string>
+    <string name="piterfy_tv_open_player">Now playing</string>
+    <string name="piterfy_tv_shuffle_all">Shuffle everything</string>
+    <string name="piterfy_tv_favorites">Favorites</string>
+    <string name="piterfy_tv_search">Search</string>
+    <string name="piterfy_tv_empty_home">Nothing to show yet. Play something from Library or Search.</string>
+    <string name="piterfy_tv_hint_remote">OK to play · Hold OK for options · Menu for navigation</string>
+    <string name="piterfy_tv_now_playing_mini">Now playing · press OK to open</string>
+
     <style name="PiterfyTvIconButton">
-        <item name="android:background">@drawable/piterfy_tv_secondary</item>
-        <item name="android:padding">9dp</item>
+        <item name="android:background">@drawable/piterfy_tv_focus_circle</item>
+        <item name="android:padding">11dp</item>
         <item name="android:scaleType">fitCenter</item>
-        <item name="android:tint">#F3FFF7</item>
+        <item name="android:tint">#FFFFFFFF</item>
+        <item name="android:focusable">true</item>
+        <item name="android:tag">tv_own_focus</item>
     </style>
-    <style name="PiterfyTvTextButton" parent="Widget.Material3.Button.TonalButton">
-        <item name="android:backgroundTint">#283D32</item>
-        <item name="android:textColor">#F3FFF7</item>
-        <item name="android:textSize">16sp</item>
+    <style name="PiterfyTvPill">
+        <item name="android:background">@drawable/piterfy_tv_focus_pill</item>
+        <item name="android:textColor">#FFFFFFFF</item>
+        <item name="android:textSize">15sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textAllCaps">false</item>
+        <item name="android:minWidth">0dp</item>
+        <item name="android:minHeight">0dp</item>
+        <item name="android:gravity">center</item>
+        <item name="android:paddingStart">20dp</item>
+        <item name="android:paddingEnd">20dp</item>
+        <item name="android:focusable">true</item>
+        <item name="android:tag">tv_own_focus</item>
+    </style>
+    <!-- Kept for compatibility with older TV layouts. -->
+    <style name="PiterfyTvTextButton" parent="PiterfyTvPill" />
+    <style name="PiterfyTvRailLabel" parent="TextAppearance.Material3.LabelMedium">
+        <item name="android:textSize">12sp</item>
+        <item name="android:fontFamily">@font/figtree_family</item>
+    </style>
+    <style name="PiterfyTvRailLabelActive" parent="TextAppearance.Material3.LabelMedium">
+        <item name="android:textSize">12sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:fontFamily">@font/figtree_family</item>
+    </style>
+    <style name="PiterfyTvRailIndicator" parent="Widget.Material3.NavigationRailView.ActiveIndicator">
+        <item name="android:color">#3376EFA5</item>
+        <item name="android:width">56dp</item>
+        <item name="android:height">34dp</item>
+    </style>
+    <style name="PiterfyTvRail" parent="Widget.Material3.NavigationRailView">
+        <item name="android:background">@drawable/piterfy_tv_rail_bg</item>
+        <item name="backgroundTint">@null</item>
+        <item name="itemIconTint">@color/piterfy_nav_item</item>
+        <item name="itemTextColor">@color/piterfy_nav_item</item>
+        <item name="itemActiveIndicatorStyle">@style/PiterfyTvRailIndicator</item>
+        <item name="itemTextAppearanceActive">@style/PiterfyTvRailLabelActive</item>
+        <item name="itemTextAppearanceInactive">@style/PiterfyTvRailLabel</item>
+        <item name="labelVisibilityMode">labeled</item>
+        <item name="menuGravity">center</item>
+        <item name="elevation">0dp</item>
     </style>
 </resources>

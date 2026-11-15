@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- TV: pigulka przycisku. Fokus = wyrazna biala obwodka + jasniejsze wypelnienie (ikony zostaja biale). -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_focused="true">
+        <shape android:shape="rectangle">
+            <solid android:color="#47FFFFFF" />
+            <stroke android:width="3dp" android:color="#FFFFFFFF" />
+            <corners android:radius="26dp" />
+        </shape>
+    </item>
+    <item android:state_selected="true">
+        <shape android:shape="rectangle">
+            <solid android:color="#73FFFFFF" />
+            <stroke android:width="3dp" android:color="#00FFFFFF" />
+            <corners android:radius="26dp" />
+        </shape>
+    </item>
+    <item android:state_pressed="true">
+        <shape android:shape="rectangle">
+            <solid android:color="#59FFFFFF" />
+            <corners android:radius="26dp" />
+        </shape>
+    </item>
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="#26FFFFFF" />
+            <stroke android:width="3dp" android:color="#00FFFFFF" />
+            <corners android:radius="26dp" />
+        </shape>
+    </item>
+</selector>

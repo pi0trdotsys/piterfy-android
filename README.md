@@ -30,8 +30,10 @@ Piterfy łączy natywną aplikację Android z odtwarzaczem webowym opartym na Na
 **Piterfy na Google TV**
 
 Natywna aplikacja uruchamia się z ekranu Google TV i jest w pełni obsługiwana
-pilotem: ekran „Teraz odtwarzane” ma gradient wyprowadzony z okładki, duże
-opisane akcje tekstu/kolejki/playlist oraz przełącznik Ambiente / Max OLED.
+pilotem: boczny pasek nawigacji (Start, Szukaj, Biblioteka, Pobrane, Ustawienia),
+ekran główny z rzędami dużych kart i tłem w kolorze fokusowanej okładki oraz
+„Teraz odtwarzane” z gradientem wyprowadzonym z okładki, trybem immersyjnym,
+opisanymi akcjami tekstu/kolejki/playlist i przełącznikiem Ambient / Max OLED.
 
 ## Co oferuje Piterfy
 

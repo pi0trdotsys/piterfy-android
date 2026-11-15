@@ -13,4 +13,17 @@
     <string name="piterfy_tv_stream_info">Informacje o strumieniu</string>
     <string name="piterfy_tv_skip_silence">Pomijaj ciszę</string>
     <string name="piterfy_tv_sleep">Wyłącznik czasowy</string>
+    <string name="piterfy_tv_next_up">Dalej: %1$s</string>
+    <string name="piterfy_tv_greeting_morning">Dzień dobry</string>
+    <string name="piterfy_tv_greeting_afternoon">Miłego popołudnia</string>
+    <string name="piterfy_tv_greeting_evening">Dobry wieczór</string>
+    <string name="piterfy_tv_greeting_night">Dobranoc</string>
+    <string name="piterfy_tv_hint_home">Co dziś gramy?</string>
+    <string name="piterfy_tv_open_player">Teraz odtwarzane</string>
+    <string name="piterfy_tv_shuffle_all">Losuj wszystko</string>
+    <string name="piterfy_tv_favorites">Ulubione</string>
+    <string name="piterfy_tv_search">Szukaj</string>
+    <string name="piterfy_tv_empty_home">Na razie nic tu nie ma. Włącz coś z Biblioteki lub wyszukiwarki.</string>
+    <string name="piterfy_tv_hint_remote">OK – odtwórz · Przytrzymaj OK – opcje · Menu – nawigacja</string>
+    <string name="piterfy_tv_now_playing_mini">Teraz odtwarzane · naciśnij OK, aby otworzyć</string>
 </resources>

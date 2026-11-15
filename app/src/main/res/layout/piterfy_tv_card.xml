@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- TV: karta okladki. Caly korzen jest celem fokusu; obwodka rysuje sie na okladce przez duplicateParentState. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:clickable="true"
+    android:clipChildren="false"
+    android:clipToPadding="false"
+    android:focusable="true"
+    android:orientation="vertical"
+    android:padding="8dp"
+    android:tag="tv_own_focus">
+
+    <FrameLayout
+        android:id="@+id/tv_card_frame"
+        android:layout_width="@dimen/piterfy_tv_card_size"
+        android:layout_height="@dimen/piterfy_tv_card_size"
+        android:duplicateParentState="true"
+        android:foreground="@drawable/piterfy_tv_card_focus">
+
+        <ImageView
+            android:id="@+id/tv_card_cover"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@drawable/piterfy_tv_card_cover_bg"
+            android:clipToOutline="true"
+            android:importantForAccessibility="no"
+            android:outlineProvider="background"
+            android:scaleType="centerCrop" />
+    </FrameLayout>
+
+    <TextView
+        android:id="@+id/tv_card_title"
+        android:layout_width="@dimen/piterfy_tv_card_size"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:ellipsize="marquee"
+        android:fontFamily="@font/figtree_family"
+        android:marqueeRepeatLimit="marquee_forever"
+        android:singleLine="true"
+        android:textColor="#FFFFFFFF"
+        android:textSize="16sp"
+        android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/tv_card_subtitle"
+        android:layout_width="@dimen/piterfy_tv_card_size"
+        android:layout_height="wrap_content"
+        android:ellipsize="end"
+        android:fontFamily="@font/figtree_family"
+        android:singleLine="true"
+        android:textColor="#B3FFFFFF"
+        android:textSize="13sp" />
+</LinearLayout>

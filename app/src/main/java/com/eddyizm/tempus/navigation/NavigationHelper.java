@@ -24,6 +24,8 @@ import com.eddyizm.tempus.R;
 import com.eddyizm.tempus.util.Preferences;
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
+import com.google.android.material.navigation.NavigationBarView;
+import com.google.android.material.navigationrail.NavigationRailView;
 import com.google.android.material.bottomsheet.BottomSheetBehavior;
 import com.google.android.material.navigation.NavigationView;
 
@@ -31,7 +33,7 @@ import org.jetbrains.annotations.Contract;
 
 public class NavigationHelper {
     /* UI components */
-    private BottomNavigationView bottomNavigationView;
+    private NavigationBarView bottomNavigationView;
     private FrameLayout bottomNavigationViewFrame;
     private DrawerLayout drawerLayout;
 
@@ -44,7 +46,7 @@ public class NavigationHelper {
     // -- //
 
     /* Private constructor */
-    public NavigationHelper(@NonNull BottomNavigationView bottomNavigationView,
+    public NavigationHelper(@NonNull NavigationBarView bottomNavigationView,
                             @NonNull FrameLayout bottomNavigationViewFrame,
                             @NonNull DrawerLayout drawerLayout,
                             @NonNull NavigationView navigationView,
@@ -56,6 +58,27 @@ public class NavigationHelper {
         this.navigationView = navigationView;
         this.navHostFragment = navHostFragment;
         this.navController = navController;
+        applyRailInset();
+    }
+
+    /**
+     * TV: boczny pasek nawigacji nachodzi na tresc, wiec obszar nawigacji rezerwuje dla niego miejsce
+     * tylko wtedy, gdy pasek jest widoczny (logowanie i ustawienia go chowaja).
+     */
+    private void applyRailInset() {
+        if (!(bottomNavigationView instanceof NavigationRailView)) return;
+        View host = navHostFragment.getView();
+        if (host == null) return;
+        int margin = host.getResources().getDimensionPixelSize(R.dimen.piterfy_tv_content_margin);
+        int rail = bottomNavigationView.getVisibility() == View.VISIBLE
+                ? host.getResources().getDimensionPixelSize(R.dimen.piterfy_tv_rail_width) : 0;
+        // Obwodka fokusu i skalowane karty wychodza poza obszar tresci, wiec nie wolno ich przycinac do paddingu.
+        if (host instanceof android.view.ViewGroup group) {
+            group.setClipToPadding(false);
+            group.setClipChildren(false);
+        }
+        host.setPaddingRelative(margin + rail, host.getResources().getDimensionPixelSize(R.dimen.piterfy_tv_content_margin) / 2,
+                margin, host.getPaddingBottom());
     }
 
     public void syncWithBottomSheetBehavior(@NonNull BottomSheetBehavior<View> bottomSheetBehavior,
@@ -98,6 +121,7 @@ public class NavigationHelper {
                 : View.GONE;
         bottomNavigationView.setVisibility(visibility);
         bottomNavigationViewFrame.setVisibility(visibility);
+        applyRailInset();
     }
 
     public void setNavigationDrawerLock(boolean locked) {
@@ -154,7 +178,7 @@ public class NavigationHelper {
     }
 
     @NonNull
-    public BottomNavigationView getBottomNavigationView() {
+    public NavigationBarView getBottomNavigationView() {
         return bottomNavigationView;
     }
 

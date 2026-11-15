@@ -1,57 +1,108 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<!--
+    Piterfy TV: pelnoekranowy odtwarzacz. Warstwy (od dolu): czern powierzchni, rozmyta okladka,
+    gradient w kolorze okladki (animowany przy zmianie utworu), winieta pod tekstem, tresci.
+-->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#0A0F0D">
 
+    <ImageView
+        android:id="@+id/tv_player_backdrop"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:orientation="vertical"
-        android:background="#080D0B">
-    <TextView
-        android:id="@+id/piterfy_playback_mode"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center_horizontal" android:layout_marginTop="4dp" android:layout_marginBottom="4dp"
-        android:background="@drawable/piterfy_mode_badge" android:textColor="#10241A" android:textSize="12sp"
-        android:textStyle="bold" android:visibility="gone" />
+        android:alpha=".22"
+        android:importantForAccessibility="no"
+        android:scaleType="centerCrop" />
+
+    <View
+        android:id="@+id/tv_player_shade"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@drawable/piterfy_tv_player_shade" />
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="160dp"
+        android:layout_gravity="bottom"
+        android:background="@drawable/piterfy_tv_bottom_scrim"
+        android:importantForAccessibility="no" />
+
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:gravity="center_vertical"
-        android:orientation="horizontal"
-        android:paddingHorizontal="12dp">
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/player_remote_toggle"
-        style="@style/Widget.Material3.Button.TextButton"
-        android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content"
-        android:maxLines="2" android:ellipsize="end"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
 
-            app:icon="@drawable/ic_lan_remote"
-            app:iconTint="@null"
-            app:iconGravity="textStart"
-            android:minHeight="48dp"
-            android:text="@string/lan_play_on" />
-    <androidx.mediarouter.app.MediaRouteButton
-        android:id="@+id/player_cast_button"
-        android:layout_width="48dp"
-        android:layout_height="48dp"
-        android:layout_marginStart="4dp"
-        android:visibility="gone" />
+        <!-- Pasek gorny: tryb, jakosc zrodla i urzadzenie wyjsciowe - male, zeby nie przyciagaly wzroku. -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:minHeight="56dp"
+            android:orientation="horizontal"
+            android:paddingStart="56dp"
+            android:paddingTop="12dp"
+            android:paddingEnd="48dp">
+
+            <TextView
+                android:id="@+id/piterfy_playback_mode"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@drawable/piterfy_mode_badge"
+                android:textColor="#10241A"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:visibility="gone" />
+
+            <TextView
+                android:id="@+id/piterfy_source_quality"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="12dp"
+                android:layout_weight="1"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:text=""
+                android:textColor="#CCFFFFFF"
+                android:textSize="13sp"
+                android:textStyle="bold" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/player_remote_toggle"
+                style="@style/Widget.Material3.Button.TonalButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:minHeight="44dp"
+                android:text="@string/lan_play_on"
+                android:textColor="#FFFFFFFF"
+                android:textSize="14sp"
+                app:backgroundTint="#26FFFFFF"
+                app:icon="@drawable/ic_lan_remote"
+                app:iconGravity="textStart"
+                app:iconTint="@null" />
+
+            <androidx.mediarouter.app.MediaRouteButton
+                android:id="@+id/player_cast_button"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:layout_marginStart="4dp"
+                android:visibility="gone" />
+        </LinearLayout>
+
+        <androidx.media3.ui.PlayerControlView
+            android:id="@+id/now_playing_media_controller_view"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            app:controller_layout_id="@layout/piterfy_tv_player_controls"
+            app:repeat_toggle_modes="all|one"
+            app:show_fastforward_button="false"
+            app:show_rewind_button="false"
+            app:show_shuffle_button="true"
+            app:show_timeout="0" />
     </LinearLayout>
-<TextView
-    android:id="@+id/piterfy_source_quality"
-    android:layout_width="match_parent"
-    android:layout_height="wrap_content"
- android:gravity="center" android:paddingHorizontal="16dp" android:paddingBottom="3dp" android:textSize="12sp"
- android:textStyle="bold" android:textColor="#FF1ED760" android:text=""/>
-<androidx.media3.ui.PlayerControlView
-    android:id="@+id/now_playing_media_controller_view"
-    android:layout_width="match_parent"
-    android:layout_height="0dp"
-    android:layout_weight="1"
-    app:controller_layout_id="@layout/piterfy_tv_player_controls"
-    app:repeat_toggle_modes="all|one"
-    app:show_shuffle_button="true"
-    app:show_rewind_button="false"
-    app:show_fastforward_button="false"
-    app:show_timeout="0" />
-</LinearLayout>
+</FrameLayout>

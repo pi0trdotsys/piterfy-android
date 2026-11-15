@@ -1,0 +1,6 @@
+<resources>
+    <!-- Piterfy TV: szerokosc bocznego paska nawigacji i marginesy "bezpiecznego pola" telewizora. -->
+    <dimen name="piterfy_tv_rail_width">112dp</dimen>
+    <dimen name="piterfy_tv_content_margin">28dp</dimen>
+    <dimen name="piterfy_tv_card_size">168dp</dimen>
+</resources>
