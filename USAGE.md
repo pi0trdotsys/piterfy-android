@@ -31,6 +31,10 @@ the track list sits to the right of the cover. Search opens the on-screen keyboa
 (or the voice key on the remote) and Down moves from the search bar straight to the
 results. Settings use a narrow, centred column with larger rows; Back leaves it.
 
+Library and Downloads follow the same style: a calm green backdrop, section titles with
+a **See all** pill, larger genre tiles and cover cards capped to a TV-friendly size. In
+Downloads, refresh, grouping and **Shuffle all** are large focusable buttons.
+
 **Max OLED** removes the illumination for a true-black screen. Back returns from the
 queue or lyrics to the player before closing it. On remotes that send a Menu key, it
 opens the app drawer.

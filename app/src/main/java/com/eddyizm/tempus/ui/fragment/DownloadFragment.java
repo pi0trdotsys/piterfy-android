@@ -77,6 +77,9 @@ public class DownloadFragment extends Fragment implements ClickCallback {
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
+        if (com.eddyizm.tempus.ui.activity.TvFocus.isTelevision(requireContext())) {
+            com.eddyizm.tempus.util.TvTheme.paintCalm(this);
+        }
 
         initAppBar();
         bind.piterfyDownloadCenterButton.setOnClickListener(v -> com.eddyizm.tempus.ui.dialog.PiterfyDownloadCenter.show(requireContext()));
@@ -100,6 +103,7 @@ public class DownloadFragment extends Fragment implements ClickCallback {
 
     @Override
     public void onDestroyView() {
+        com.eddyizm.tempus.util.TvTheme.releasePage(this);
         super.onDestroyView();
         bind = null;
     }
