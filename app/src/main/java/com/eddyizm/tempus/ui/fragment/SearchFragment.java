@@ -70,6 +70,9 @@ public class SearchFragment extends Fragment implements ClickCallback {
         playbackViewModel = new ViewModelProvider(requireActivity()).get(PlaybackViewModel.class);
 
         inputFocus();
+        if (com.eddyizm.tempus.ui.activity.TvFocus.isTelevision(requireContext())) {
+            com.eddyizm.tempus.util.TvTheme.paintCalm(this);
+        }
 
         return view;
     }
@@ -123,6 +126,7 @@ public class SearchFragment extends Fragment implements ClickCallback {
 
     @Override
     public void onDestroyView() {
+        com.eddyizm.tempus.util.TvTheme.releasePage(this);
         suggestionHandler.removeCallbacksAndMessages(null);
         searchViewModel.cancel();
         super.onDestroyView();

@@ -131,6 +131,10 @@ public class PlaylistPageFragment extends Fragment implements ClickCallback {
         initBackCover();
         initSongsView();
         initKeepSynced(savedInstanceState == null);
+        if (com.eddyizm.tempus.ui.activity.TvFocus.isTelevision(requireContext())) {
+            com.eddyizm.tempus.util.TvTheme.paintPage(this, playlistArg.getCoverArtId());
+            com.eddyizm.tempus.ui.activity.TvFocus.requestInitialFocus(view.findViewById(R.id.playlist_page_play_button));
+        }
 
         playlistPageViewModel.getPlaylistMissingEvent().observe(getViewLifecycleOwner(), isMissing -> {
             // One dialog at a time. The event is raised again by a fetch landing after a
@@ -178,6 +182,7 @@ public class PlaylistPageFragment extends Fragment implements ClickCallback {
 
     @Override
     public void onDestroyView() {
+        com.eddyizm.tempus.util.TvTheme.releasePage(this);
         super.onDestroyView();
         if (playlistMissingDialog != null && playlistMissingDialog.isShowing()) playlistMissingDialog.dismiss();
         playlistMissingDialog = null;

@@ -49,6 +49,9 @@ public class SettingsFragment extends Fragment {
         View view = bind.getRoot();
 
         initAppBar();
+        if (com.eddyizm.tempus.ui.activity.TvFocus.isTelevision(requireContext())) {
+            com.eddyizm.tempus.util.TvTheme.paintCalm(this);
+        }
 
         return view;
 
@@ -70,6 +73,12 @@ public class SettingsFragment extends Fragment {
                     .setReorderingAllowed(true)   // optional but recommended
                     .commit();
         }
+    }
+
+    @Override
+    public void onDestroyView() {
+        com.eddyizm.tempus.util.TvTheme.releasePage(this);
+        super.onDestroyView();
     }
 
     @Override

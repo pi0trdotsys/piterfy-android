@@ -100,6 +100,10 @@ public class ArtistPageFragment extends Fragment implements ClickCallback {
         initTopSongsView();
         initCategorizedAlbumsView();
         initSimilarArtistsView();
+        if (com.eddyizm.tempus.ui.activity.TvFocus.isTelevision(requireContext())) {
+            com.eddyizm.tempus.util.TvTheme.paintPage(this, artistArg.getCoverArtId());
+            com.eddyizm.tempus.ui.activity.TvFocus.requestInitialFocus(view.findViewById(R.id.artist_page_shuffle_button));
+        }
 
         return view;
     }
@@ -127,6 +131,7 @@ public class ArtistPageFragment extends Fragment implements ClickCallback {
 
     @Override
     public void onDestroyView() {
+        com.eddyizm.tempus.util.TvTheme.releasePage(this);
         super.onDestroyView();
         emptyTopSongsTimerHandler.removeCallbacks(emptyTopSongsTimerRunnable);
         bind = null;
@@ -163,7 +168,8 @@ public class ArtistPageFragment extends Fragment implements ClickCallback {
         // Prevent top-left buttons from growing in height: remove text if it doesn't fit
         Button shuffleBtn = view.findViewById(R.id.artist_page_shuffle_button);
         Button radioBtn = view.findViewById(R.id.artist_page_radio_button);
-        if (shuffleBtn != null && radioBtn != null) {
+        // TV: przyciski sa tekstowymi pigulkami - nie wolno im chowac tekstu (to rozwiazanie dla wersji z ikonami).
+        if (shuffleBtn != null && radioBtn != null && !com.eddyizm.tempus.ui.activity.TvFocus.isTelevision(requireContext())) {
             view.getViewTreeObserver().addOnGlobalLayoutListener(new android.view.ViewTreeObserver.OnGlobalLayoutListener() {
                 @Override
                 public void onGlobalLayout() {

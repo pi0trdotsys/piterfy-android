@@ -439,11 +439,37 @@ public class MainActivity extends BaseActivity {
                 ? android.view.ViewGroup.FOCUS_AFTER_DESCENDANTS : android.view.ViewGroup.FOCUS_BLOCK_DESCENDANTS);
     }
 
-    /** TV: pelnoekranowe tlo za cala aplikacja (np. gradient w kolorze fokusowanej okladki). */
-    public void setTvBackdrop(@Nullable android.graphics.drawable.Drawable drawable) {
+    private Object tvBackdropOwner;
+    private int tvBackdropColor = 0;
+    private android.animation.ValueAnimator tvBackdropAnimator;
+
+    /**
+     * TV: pelnoekranowy gradient za cala aplikacja w kolorze okladki. Plynnie przechodzi od poprzedniego
+     * koloru. Wlascicielem jest ekran, ktory go ustawil - dzieki temu ekran, ktory zostaje zniszczony
+     * PO utworzeniu nastepnego, nie zdejmie jego tla.
+     */
+    public void setTvBackdropColor(Object owner, int color) {
         if (bind == null || !isTelevision) return;
-        bind.drawerLayout.setBackground(drawable != null ? drawable
-                : new android.graphics.drawable.ColorDrawable(com.eddyizm.tempus.util.TvTheme.SURFACE));
+        tvBackdropOwner = owner;
+        int from = tvBackdropColor == 0 ? color : tvBackdropColor;
+        if (tvBackdropAnimator != null) tvBackdropAnimator.cancel();
+        tvBackdropAnimator = android.animation.ValueAnimator.ofObject(new android.animation.ArgbEvaluator(), from, color);
+        tvBackdropAnimator.setDuration(from == color ? 1L : 550L);
+        tvBackdropAnimator.addUpdateListener(a -> {
+            if (bind == null) return;
+            tvBackdropColor = (int) a.getAnimatedValue();
+            bind.drawerLayout.setBackground(com.eddyizm.tempus.util.TvTheme.pageGradient(tvBackdropColor));
+        });
+        tvBackdropAnimator.start();
+    }
+
+    /** Zdejmuje tlo tylko wtedy, gdy nadal nalezy do podanego ekranu. */
+    public void releaseTvBackdrop(Object owner) {
+        if (bind == null || !isTelevision || tvBackdropOwner != owner) return;
+        tvBackdropOwner = null;
+        tvBackdropColor = 0;
+        if (tvBackdropAnimator != null) tvBackdropAnimator.cancel();
+        bind.drawerLayout.setBackground(new android.graphics.drawable.ColorDrawable(com.eddyizm.tempus.util.TvTheme.SURFACE));
     }
 
     public boolean isTelevision() {

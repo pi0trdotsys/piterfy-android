@@ -115,6 +115,7 @@ public class AlbumPageFragment extends Fragment implements ClickCallback {
         initMusicButton();
         initBackCover();
         initSongsView();
+        com.eddyizm.tempus.ui.activity.TvFocus.requestInitialFocus(view.findViewById(R.id.album_page_play_button));
 
         return view;
     }
@@ -142,6 +143,7 @@ public class AlbumPageFragment extends Fragment implements ClickCallback {
 
     @Override
     public void onDestroyView() {
+        com.eddyizm.tempus.util.TvTheme.releasePage(this);
         removePendingArtistObserver();
         super.onDestroyView();
         bind = null;
@@ -383,10 +385,14 @@ public class AlbumPageFragment extends Fragment implements ClickCallback {
         albumPageViewModel.getAlbum().observe(getViewLifecycleOwner(), album -> {
             if (bind != null && album != null) {
                 CustomGlideRequest.Builder.from(requireContext(), album.getCoverArtId(), CustomGlideRequest.ResourceType.Album).build().into(bind.albumCoverImageView);
-                // Piterfy: tlo strony w kolorze okladki jak w Spotify
-                com.eddyizm.tempus.util.PiterfyAmbient.forCover(requireContext(), album.getCoverArtId(), color -> {
-                    if (bind != null) bind.getRoot().setBackground(com.eddyizm.tempus.util.PiterfyAmbient.pageGradient(color));
-                });
+                // Piterfy: tlo strony w kolorze okladki jak w Spotify (na TV - pelnoekranowe, za cala aplikacja)
+                if (com.eddyizm.tempus.ui.activity.TvFocus.isTelevision(requireContext())) {
+                    com.eddyizm.tempus.util.TvTheme.paintPage(this, album.getCoverArtId());
+                } else {
+                    com.eddyizm.tempus.util.PiterfyAmbient.forCover(requireContext(), album.getCoverArtId(), color -> {
+                        if (bind != null) bind.getRoot().setBackground(com.eddyizm.tempus.util.PiterfyAmbient.pageGradient(color));
+                    });
+                }
             }
         });
     }

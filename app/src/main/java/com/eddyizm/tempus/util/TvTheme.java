@@ -80,6 +80,30 @@ public final class TvTheme {
         });
     }
 
+    /** Spokojny, miętowy odcień dla ekranów bez okładki (wyszukiwanie, ustawienia). */
+    public static final int CALM = 0xFF1F4D36;
+
+    /** Tlo strony w kolorze okladki; bez okladki - spokojny odcien. */
+    public static void paintPage(androidx.fragment.app.Fragment page, String coverId) {
+        if (!(page.getActivity() instanceof com.eddyizm.tempus.ui.activity.MainActivity activity)) return;
+        activity.setTvBackdropColor(page, CALM);
+        forCover(page.requireContext(), coverId, color -> {
+            if (page.isAdded()) activity.setTvBackdropColor(page, color);
+        });
+    }
+
+    public static void paintCalm(androidx.fragment.app.Fragment page) {
+        if (page.getActivity() instanceof com.eddyizm.tempus.ui.activity.MainActivity activity) {
+            activity.setTvBackdropColor(page, CALM);
+        }
+    }
+
+    public static void releasePage(androidx.fragment.app.Fragment page) {
+        if (page.getActivity() instanceof com.eddyizm.tempus.ui.activity.MainActivity activity) {
+            activity.releaseTvBackdrop(page);
+        }
+    }
+
     private static float clamp(float value, float min, float max) {
         return Math.max(min, Math.min(max, value));
     }

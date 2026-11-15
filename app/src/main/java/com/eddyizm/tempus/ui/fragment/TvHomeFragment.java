@@ -80,8 +80,6 @@ public class TvHomeFragment extends Fragment {
 
     private final Handler handler = new Handler(Looper.getMainLooper());
     private Runnable pendingBackdrop;
-    private ValueAnimator backdropAnimator;
-    private int backdropColor = PiterfyAmbient.DEFAULT;
     private int lastRowIndex = -1;
     private int lastCardIndex;
     private boolean focusRestored;
@@ -155,8 +153,7 @@ public class TvHomeFragment extends Fragment {
     @Override
     public void onDestroyView() {
         handler.removeCallbacksAndMessages(null);
-        if (backdropAnimator != null) backdropAnimator.cancel();
-        if (activity != null) activity.setTvBackdrop(null); // inne ekrany wracaja do zwyklej czerni
+        if (activity != null) activity.releaseTvBackdrop(this); // inne ekrany wracaja do zwyklej czerni
         nowPlayingAction = null;
         rowsView = null;
         super.onDestroyView();
@@ -371,17 +368,10 @@ public class TvHomeFragment extends Fragment {
     }
 
     private void animateBackdrop(int target) {
-        if (backdropAnimator != null) backdropAnimator.cancel();
-        backdropAnimator = ValueAnimator.ofObject(new ArgbEvaluator(), backdropColor, target);
-        backdropAnimator.setDuration(550L);
-        backdropAnimator.addUpdateListener(a -> {
-            backdropColor = (int) a.getAnimatedValue();
-            applyBackdrop(backdropColor);
-        });
-        backdropAnimator.start();
+        activity.setTvBackdropColor(this, target);
     }
 
     private void applyBackdrop(int color) {
-        if (activity != null) activity.setTvBackdrop(TvTheme.pageGradient(color));
+        if (activity != null) activity.setTvBackdropColor(this, color);
     }
 }

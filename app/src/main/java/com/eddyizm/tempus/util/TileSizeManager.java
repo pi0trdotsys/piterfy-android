@@ -71,6 +71,15 @@ public class TileSizeManager {
         return discoverHeightPx;
     }
 
+    /**
+     * TV: kafelki liczone z wysokosci ekranu (1080 px) wychodza ogromne - jeden kafel zajmowalby pol ekranu.
+     * Na telewizorze ograniczamy je do rozmiaru kart z ekranu glownego; gdzie indziej bez ograniczenia.
+     */
+    private static int tvCapPx(Context context, int dp) {
+        if (!com.eddyizm.tempus.ui.activity.TvFocus.isTelevision(context)) return Integer.MAX_VALUE;
+        return Math.round(dp * context.getResources().getDisplayMetrics().density);
+    }
+
     public void calculateTileSize(Context context) {
         DisplayMetrics metrics = context.getResources().getDisplayMetrics();
         float screenWidth = metrics.widthPixels;
@@ -81,7 +90,7 @@ public class TileSizeManager {
         float divisor = (float)userTileSize;
 
         // little pading = 10
-        tileSizePx = Math.round(Math.min(screenWidth, screenHeight) / divisor) - 10;
+        tileSizePx = Math.min(Math.round(Math.min(screenWidth, screenHeight) / divisor) - 10, tvCapPx(context, 168));
         tileSpanCount = Math.max(2, Math.round(screenWidth / (float)tileSizePx) );
 
         switch (userTileSize) {
@@ -115,7 +124,7 @@ public class TileSizeManager {
         float divisor = (float)userTileSize;
 
         // little pading = 10
-        genreSizePx = Math.round(Math.min(screenWidth, screenHeight) / divisor) - 10;
+        genreSizePx = Math.min(Math.round(Math.min(screenWidth, screenHeight) / divisor) - 10, tvCapPx(context, 200));
         genreSpanCount = Math.max(2, Math.round(screenWidth / (float)genreSizePx) );
 
         switch (userTileSize) {
@@ -167,7 +176,7 @@ public class TileSizeManager {
                 break;
         }
 
-        discoverWidthPx = Math.round(Math.min(screenWidth, screenHeight) / discoverDivisor) - 50;
+        discoverWidthPx = Math.min(Math.round(Math.min(screenWidth, screenHeight) / discoverDivisor) - 50, tvCapPx(context, 300));
         discoverHeightPx = Math.round((float)discoverWidthPx * 0.6f);
         discoverIsInitialized = true;
     }

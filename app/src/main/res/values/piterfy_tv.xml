@@ -77,4 +77,20 @@
         <item name="menuGravity">center</item>
         <item name="elevation">0dp</item>
     </style>
+    <style name="PiterfyTvPrefTitle" parent="TextAppearance.Material3.TitleMedium">
+        <item name="android:textSize">20sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">#FFFFFFFF</item>
+    </style>
+    <style name="PiterfyTvPrefSummary" parent="TextAppearance.Material3.BodyMedium">
+        <item name="android:textSize">16sp</item>
+        <item name="android:textColor">#B3FFFFFF</item>
+    </style>
+    <!-- Nakladka na motyw ekranu ustawien na TV: wieksze, czytelniejsze wiersze preferencji. -->
+    <style name="ThemeOverlay.PiterfyTvPreferences" parent="">
+        <item name="android:textAppearanceListItem">@style/PiterfyTvPrefTitle</item>
+        <item name="android:textAppearanceListItemSecondary">@style/PiterfyTvPrefSummary</item>
+        <item name="android:listPreferredItemHeight">72dp</item>
+        <item name="android:listPreferredItemHeightSmall">64dp</item>
+    </style>
 </resources>

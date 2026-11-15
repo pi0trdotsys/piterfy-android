@@ -108,6 +108,10 @@ public class SettingsContainerFragment extends PreferenceFragmentCompat {
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
+        // TV: wieksze, czytelniejsze wiersze preferencji; musi byc zastosowane przed zbudowaniem listy.
+        if (com.eddyizm.tempus.ui.activity.TvFocus.isTelevision(requireContext())) {
+            requireContext().getTheme().applyStyle(R.style.ThemeOverlay_PiterfyTvPreferences, true);
+        }
         super.onCreate(savedInstanceState);
 
         equalizerResultLauncher = registerForActivityResult(

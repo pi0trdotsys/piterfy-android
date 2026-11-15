@@ -25,6 +25,12 @@ actions. A line shows what plays next. After about 15 seconds without remote inp
 the secondary controls fade away for an immersive view; any key brings them back
 (the first arrow key only wakes the screen).
 
+Album, playlist and artist pages share the same look: the page takes on the cover
+colour, the main action (Play / Shuffle) is focused as soon as the page opens, and
+the track list sits to the right of the cover. Search opens the on-screen keyboard
+(or the voice key on the remote) and Down moves from the search bar straight to the
+results. Settings use a narrow, centred column with larger rows; Back leaves it.
+
 **Max OLED** removes the illumination for a true-black screen. Back returns from the
 queue or lyrics to the player before closing it. On remotes that send a Menu key, it
 opens the app drawer.

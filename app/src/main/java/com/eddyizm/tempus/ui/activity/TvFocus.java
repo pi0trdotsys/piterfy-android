@@ -69,6 +69,14 @@ public final class TvFocus {
         return context.getPackageManager().hasSystemFeature(PackageManager.FEATURE_LEANBACK);
     }
 
+    /** TV: po wejsciu na strone fokus od razu ladowal na glownej akcji, a nie na strzalce "wstecz". */
+    public static void requestInitialFocus(View view) {
+        if (view == null || !isTelevision(view.getContext())) return;
+        view.post(() -> {
+            if (view.isShown() && view.isFocusable()) view.requestFocus();
+        });
+    }
+
     public static boolean install(Activity activity) {
         if (!activity.getPackageManager().hasSystemFeature(PackageManager.FEATURE_LEANBACK)) {
             return false;
@@ -82,6 +90,7 @@ public final class TvFocus {
         // Widoki z wlasnym, wyraznym stanem fokusu (karty, pigulki, przyciski odtwarzacza) nie dostaja
         // drugiej ramki - dwie obwodki naraz wygladaja nieczysto, a ramka nie podaza za skalowaniem karty.
         if (focused == null || focused == decor || !focused.isShown() || ownsFocusLook(focused)) {
+            outline.setBounds(0, 0, 0, 0); // setVisible(false) nie przestaje rysowac - pusta ramka znika naprawde
             outline.setVisible(false, false);
             return;
         }
