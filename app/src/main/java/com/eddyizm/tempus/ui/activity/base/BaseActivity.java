@@ -81,8 +81,12 @@ public class BaseActivity extends AppCompatActivity {
     private void checkPermission() {
         // One request for everything, since Android refuses a second request while the first is still open.
         List<String> missing = new ArrayList<>();
+        boolean television = getPackageManager().hasSystemFeature(PackageManager.FEATURE_LEANBACK);
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        // The notification shade is not a useful destination on Google TV. Media
+        // controls live in Piterfy itself, so don't interrupt the first-run flow
+        // with a phone-only permission request.
+        if (!television && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
                 missing.add(Manifest.permission.POST_NOTIFICATIONS);
             }
@@ -118,6 +122,9 @@ public class BaseActivity extends AppCompatActivity {
     }
 
     private boolean detectBatteryOptimization() {
+        // TV hardware is mains-powered; asking to optimise a non-existent battery
+        // blocks the first screen and is particularly awkward to dismiss by remote.
+        if (getPackageManager().hasSystemFeature(PackageManager.FEATURE_LEANBACK)) return false;
         String packageName = getPackageName();
         PowerManager powerManager = (PowerManager) getSystemService(POWER_SERVICE);
         return !powerManager.isIgnoringBatteryOptimizations(packageName);
