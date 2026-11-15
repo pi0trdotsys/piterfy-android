@@ -52,7 +52,9 @@ public class ArtistCarouselAdapter extends RecyclerView.Adapter<ArtistCarouselAd
                 .from(holder.itemView.getContext(), artist.getCoverArtId(), CustomGlideRequest.ResourceType.Artist)
                 .build()
                 .circleCrop()
+                .dontAnimate()
                 .into(holder.item.artistCoverImageView);
+        com.eddyizm.tempus.util.CircularImage.clip(holder.item.artistCoverImageView);
     }
 
     @Override

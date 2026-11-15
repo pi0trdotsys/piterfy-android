@@ -97,3 +97,18 @@ Szkielet Tempus (fragmenty, logika, odtwarzanie) bez zmian; przerobiona jest tyl
 | Logo 18 stacji radiowych wbudowane w aplikację (`res/raw/radio_<id>.png`) i kopiowane do okładek radia; Jedynka, Dwójka i RMF Classic mają własne kafelki, bo nie ma do nich oficjalnych logo do pobrania | `util/PiterfyRadioCatalog.installCovers` |
 
 Logo stacji są znakami towarowymi ich właścicieli — wykorzystane tylko jako ikony stacji w prywatnej aplikacji.
+
+## Google TV (układ pilotowy)
+
+Na urządzeniach z `android.software.leanback` (`TvFocus.isTelevision`) aplikacja używa osobnych układów w `res/layout-land-television/`; telefon i tablet są bez zmian.
+
+| Element | Gdzie |
+|---|---|
+| Boczny pasek nawigacji zamiast dolnego; obszar treści rezerwuje dla niego miejsce tylko gdy pasek jest widoczny | `layout-land-television/activity_main.xml`, `NavigationHelper.applyRailInset`, styl `PiterfyTvRail` |
+| Ekran główny: powitanie, szybkie akcje, rzędy kart; zakładki Muzyka/Podcasty/Radio zostają | `TvHomeFragment`, `TvRowsAdapter`, `HomeFragment.initTvHome`, `piterfy_tv_home*.xml` |
+| Teraz odtwarzane: gradient z okładki (`PiterfyAmbient`), poświata, „Dalej”, tryb immersyjny po 15 s | `PlayerControllerFragment`, `piterfy_tv_player_controls.xml`, `TvTheme` |
+| Tło za całą aplikacją w kolorze okładki; właścicielem jest ekran, więc ekran niszczony po utworzeniu następnego nie zdejmie jego tła | `MainActivity.setTvBackdropColor` / `releaseTvBackdrop`, `TvTheme.paintPage` |
+| Fokus: własne stany dla przycisków i kart (`android:tag="tv_own_focus"`), reszta dostaje zieloną ramkę | `TvFocus`, `piterfy_tv_focus_*.xml` |
+| Strony albumu, playlisty, artysty, wyszukiwania, Biblioteki, Pobranych i Ustawień | `layout-land-television/fragment_*.xml`, `ThemeOverlay.PiterfyTvPreferences` |
+| Kafelki liczone z wysokości ekranu (1080 px) były ogromne, więc na TV mają górny limit | `TileSizeManager.tvCapPx` |
+| Okrągłe zdjęcia wykonawców przycięte do koła (Glide zostawiał kwadratowy placeholder) | `util/CircularImage.java` |

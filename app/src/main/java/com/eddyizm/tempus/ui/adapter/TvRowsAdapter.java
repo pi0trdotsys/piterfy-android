@@ -208,7 +208,10 @@ public class TvRowsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder>
                 cover.setClipToOutline(true);
                 frame.setForeground(ContextCompat.getDrawable(context,
                         card.round ? R.drawable.piterfy_tv_card_focus_oval : R.drawable.piterfy_tv_card_focus));
-                CustomGlideRequest.Builder.from(context, card.coverId, card.coverType).build().into(cover);
+                com.bumptech.glide.RequestBuilder<android.graphics.drawable.Drawable> request =
+                        CustomGlideRequest.Builder.from(context, card.coverId, card.coverType).build();
+                // Okragla karta: bez przenikania, bo placeholder zostaje widoczny jako kwadrat za przezroczystymi rogami.
+                (card.round ? request.circleCrop().dontAnimate() : request).into(cover);
 
                 itemView.setOnClickListener(v -> card.onClick.run());
                 itemView.setOnLongClickListener(card.onLongClick == null ? null : v -> {

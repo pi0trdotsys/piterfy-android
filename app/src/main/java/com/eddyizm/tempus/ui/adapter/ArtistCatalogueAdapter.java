@@ -80,7 +80,9 @@ public class ArtistCatalogueAdapter extends RecyclerView.Adapter<ArtistCatalogue
                 .from(holder.itemView.getContext(), artist.getCoverArtId(), CustomGlideRequest.ResourceType.Artist)
                 .build()
                 .circleCrop()
+                .dontAnimate()
                 .into(holder.item.artistCatalogueCoverImageView);
+        com.eddyizm.tempus.util.CircularImage.clip(holder.item.artistCatalogueCoverImageView);
     }
 
     @Override

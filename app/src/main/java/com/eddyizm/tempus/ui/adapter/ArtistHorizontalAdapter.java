@@ -90,8 +90,10 @@ public class ArtistHorizontalAdapter extends RecyclerView.Adapter<ArtistHorizont
         CustomGlideRequest.Builder
                 .from(holder.itemView.getContext(), artist.getCoverArtId(), CustomGlideRequest.ResourceType.Artist)
                 .build()
-                .circleCrop()  // Piterfy: okragle zdjecia wykonawcow jak w Spotify
+                .circleCrop()
+                .dontAnimate()  // Piterfy: okragle zdjecia wykonawcow jak w Spotify
                 .into(holder.item.artistCoverImageView);
+        com.eddyizm.tempus.util.CircularImage.clip(holder.item.artistCoverImageView);
     }
 
     @Override

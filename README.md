@@ -29,11 +29,12 @@ Piterfy łączy natywną aplikację Android z odtwarzaczem webowym opartym na Na
 
 **Piterfy na Google TV**
 
-Natywna aplikacja uruchamia się z ekranu Google TV i jest w pełni obsługiwana
-pilotem: boczny pasek nawigacji (Start, Szukaj, Biblioteka, Pobrane, Ustawienia),
-ekran główny z rzędami dużych kart i tłem w kolorze fokusowanej okładki oraz
-„Teraz odtwarzane” z gradientem wyprowadzonym z okładki, trybem immersyjnym,
-opisanymi akcjami tekstu/kolejki/playlist i przełącznikiem Ambient / Max OLED.
+Natywna aplikacja uruchamia się z ekranu Google TV i jest w pełni obsługiwana pilotem. To osobny układ dla telewizora, a nie powiększona wersja mobilna:
+
+- **Boczny pasek nawigacji** (Start, Szukaj, Biblioteka, Pobrane, Ustawienia) pod klawiszem „w lewo”; mini odtwarzacz osiągniesz strzałką w dół.
+- **Ekran główny** z powitaniem, szybkimi akcjami (losuj wszystko, Teraz odtwarzane, Ulubione, Szukaj) i rzędami dużych kart. Tło płynnie przyjmuje kolor okładki fokusowanej karty, a po powrocie z albumu fokus wraca na tę samą kartę.
+- **Teraz odtwarzane** z gradientem wyprowadzonym z okładki, dużym tytułem, paskiem postępu przewijanym strzałkami, linią „Dalej” i trybem immersyjnym, który po 15 s bez pilota chowa drugorzędne przyciski. Przełącznik Ambient / Max OLED zostaje.
+- **Album, playlista, artysta, wyszukiwanie, Biblioteka, Pobrane i Ustawienia** mają własne układy: pełnoekranowe tło w kolorze okładki, duże przyciski z wyraźnym fokusem, fokus od razu na głównej akcji i napisy, które się nie ucinają (tytuły kart zawijają się do dwóch linii).
 
 ## Co oferuje Piterfy
 

@@ -98,6 +98,7 @@ public class ToolbarFragment extends Fragment {
         com.bumptech.glide.Glide.with(this)
                 .load(url)
                 .circleCrop()
+                .dontAnimate()
                 .signature(new com.bumptech.glide.signature.ObjectKey(System.currentTimeMillis() / 600000L))
                 .listener(new com.bumptech.glide.request.RequestListener<android.graphics.drawable.Drawable>() {
                     @Override

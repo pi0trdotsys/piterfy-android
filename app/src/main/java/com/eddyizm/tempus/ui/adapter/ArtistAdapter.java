@@ -61,7 +61,9 @@ public class ArtistAdapter extends RecyclerView.Adapter<ArtistAdapter.ViewHolder
                 .from(holder.itemView.getContext(), artist.getCoverArtId(), CustomGlideRequest.ResourceType.Artist)
                 .build()
                 .circleCrop()
+                .dontAnimate()
                 .into(holder.item.artistCoverImageView);
+        com.eddyizm.tempus.util.CircularImage.clip(holder.item.artistCoverImageView);
     }
 
     @Override

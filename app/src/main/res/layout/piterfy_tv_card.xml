@@ -34,10 +34,9 @@
         android:layout_width="@dimen/piterfy_tv_card_size"
         android:layout_height="wrap_content"
         android:layout_marginTop="10dp"
-        android:ellipsize="marquee"
+        android:ellipsize="end"
         android:fontFamily="@font/figtree_family"
-        android:marqueeRepeatLimit="marquee_forever"
-        android:singleLine="true"
+        android:maxLines="2"
         android:textColor="#FFFFFFFF"
         android:textSize="16sp"
         android:textStyle="bold" />
@@ -48,7 +47,7 @@
         android:layout_height="wrap_content"
         android:ellipsize="end"
         android:fontFamily="@font/figtree_family"
-        android:singleLine="true"
+        android:maxLines="2"
         android:textColor="#B3FFFFFF"
         android:textSize="13sp" />
 </LinearLayout>
