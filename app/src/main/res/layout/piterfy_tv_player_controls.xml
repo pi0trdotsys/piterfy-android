@@ -101,19 +101,18 @@
                         android:gravity="center_vertical" app:layout_constraintStart_toStartOf="parent"
                         app:layout_constraintEnd_toEndOf="parent" app:layout_constraintTop_toTopOf="parent"
                         app:layout_constraintBottom_toBottomOf="parent">
-                        <ImageButton
-                            android:id="@+id/player_open_lyrics_button" style="@style/PiterfyTvIconButton"
-                            android:layout_width="44dp"
-                            android:layout_height="44dp"
-                            android:src="@drawable/ic_lyrics"
-                            android:contentDescription="@string/piterfy_tv_lyrics" />
-                        <ImageButton
-                            android:id="@+id/player_open_queue_button" style="@style/PiterfyTvIconButton"
-                            android:layout_width="44dp"
-                            android:layout_height="44dp"
-                            android:src="@drawable/ic_queue"
-                            android:contentDescription="@string/piterfy_tv_queue"
-                            android:layout_marginStart="6dp" />
+                        <Button style="@style/PiterfyTvTextButton"
+                            android:id="@+id/player_open_lyrics_button"
+                            android:layout_width="wrap_content"
+                            android:layout_height="48dp"
+                            android:text="@string/piterfy_tv_lyrics"
+                            android:textAllCaps="false" />
+                        <Button style="@style/PiterfyTvTextButton"
+                            android:id="@+id/player_open_queue_button"
+                            android:layout_width="wrap_content"
+                            android:layout_height="48dp"
+                            android:text="@string/piterfy_tv_queue"
+                            android:textAllCaps="false" />
                         <Button style="@style/PiterfyTvTextButton"
                             android:id="@+id/tv_player_playlists"
                             android:layout_width="wrap_content"

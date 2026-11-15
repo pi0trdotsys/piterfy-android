@@ -6,6 +6,8 @@ import android.graphics.Color;
 import android.graphics.drawable.GradientDrawable;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
+import android.widget.ImageButton;
 
 /** Provides a consistent focus indicator for the native controls when using a TV remote. */
 public final class TvFocus {
@@ -14,19 +16,42 @@ public final class TvFocus {
     private final int[] viewPosition = new int[2];
     private final int[] windowPosition = new int[2];
     private final int inset;
+    private View animatedFocus;
 
     private TvFocus(Activity activity) {
         decor = (ViewGroup) activity.getWindow().getDecorView();
         float density = activity.getResources().getDisplayMetrics().density;
         inset = Math.max(1, Math.round(density));
-        outline.setColor(Color.TRANSPARENT);
-        outline.setCornerRadius(8 * density);
-        outline.setStroke(Math.round(3 * density), 0xff66ee99);
+        // A translucent mint "spotlight" is easier to follow from a sofa than the
+        // platform's thin white rectangle, while retaining a very clear edge.
+        outline.setColor(0x2449f59a);
+        outline.setCornerRadius(12 * density);
+        outline.setStroke(Math.round(3 * density), 0xff82f7b0);
         decor.getOverlay().add(outline);
+        decor.getViewTreeObserver().addOnGlobalFocusChangeListener((oldFocus, newFocus) -> {
+            animateFocus(oldFocus, false);
+            animateFocus(newFocus, true);
+        });
         decor.getViewTreeObserver().addOnPreDrawListener(() -> {
             update();
             return true;
         });
+    }
+
+    private void animateFocus(View view, boolean selected) {
+        if (!isCompactControl(view)) return;
+        if (selected) animatedFocus = view;
+        view.animate().cancel();
+        view.animate()
+                .scaleX(selected ? 1.055f : 1f)
+                .scaleY(selected ? 1.055f : 1f)
+                .setDuration(selected ? 150L : 100L)
+                .start();
+    }
+
+    private boolean isCompactControl(View view) {
+        return view instanceof Button || view instanceof ImageButton
+                || view instanceof android.widget.CompoundButton;
     }
 
     public static boolean install(Activity activity) {

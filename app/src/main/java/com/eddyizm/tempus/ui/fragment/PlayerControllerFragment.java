@@ -5,6 +5,9 @@ import android.content.ClipboardManager;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.Color;
+import android.graphics.drawable.GradientDrawable;
 import android.content.ServiceConnection;
 import android.os.Bundle;
 import android.os.IBinder;
@@ -74,6 +77,8 @@ import com.google.android.material.chip.ChipGroup;
 import com.google.android.material.elevation.SurfaceColors;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.MoreExecutors;
+import com.bumptech.glide.request.target.CustomTarget;
+import com.bumptech.glide.request.transition.Transition;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -99,8 +104,8 @@ public class PlayerControllerFragment extends Fragment {
     private Chip playerMediaExtension;
     private TextView playerMediaBitrate;
     private ConstraintLayout playerQuickActionView;
-    private ImageButton playerOpenQueueButton;
-    private ImageButton playerOpenLyricsButton;
+    private View playerOpenQueueButton;
+    private View playerOpenLyricsButton;
     private ImageButton playerTrackInfo;
     private LinearLayout ratingContainer;
     private LinearLayout sleepTimerContainer;
@@ -111,6 +116,7 @@ public class PlayerControllerFragment extends Fragment {
     private Chip playerAlbumLinkChip;
     private Chip playerArtistLinkChip;
     private android.widget.ImageView tvBackdrop;
+    private View tvPlayerShade;
     private android.net.Uri tvArtwork;
     private boolean tvOled;
 
@@ -369,6 +375,7 @@ public class PlayerControllerFragment extends Fragment {
     private void initTvPlayer() {
         tvBackdrop = bind.getRoot().findViewById(R.id.tv_player_backdrop);
         if (tvBackdrop == null) return;
+        tvPlayerShade = bind.getRoot().findViewById(R.id.tv_player_shade);
 
         if (android.os.Build.VERSION.SDK_INT >= 31) {
             tvBackdrop.setRenderEffect(android.graphics.RenderEffect.createBlurEffect(
@@ -393,7 +400,7 @@ public class PlayerControllerFragment extends Fragment {
     private void renderTvMode(Button displayMode) {
         displayMode.setText(tvOled ? R.string.piterfy_tv_oled : R.string.piterfy_tv_ambient);
         tvBackdrop.setVisibility(tvOled ? View.GONE : View.VISIBLE);
-        bind.getRoot().findViewById(R.id.tv_player_shade).setVisibility(tvOled ? View.GONE : View.VISIBLE);
+        if (tvPlayerShade != null) tvPlayerShade.setVisibility(tvOled ? View.GONE : View.VISIBLE);
         ((View) tvBackdrop.getParent()).setBackgroundColor(tvOled ? 0xff000000 : 0xff080d0b);
         bind.getRoot().setBackgroundColor(tvOled ? 0xff000000 : 0xff080d0b);
     }
@@ -406,7 +413,59 @@ public class PlayerControllerFragment extends Fragment {
         if (!Objects.equals(tvArtwork, metadata.artworkUri)) {
             tvArtwork = metadata.artworkUri;
             com.bumptech.glide.Glide.with(this).load(tvArtwork).override(320, 180).into(tvBackdrop);
+            final android.net.Uri requestedArtwork = tvArtwork;
+            // The artwork itself remains a soft, atmospheric backdrop.  A sampled
+            // palette gives each song a distinct TV-sized gradient, including on
+            // Android versions where RenderEffect blur is unavailable.
+            com.bumptech.glide.Glide.with(this).asBitmap().load(requestedArtwork).override(48, 48)
+                    .into(new CustomTarget<Bitmap>() {
+                        @Override public void onResourceReady(@NonNull Bitmap bitmap, Transition<? super Bitmap> transition) {
+                            if (bind != null && Objects.equals(tvArtwork, requestedArtwork)) {
+                                applyTvArtworkGradient(dominantArtworkColor(bitmap));
+                            }
+                        }
+
+                        @Override public void onLoadCleared(android.graphics.drawable.Drawable placeholder) { }
+                    });
         }
+    }
+
+    private void applyTvArtworkGradient(int color) {
+        if (tvPlayerShade == null) return;
+        float[] hsv = new float[3];
+        Color.colorToHSV(color, hsv);
+        hsv[1] = Math.max(.38f, hsv[1]);
+        hsv[2] = Math.max(.32f, Math.min(.72f, hsv[2]));
+        int vivid = Color.HSVToColor(hsv);
+        hsv[2] = Math.max(.08f, hsv[2] * .34f);
+        int shadow = Color.HSVToColor(hsv);
+        GradientDrawable gradient = new GradientDrawable(GradientDrawable.Orientation.TL_BR,
+                new int[]{Color.argb(205, Color.red(vivid), Color.green(vivid), Color.blue(vivid)),
+                        Color.argb(238, Color.red(shadow), Color.green(shadow), Color.blue(shadow)),
+                        0xff080d0b});
+        gradient.setCornerRadius(0f);
+        tvPlayerShade.setBackground(gradient);
+    }
+
+    /** Extracts a stable, reasonably vibrant colour without adding another dependency. */
+    private int dominantArtworkColor(Bitmap bitmap) {
+        long red = 0, green = 0, blue = 0, weightTotal = 0;
+        float[] hsv = new float[3];
+        for (int y = 0; y < bitmap.getHeight(); y += 2) {
+            for (int x = 0; x < bitmap.getWidth(); x += 2) {
+                int pixel = bitmap.getPixel(x, y);
+                Color.colorToHSV(pixel, hsv);
+                if (hsv[1] < .16f || hsv[2] < .12f) continue;
+                int weight = Math.max(1, Math.round(hsv[1] * hsv[2] * 100));
+                red += Color.red(pixel) * (long) weight;
+                green += Color.green(pixel) * (long) weight;
+                blue += Color.blue(pixel) * (long) weight;
+                weightTotal += weight;
+            }
+        }
+        if (weightTotal == 0) return 0xff278355;
+        return Color.rgb((int) (red / weightTotal), (int) (green / weightTotal),
+                (int) (blue / weightTotal));
     }
 
     boolean closeTvLyrics() {
@@ -1017,7 +1076,13 @@ public class PlayerControllerFragment extends Fragment {
                 ? com.google.android.material.R.attr.colorPrimary
                 : com.google.android.material.R.attr.colorOnSurface;
         int color = com.google.android.material.color.MaterialColors.getColor(playerOpenLyricsButton, colorAttr);
-        ImageViewCompat.setImageTintList(playerOpenLyricsButton, ColorStateList.valueOf(color));
+        if (playerOpenLyricsButton instanceof android.widget.ImageView) {
+            ImageViewCompat.setImageTintList((android.widget.ImageView) playerOpenLyricsButton,
+                    ColorStateList.valueOf(color));
+        } else {
+            // TV presents this action as a readable label rather than a tiny icon.
+            ((TextView) playerOpenLyricsButton).setTextColor(color);
+        }
     }
 
     private void initMediaListenable() {

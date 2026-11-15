@@ -27,6 +27,12 @@ Piterfy łączy natywną aplikację Android z odtwarzaczem webowym opartym na Na
 
 [Otwórz interaktywny podgląd TV](https://piterfy.prosinski.eu/piterfy-ui/cast-receiver.html?preview=1) · [Konfiguracja odbiornika](connect/README.md#piterfy-tv-chromecast)
 
+**Piterfy na Google TV**
+
+Natywna aplikacja uruchamia się z ekranu Google TV i jest w pełni obsługiwana
+pilotem: ekran „Teraz odtwarzane” ma gradient wyprowadzony z okładki, duże
+opisane akcje tekstu/kolejki/playlist oraz przełącznik Ambiente / Max OLED.
+
 ## Co oferuje Piterfy
 
 | Funkcja | Jak działa |

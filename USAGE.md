@@ -7,12 +7,16 @@ from the Google TV app row. For ADB installation, run
 `adb -s TV_ADDRESS install -r app-tempus-release.apk` after authorizing the
 computer on the TV. Add your music server and sign in from Piterfy.
 
-Use the directional pad to move the green focus outline and OK to activate the
-highlighted control. Home, Library and Downloads are in the bottom bar. Open
-the mini player to reach the TV player, with lyrics, queue and playlists.
-Use the display mode button to switch between the cover-lit Ambiente background
-and Max OLED. Back returns from the queue or lyrics to the player before closing
-it. On remotes that send a Menu key, it opens the app drawer.
+Use the directional pad to move the animated mint focus spotlight and OK to
+activate the highlighted control. Home, Library and Downloads are in the bottom
+bar. Open the mini player to reach the dedicated TV player: previous, pause and
+next are deliberately grouped in one row, followed by labelled **Lyrics**,
+**Queue** and **Playlists** actions.
+
+Ambiente derives a dark, readable gradient from every current cover; **Max OLED**
+removes that illumination for a true-black screen. Back returns from the queue
+or lyrics to the player before closing it. On remotes that send a Menu key, it
+opens the app drawer.
 Playback takes place on the TV using the same native app and server account.
 
 ## Piterfy discovery and podcasts
