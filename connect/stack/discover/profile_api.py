@@ -8,6 +8,7 @@ Przeglądarka przycina zdjęcie do kwadratu 512 × 512 i wysyła JPEG, więc tu 
 
 Rzeczywista jakość utworu (plakietka na pasku odtwarzania):
 GET    /piterfy-api/quality/<id utworu>  wynik analizy widma pliku (spectrum.py w kontenerze beets)
+GET    /piterfy-api/stats                statystyki dla nerdów: biblioteka, stan serwera, Wrapped (stats.py)
 
 Wszystko poza pobraniem zdjęcia wymaga tokenu sesji Navidrome (nagłówek X-ND-Authorization),
 który sprawdza sam Navidrome.
@@ -28,6 +29,7 @@ PORT = int(os.environ.get("PROFILE_API_PORT") or 8090)
 MAX_BYTES = 2 * 1024 * 1024
 SPECTRUM_FILE = Path(os.environ.get("SPECTRUM_FILE") or "/app/beets/spectrum.json")
 QUALITY_FIELDS = ("verdict", "cutoff", "source_kbps", "sr", "codec")
+STATS_FILE = Path(os.environ.get("STATS_FILE") or Path(os.environ.get("DATA_DIR", "/data")) / "stats.json")
 
 
 def navidrome_get(navidrome_url, path, auth):
@@ -103,7 +105,20 @@ class Handler(BaseHTTPRequestHandler):
     def route(self):
         return urllib.parse.urlsplit(self.path).path
 
+    def stats(self):
+        if not self.authorized_user():
+            return
+        try:
+            data = json.loads(STATS_FILE.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            return self.send(404, "Statystyki jeszcze się liczą — spróbuj za kilka minut.")
+        import stats  # miejsce na dysku odświeżamy przy każdym pytaniu; resztę liczy discover co kilka godzin
+        self.send(200, json.dumps(stats.live(data), ensure_ascii=False, separators=(",", ":")), "application/json",
+                  {"Cache-Control": "no-cache"})
+
     def do_GET(self):
+        if self.route() == "/piterfy-api/stats":
+            return self.stats()
         quality = re.fullmatch(r"/piterfy-api/quality/([^/]+)", self.route())
         if quality:
             return self.quality(urllib.parse.unquote(quality.group(1)))

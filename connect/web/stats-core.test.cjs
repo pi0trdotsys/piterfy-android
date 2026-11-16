@@ -1,0 +1,130 @@
+const test = require("node:test");
+const assert = require("node:assert/strict");
+const core = require("./stats-core.js");
+
+const nb = (s) => s.replace(/ /g, " ");
+
+test("number formatting is stable and Polish", () => {
+  assert.equal(nb(core.fmtNum(1234567)), "1 234 567");
+  assert.equal(core.fmtNum(999), "999");
+  assert.equal(core.fmtNum(null), "0");
+  assert.equal(core.fmtDec(1.5, 1), "1,5");
+  assert.equal(core.fmtDec(2, 2), "2");
+  assert.equal(nb(core.fmtBytes(0)), "0 B");
+  assert.equal(nb(core.fmtBytes(1536)), "1,5 KB");
+  assert.equal(nb(core.fmtBytes(5 * 1024 ** 3)), "5 GB");
+  assert.equal(nb(core.fmtBytes(123.4 * 1024 ** 3)), "123 GB");
+  assert.equal(nb(core.fmtBytes(12.34 * 1024 ** 3)), "12,3 GB");
+});
+
+test("durations and listening time", () => {
+  assert.equal(nb(core.fmtDuration(90061)), "1 d 1 h");
+  assert.equal(nb(core.fmtDuration(3725)), "1 h 2 min");
+  assert.equal(nb(core.fmtDuration(59)), "0 min");
+  assert.equal(nb(core.fmtListening(95)), "95 min");
+  assert.equal(nb(core.fmtListening(600)), "10 godz.");
+  assert.equal(nb(core.fmtListening(24700)), "412 godz.");
+});
+
+test("percent, delta and dates", () => {
+  assert.equal(core.fmtPercent(1, 4), "25%");
+  assert.equal(core.fmtPercent(1, 0), "—");
+  assert.equal(core.deltaText(18), "▲ 18%");
+  assert.equal(core.deltaText(-7), "▼ 7%");
+  assert.equal(core.deltaText(0), "bez zmian");
+  assert.equal(core.deltaText(null), "");
+  assert.equal(nb(core.fmtDay("2026-11-05")), "5 lis 2026");
+  assert.equal(core.fmtDay("zepsute"), "—");
+  assert.equal(core.fmtShortDay("2026-11-16"), "16.11");
+  assert.equal(core.fmtStamp("nie czas"), "—");
+  assert.match(nb(core.fmtStamp("2026-11-16T12:05:00.123456789Z".slice(0, 19) + "Z")), /\d+ \p{L}+ 2026, \d{2}:\d{2}/u);
+});
+
+test("bars scale to the maximum and keep zero at zero", () => {
+  assert.equal(core.barPercent(0, 10), 0);
+  assert.equal(core.barPercent(1, 1000), 2);       // widoczny ślad
+  assert.equal(core.barPercent(10, 10), 100);
+  assert.equal(core.barPercent(5, 0), 0);
+  const rows = core.bars([["flac", 40], ["mp3", 10], ["opus", 0]]);
+  assert.deepEqual(rows.map((r) => r.pct), [100, 25, 0]);
+  assert.equal(rows[0].label, "flac");
+});
+
+test("quality breakdown merges verdicts into four honest segments", () => {
+  const out = core.qualityBreakdown({ ok: 70, suspect: 5, upsampled: 5, fake: 8, transcoded: 2, pending: 8, unknown: 2 });
+  assert.equal(out.total, 100);
+  assert.deepEqual(out.segments.map((s) => [s.key, s.n]), [["ok", 70], ["suspect", 10], ["fake", 10], ["pending", 10]]);
+  assert.equal(out.segments[0].pct, 70);
+  assert.equal(core.qualityBreakdown({}).total, 0);
+  assert.equal(core.qualityBreakdown(null).segments[0].pct, 0);
+});
+
+test("growth series labels weeks by their Monday", () => {
+  const rows = core.growthSeries([["2026-11-02", 4, 100], ["2026-11-09", 8, 200], ["2026-11-16", 0, 0]]);
+  assert.deepEqual(rows.map((r) => r.label), ["2.11", "9.11", "16.11"]);
+  assert.deepEqual(rows.map((r) => r.pct), [50, 100, 0]);
+});
+
+test("disk breakdown never exceeds the disk and survives missing data", () => {
+  assert.equal(core.diskBreakdown(null, 1, 1), null);
+  assert.equal(core.diskBreakdown({ total: 0 }, 1, 1), null);
+  const d = core.diskBreakdown({ total: 1000, used: 600, free: 400 }, 500, 300);
+  assert.equal(d.usedPct, 60);
+  const bytes = Object.fromEntries(d.parts.map((p) => [p.key, p.bytes]));
+  assert.deepEqual(bytes, { library: 500, trash: 100, other: 0, free: 400 });   // kosz przycięty do reszty zajętego
+  assert.ok(Math.abs(d.parts.reduce((s, p) => s + p.pct, 0) - 100) < 1e-9);
+});
+
+test("outcome rows skip empty outcomes and keep a stable order", () => {
+  const rows = core.outcomeRows({ failed: 2, done: 9, trashed: 0 });
+  assert.deepEqual(rows.map((r) => [r.key, r.n]), [["done", 9], ["failed", 2]]);
+  assert.deepEqual(core.outcomeRows(null), []);
+});
+
+const period = {
+  key: "2026-11", label: "Listopad 2026", partial: true, minutes: 24700, plays: 1200, tracks: 400, artists: 90,
+  active_days: 15, longest_streak: 9, new_artists: 12, busiest_day: { day: "2026-11-05", plays: 77 },
+  top_artists: [{ name: "A", plays: 90 }, { name: "B", plays: 80 }, { name: "C", plays: 70 }, { name: "D", plays: 60 }],
+  top_tracks: [{ title: "Hit", artist: "A", plays: 30 }],
+  listener: { id: "night", name: "Nocny marek", blurb: "Po zmroku.", why: ["61% po 22:00", "x", "y"] },
+  compare: { plays: 18, minutes: 5 },
+};
+
+test("wrapped card model is ready-made text", () => {
+  const m = core.cardModel(period);
+  assert.equal(m.title, "Listopad 2026 · do dziś");
+  assert.equal(nb(m.big), "412 godz.");
+  assert.equal(nb(m.bigCaption), "słuchania · 1 200 odsłuchów");
+  assert.equal(m.artists.length, 3);
+  assert.equal(m.track.title, "Hit");
+  assert.equal(m.listener.why.length, 2);
+  assert.equal(m.delta.text, "▲ 18% odsłuchów");
+  assert.equal(m.delta.up, true);
+  assert.equal(m.facts.length, 4);
+  assert.match(nb(m.facts[1]), /15 dni z muzyką, seria 9 dni/);
+  assert.equal(m.fileName, "piterfy-wrapped-2026-11.png");
+});
+
+test("wrapped card model copes with sparse periods", () => {
+  const m = core.cardModel({ key: "2026", label: "Rok 2026", minutes: 30, plays: 10, tracks: 3, artists: 2, active_days: 1,
+    longest_streak: 1, top_artists: [], top_tracks: [], listener: null, compare: null, busiest_day: null });
+  assert.equal(m.listener, null);
+  assert.equal(m.delta, null);
+  assert.equal(m.track, null);
+  assert.equal(m.title, "Rok 2026");
+  assert.equal(m.facts.length, 2);
+  assert.equal(core.cardModel(null), null);
+  assert.equal(core.cardModel({ ...period, compare: { plays: 0 } }).delta.flat, true);
+});
+
+test("wrapText wraps by measured width and ellipsizes the last line", () => {
+  const measure = (s) => s.length * 10;
+  assert.deepEqual(core.wrapText("ala ma kota", 1000, measure, 3), ["ala ma kota"]);
+  assert.deepEqual(core.wrapText("ala ma kota i psa", 80, measure, 5), ["ala ma", "kota i", "psa"]);
+  const cut = core.wrapText("bardzo długi tytuł który się nie mieści w dwóch liniach", 100, measure, 2);
+  assert.equal(cut.length, 2);
+  assert.ok(cut[1].endsWith("…"));
+  assert.ok(measure(cut[1]) <= 100);
+  assert.deepEqual(core.wrapText("", 100, measure, 2), []);
+  assert.deepEqual(core.wrapText("superdługiejednosłowo", 50, measure, 2), ["superdługiejednosłowo"]);
+});

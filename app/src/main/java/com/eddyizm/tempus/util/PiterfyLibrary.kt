@@ -62,6 +62,47 @@ object PiterfyLibrary {
         }
     }
     @JvmStatic fun refresh(done: Consumer<JSONObject>?) = request(JSONObject().put("action", "get"), done, null)
+
+    /** „Statystyki dla nerdów”: ostatnia odpowiedź serwera dla tego konta (surowy JSON) albo null. */
+    @JvmStatic fun cachedStats(): String? = prefs().getString("stats|${account()}", null)
+
+    /**
+     * GET /piterfy-api/stats z tym samym tokenem Navidrome co reszta (patrz [requestAt]). [done] dostaje surowy JSON
+     * (zapisany też lokalnie, żeby ekran miał co pokazać offline), [failed] jeden z kodów: „https” (adres serwera bez
+     * HTTPS), „not_ready” (serwer jeszcze nie policzył statystyk), „network” (reszta).
+     */
+    @JvmStatic fun stats(done: Consumer<String>?, failed: Consumer<String>?) {
+        val identity = account()
+        val origin = runCatching { (Preferences.getServer() ?: "").toHttpUrl().newBuilder().encodedPath("/").query(null).fragment(null).build().toString().trimEnd('/') }.getOrNull()
+        if (origin == null || !origin.startsWith("https://")) { failed?.accept("https"); return }
+        val user = Preferences.getUser(); val password = Preferences.getPassword()
+        io.execute {
+            try {
+                var attempt = 0
+                while (true) {
+                    check(account() == identity)
+                    if (tokenAccount != identity || SystemClock.elapsedRealtime() - tokenAt > 1800000) token = ""
+                    if (token.isEmpty()) {
+                        token = execute("$origin/auth/login", JSONObject().put("username", user).put("password", password)).getString("token")
+                        tokenAccount = identity; tokenAt = SystemClock.elapsedRealtime()
+                    }
+                    val request = Request.Builder().url("$origin/piterfy-api/stats").header("X-ND-Authorization", "Bearer $token").get().build()
+                    val (code, body) = http.newCall(request).execute().use { it.code to (it.body?.string() ?: "") }
+                    if (code == 401 && attempt++ == 0) { token = ""; continue }
+                    check(account() == identity)
+                    when {
+                        code == 404 -> main.post { if (account() == identity) failed?.accept("not_ready") }
+                        code in 200..299 -> {
+                            prefs().edit().putString("stats|$identity", body).apply()
+                            main.post { if (account() == identity) done?.accept(body) }
+                        }
+                        else -> main.post { if (account() == identity) failed?.accept("network") }
+                    }
+                    return@execute
+                }
+            } catch (_: Exception) { main.post { if (account() == identity) failed?.accept("network") } }
+        }
+    }
     @JvmStatic fun isPinned(id:String):Boolean = cached().optJSONArray("pins")?.let { pins -> (0 until pins.length()).any { pins.optString(it)==id } }?:false
     @JvmStatic fun pin(id:String,enabled:Boolean,done:Consumer<JSONObject>?,failed:Consumer<String>?) = request(JSONObject().put("action","pin").put("id",id).put("enabled",enabled),done,failed)
     @JvmStatic fun rankSongs(songs: List<Child>, done: Consumer<List<Child>>) {

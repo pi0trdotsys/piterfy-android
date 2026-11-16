@@ -119,6 +119,16 @@ public final class PiterfyHomePanel extends LinearLayout implements DefaultLifec
         });
         shortcuts.addView(taste, new LayoutParams(0, LayoutParams.WRAP_CONTENT, 1));
 
+        MaterialButton nerdStats = new MaterialButton(getContext());
+        nerdStats.setText(R.string.stats_title); nerdStats.setAllCaps(false); nerdStats.setTypeface(bold);
+        nerdStats.setMinHeight(dp(48)); nerdStats.setCornerRadius(dp(24)); nerdStats.setTextColor(Color.WHITE);
+        nerdStats.setBackgroundTintList(android.content.res.ColorStateList.valueOf(TILE_COLOR));
+        nerdStats.setOnClickListener(v -> new com.eddyizm.tempus.ui.dialog.PiterfyStatsDialog()
+                .show(host.getParentFragmentManager(), com.eddyizm.tempus.ui.dialog.PiterfyStatsDialog.TAG));
+        LayoutParams nerdParams = new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT);
+        nerdParams.topMargin = dp(8);
+        addView(nerdStats, nerdParams);
+
         tiles = new LinearLayout(getContext());
         tiles.setOrientation(VERTICAL);
         addView(tiles);

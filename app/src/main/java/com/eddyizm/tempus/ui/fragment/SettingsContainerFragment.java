@@ -256,6 +256,12 @@ public class SettingsContainerFragment extends PreferenceFragmentCompat {
             return true;
         });
 
+        Preference nerdStats = findPreference("piterfy_stats");
+        if (nerdStats != null) nerdStats.setOnPreferenceClickListener(p -> {
+            new com.eddyizm.tempus.ui.dialog.PiterfyStatsDialog().show(getParentFragmentManager(), com.eddyizm.tempus.ui.dialog.PiterfyStatsDialog.TAG);
+            return true;
+        });
+
         if (BuildConfig.FLAVOR.equals("degoogled")) {
             ClickablePreferenceCategory androidAutoCategory = findPreference("settings_androidauto_category_key");
             if (androidAutoCategory != null) {

@@ -475,10 +475,12 @@ html[data-pf-route="login"] :is(#pf-lyrics-button, #pf-connect-button) { display
 /* Navidrome nie zna tej trasy i wyświetla „Nie znaleziono” — chowamy to i pustą nazwę widoku w pasku. */
 html[data-pf-route="start"] #main-content > :not(.pf-home),
 html[data-pf-route="ulubione"] #main-content > :not(.pf-home),
-html[data-pf-route="podcasty"] #main-content > :not(.pf-home) { display: none !important; }
+html[data-pf-route="podcasty"] #main-content > :not(.pf-home),
+html[data-pf-route="statystyki"] #main-content > :not(.pf-home) { display: none !important; }
 html[data-pf-route="start"] #react-admin-title,
 html[data-pf-route="ulubione"] #react-admin-title,
-html[data-pf-route="podcasty"] #react-admin-title { visibility: hidden; }
+html[data-pf-route="podcasty"] #react-admin-title,
+html[data-pf-route="statystyki"] #react-admin-title { visibility: hidden; }
 /* podcasty wycięte z widoków muzycznych (piterfy.js oznacza ich kafelki i wiersze) */
 .pf-pod { display: none !important; }
 

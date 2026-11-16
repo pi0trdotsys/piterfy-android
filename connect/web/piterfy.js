@@ -3,7 +3,8 @@
  * a tak zmiany docierają najpóźniej po 10 minutach). Ten plik dokłada:
  * nazwę i logo Piterfy wszędzie, gdzie widać „Navidrome” (tytuł karty, ikona, logowanie, napisy),
  * logo i pozycje „Start”, „Ulubione”, „Podcasty” w panelu bocznym, stronę startową w stylu Spotify (#/start),
- * stronę „Ulubione” (#/ulubione: tylko polubiona muzyka, odtwarzanie i losowo) i „Podcasty” (#/podcasty);
+ * stronę „Ulubione” (#/ulubione: tylko polubiona muzyka, odtwarzanie i losowo), „Podcasty” (#/podcasty)
+ * i „Statystyki” (#/statystyki: biblioteka, serwer, Wrapped; rysuje je stats.js);
  * podcasty są wycinane z widoków muzycznych,
  * przycisk „Mój gust” w górnym pasku, zdjęcie profilowe (menu użytkownika), plakietkę jakości dźwięku
  * na pasku odtwarzania, znacznik bieżącego widoku (do stylów) i tło nagłówka albumu/wykonawcy z jego okładki.
@@ -32,6 +33,8 @@
     '<path d="M12 20.5s-7-4.3-9-8.5C1.6 8.9 3.5 5 7 5c2 0 3.4 1.1 5 3 1.6-1.9 3-3 5-3 3.5 0 5.4 3.9 4 7-2 4.2-9 8.5-9 8.5z"></path></svg>';
   const MIC = '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
     '<rect x="9" y="3" width="6" height="11" rx="3"></rect><path d="M5 11a7 7 0 0 0 14 0M12 18v3M9 21h6"></path></svg>';
+  const CHART = '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+    '<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"></path></svg>';
   const SHUFFLE = '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
     '<path d="M16 3h5v5M4 20 21 3M21 16v5h-5M15 15l6 6M4 4l5 5"></path></svg>';
 
@@ -311,7 +314,7 @@
 
   // ── panel boczny: logo i „Start” nad menu ──
   // Muzyka i podcasty to osobne światy: „Ulubione” zawiera tylko polubioną muzykę, „Podcasty” tylko audycje.
-  const NAV = [["start", HOME, "Start", HOME_ICON], ["ulubione", "#/ulubione", "Ulubione", HEART_LINE], ["podcasty", "#/podcasty", "Podcasty", MIC]];
+  const NAV = [["start", HOME, "Start", HOME_ICON], ["ulubione", "#/ulubione", "Ulubione", HEART_LINE], ["podcasty", "#/podcasty", "Podcasty", MIC], ["statystyki", "#/statystyki", "Statystyki", CHART]];
 
   function sidebar() {
     document.querySelectorAll(".MuiDrawer-paper").forEach((paper) => {
@@ -1028,6 +1031,7 @@
       return li;
     };
     const items = [item(PHOTO, avatar.missing ? "Dodaj zdjęcie profilowe" : "Zmień zdjęcie profilowe", pickAvatar)];
+    items.push(item(CHART, "Statystyki dla nerdów", () => { location.hash = "#/statystyki"; }));
     items.push(item(SPARKLE, "Wygląd Piterfy: motywy i ikony", () => { if (window.PiterfyAppearance) window.PiterfyAppearance.open(); }));
     if (!avatar.missing) {
       items.push(item(TRASH, "Usuń zdjęcie profilowe", () => saveAvatar("DELETE")
@@ -1366,6 +1370,20 @@
     start: { state: home, ttl: 60000, load: loadHome, render: renderHome },
     ulubione: { state: liked, ttl: 15000, load: loadLiked, render: renderLiked, sig: (d) => d.songs.map((s) => s.id).join() + "|" + d.albums.length + "|" + d.artists.length },
     podcasty: { state: { data: null, at: 0, loading: false }, ttl: 120000, load: loadPodcasts, render: renderPodcasts },
+    // stats.js ładuje się osobno (loader na końcu pliku), więc strona chwilę czeka, aż się pojawi
+    statystyki: {
+      state: { data: null, at: 0, loading: false }, ttl: 300000,
+      load: () => new Promise((resolve, reject) => {
+        let tries = 0;
+        const timer = setInterval(() => {
+          if (window.PiterfyStats) { clearInterval(timer); resolve(window.PiterfyStats.load()); }
+          else if (++tries > 150) { clearInterval(timer); reject(new Error("stats.js")); }
+        }, 100);
+      }),
+      render: (box, d) => { if (window.PiterfyStats) window.PiterfyStats.render(box, d); },
+      sig: (d) => (d && (d.generated || d.error)) || "",
+      skeleton: () => (window.PiterfyStats ? window.PiterfyStats.skeleton() : ""),
+    },
   };
 
   // Szkielet strony startowej: ten sam układ co gotowa strona, z pulsującymi blokami, dopóki nie dojdą dane.
@@ -1430,6 +1448,8 @@
         revealSections(box);
       } else if (route === "start") {
         box.innerHTML = homeSkeleton();
+      } else if (page.skeleton) {
+        box.innerHTML = page.skeleton();
       }
     }
     if (!st.loading && Date.now() - st.at > page.ttl) {
@@ -1635,6 +1655,17 @@
   document.head.appendChild(core);
 })();
 // piterfy-crossfade-loader-end
+
+// piterfy-stats-loader
+;(() => {
+  const m = document.currentScript && document.currentScript.src.match(/[?&]v=([^&]+)/);
+  const v = "?v=" + (m ? m[1] : "1");
+  const core = document.createElement('script');
+  core.src = '/piterfy-ui/stats-core.js' + v;
+  core.onload = () => { const ui = document.createElement('script'); ui.src = '/piterfy-ui/stats.js' + v; document.head.appendChild(ui); };
+  document.head.appendChild(core);
+})();
+// piterfy-stats-loader-end
 
 // piterfy-library-loader
 ;(() => { const s = document.createElement('script'); s.src = '/piterfy-ui/library.js?v=20261104-204612'; document.head.appendChild(s); })();

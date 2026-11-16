@@ -87,6 +87,7 @@ MIXES            = os.environ.get("DISCOVER_MIXES", "all")      # „all”, lis
 MIX_EVERY_HOURS  = env_float("DISCOVER_MIX_EVERY_HOURS", 24)    # co ile godzin miksy dobierają utwory od nowa
 MIX_SIZE         = env_int("DISCOVER_MIX_SIZE", 40)             # najmniejsza liczba utworów w miksie (rośnie z biblioteką)
 MIX_SIZE_MAX     = env_int("DISCOVER_MIX_SIZE_MAX", 100)        # największa liczba utworów w miksie
+STATS_EVERY_HOURS = env_float("DISCOVER_STATS_EVERY_HOURS", 6)  # co ile godzin liczymy „Statystyki dla nerdów” (stats.py); 0 = wyłączone
 MIX_MAX_PER_ARTIST = env_int("DISCOVER_MIX_MAX_PER_ARTIST", 3)  # tylu utworów jednego wykonawcy najwyżej w miksie
 
 SEED_TRACKS   = 15        # ile najczęściej słuchanych utworów bierze za punkt wyjścia
@@ -958,7 +959,8 @@ def remember(history, jobs):
     for job in jobs:
         old = history.get(job["key"], {})
         history[job["key"]] = {"artist": job["artist"], "title": job["title"], "status": job["status"],
-                               "date": today, "via": job["via"], "user": job.get("user"), "file": job.get("file")}
+                               "date": today, "via": job["via"], "user": job.get("user"), "file": job.get("file"),
+                               "pool": job.get("pool"), "engine": "Last.fm" if LASTFM_API_KEY else "Deezer"}
         for field in ("bad_users", "fake_count", "fake_info"):  # pamięć o fałszywych kopiach tego utworu
             if field in old:
                 history[job["key"]][field] = old[field]
@@ -1296,6 +1298,19 @@ def refresh_taste(state, force=False):
         taste_state["retry_at"] = time.time() + 3600
 
 
+def refresh_stats(state, force=False):
+    """Statystyki dla nerdów (stats.py): biblioteka, stan serwera i Wrapped, co STATS_EVERY_HOURS godzin."""
+    if not force and (STATS_EVERY_HOURS <= 0 or time.time() - state.get("stats_checked", 0) < STATS_EVERY_HOURS * 3600):
+        return
+    import stats  # jak taste: osobny moduł, który korzysta z discover, więc import dopiero tutaj
+    try:
+        stats.generate(state=state)
+        state["stats_checked"] = time.time()
+    except Exception as e:  # statystyki nie mogą zatrzymać odkrywania
+        log(f"Statystyki się nie policzyły: {e} — spróbuję za godzinę.")
+        state["stats_checked"] = time.time() - STATS_EVERY_HOURS * 3600 + 3600
+
+
 # ── tematyczne miksy ─────────────────────────────────────────────────────────
 
 def mix_feature_lookup():
@@ -1451,6 +1466,7 @@ def main():
     parser.add_argument("--search", metavar='"ARTYSTA - TYTUŁ"', help="sprawdź jedno wyszukiwanie w Soulseek")
     parser.add_argument("--test-mail", action="store_true", help="wyślij próbnego maila")
     parser.add_argument("--taste", action="store_true", help="odśwież panel gustu od razu")
+    parser.add_argument("--stats", action="store_true", help="policz statystyki dla nerdów od razu")
     parser.add_argument("--podcasts", action="store_true", help="sprawdź kanały podcastów od razu")
     parser.add_argument("--mixes", action="store_true", help="odśwież tematyczne miksy (Happy Mix, Dark Mix...) od razu")
     parser.add_argument("--podcast-fetch", metavar="AUDYCJA", help="pobierz starsze odcinki audycji (podgląd, dopóki nie dodasz --yes)")
@@ -1474,6 +1490,11 @@ def main():
     if args.taste:
         state = load_state()
         refresh_taste(state, force=True)
+        save_state(state)
+        return
+    if args.stats:
+        state = load_state()
+        refresh_stats(state, force=True)
         save_state(state)
         return
     if args.test_mail:
@@ -1502,6 +1523,7 @@ def main():
         refresh_taste(state)
         refresh_podcasts(state)
         refresh_mixes(state)
+        refresh_stats(state)
         save_state(state)
         if time.time() >= retry_at and is_due(state, datetime.now()):
             try:

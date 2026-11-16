@@ -106,6 +106,26 @@ Navidrome + Last.fm ──► discover ──► slskd ──► incoming/ ─�
     - Aplikacja pokazuje miksy w półce „Twoje miksy” na ekranie głównym (rozpoznaje je po początku komentarza „Piterfy Mix”).
     - Odświeżenie od ręki: `docker compose run --rm --no-deps piterfy-discover --mixes`.
 
+- **Statystyki dla nerdów** (`stats.py`): co `DISCOVER_STATS_EVERY_HOURS` (domyślnie 6) godzin discover liczy trzy zestawienia
+  i zapisuje je w `discover/state/stats.json`; aplikacja i strona WWW pobierają plik z `GET /piterfy-api/stats`
+  (wymaga zalogowania do Navidrome, jak zdjęcia profilowe).
+    - **Biblioteka**: liczby utworów, albumów i wykonawców, czas i rozmiar, formaty, bitrate plików stratnych, próbkowanie
+      i głębia bitowa, hi-res, dekady, gatunki, rekordy oraz **rachunek jakości** z analizy widma (ile plików jest naprawdę
+      bezstratnych, ile „udawanych”, lista do wymiany od najczęściej słuchanych).
+    - **Serwer**: przyrost biblioteki tydzień po tygodniu (z daty dodania w Navidrome), miejsce na dysku (wolne
+      jest odświeżane przy każdym pytaniu), kosz, czas ostatniego skanu i odkrywania, skuteczność Soulseek, trafność odkryć
+      (polubione z ocenionych) oraz skuteczność według silnika rekomendacji (Last.fm albo Deezer) i puli (nowi albo
+      znani wykonawcy). Podział na silnik i pulę liczy się dopiero od wersji z statystykami: `remember()` zapisuje te pola
+      w historii od teraz, starsze wpisy ich nie mają.
+    - **Wrapped**: podsumowanie każdego z ostatnich 13 miesięcy i dwóch lat z dziennej historii odsłuchów panelu gustu
+      (czas słuchania, odsłuchy, top wykonawcy i utwory, nowi wykonawcy, seria dni, rekordowy dzień) wraz z porównaniem do
+      poprzedniego miesiąca albo roku (przy trwającym okresie: do tej samej liczby dni) i **typem słuchacza**
+      (Eksplorator, Wierny fan, Nocny marek, Maratończyk, Powtarzacz, Podróżnik w czasie, Na fali albo Równy rytm).
+      „Nocny marek” wymaga scrobbli Last.fm (co najmniej 40 w okresie), bo Navidrome nie zna godzin słuchania.
+      Wymaga co najmniej 15 odsłuchów, a porównanie pojawia się, gdy historia obejmuje poprzedni okres.
+    - Odsłuchy są liczone dla konta, którego discover używa do Navidrome (tak samo jak panel gustu).
+    - Odświeżenie od ręki: `docker compose run --rm --no-deps piterfy-discover --stats`.
+
 ## Pliki
 
 | Na serwerze | Co to jest |
@@ -120,6 +140,7 @@ Navidrome + Last.fm ──► discover ──► slskd ──► incoming/ ─�
 | `discover/mixes.py` | tematyczne miksy (Happy Mix, Dark Mix, Electronic Mix, Bass Boost...): reguły gatunków i nastroju oraz dobór utworów |
 | `discover/podcasts.py`, `discover/podcasts.txt` | podcasty: moduł (RSS → pliki audio z tagami) i lista audycji |
 | `library/Podcasty/` | odcinki podcastów, po jednym folderze na audycję |
+| `discover/stats.py`, `discover/state/stats.json` | statystyki dla nerdów: liczy je discover co kilka godzin, oddaje `/piterfy-api/stats` |
 | `discover/profile_api.py` | serwer zdjęć profilowych i jakości utworów (port 8090 w sieci Dockera; uruchamia go discover) |
 | `discover/beets/spectrum.py` | analiza widma: wykrywa FLAC-i zrobione z MP3 i podbite MP3; liczy ją pętla importu beets |
 | `discover/beets/spectrum.json` | wyniki analizy widma dla każdego pliku biblioteki |
@@ -157,6 +178,7 @@ Po zmianie uruchom `docker compose up -d piterfy-discover`.
 | `DISCOVER_MIX_EVERY_HOURS` | `24` | co ile godzin miksy dobierają utwory od nowa |
 | `DISCOVER_MIX_SIZE` / `DISCOVER_MIX_SIZE_MAX` | `40` / `100` | najmniejsza i największa liczba utworów w miksie |
 | `DISCOVER_MIX_MAX_PER_ARTIST` | `3` | najwyżej tylu utworów jednego wykonawcy w miksie |
+| `DISCOVER_STATS_EVERY_HOURS` | `6` | co ile godzin liczą się statystyki dla nerdów (`0` = wyłączone) |
 | `DISCOVER_BLOCK` | | wykonawcy do pomijania, rozdzieleni `;` |
 | `DISCOVER_DOWNLOAD_TIMEOUT_MIN` | `90` | ile minut czekać na pobrania (reszta dociągnie się później) |
 | `LASTFM_API_KEY` / `LASTFM_SECRET` | | klucz API Last.fm: rekomendacje w discover i scrobblowanie w Navidrome |
@@ -175,6 +197,7 @@ docker compose run --rm piterfy-discover --search "Artysta - Tytuł"  # jedno pr
 docker compose run --rm --no-deps piterfy-discover --test-mail      # próbny mail
 docker compose run --rm --no-deps piterfy-discover --taste          # odśwież panel gustu od razu
 docker compose run --rm --no-deps piterfy-discover --mixes          # odśwież miksy (Happy Mix, Dark Mix...) od razu
+docker compose run --rm --no-deps piterfy-discover --stats          # policz statystyki dla nerdów od razu
 docker compose run --rm piterfy-discover --now                      # przebieg poza harmonogramem
 docker logs -f piterfy-discover                                      # co robi discover
 docker logs -f piterfy-beets                                         # co importuje beets

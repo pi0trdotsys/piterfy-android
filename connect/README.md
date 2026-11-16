@@ -66,6 +66,12 @@ SMTP and Telegram do not provide an idempotency key. Each channel is durably cla
 
 `mode: "radio"` in `/piterfy-api/connect/dj` is the acquisition lane behind smart playback in Android and the web player. It reuses the DJ worker's Last.fm/Deezer similarity, slskd search and import path, but never builds library blocks, speech or summaries. Clients send the last five distinct artists/songs (newest first, weights in `server/radio_core.py`) with `start`, poll with `get`, and `select` a ready discovery block to take it; accepted songs are then added to the queue one at a time. Candidates are interleaved across seeds with one song per artist, so consecutive downloads differ. At most three radio batches per account and hour are started, below the shared eight-batch limit, so Discover and DJ keep their capacity. Nothing runs for an account unless a client keeps the session warm, and idle sessions expire after two hours.
 
+## Nerd statistics and Wrapped
+
+`GET /piterfy-api/stats` (served by `stack/discover/profile_api.py`, authenticated with the Navidrome session token like avatars and source quality) returns `stats.json`, which the discovery daemon recomputes every six hours (`stack/discover/stats.py`, `DISCOVER_STATS_EVERY_HOURS`). It has three parts: `library` (counts, formats, bitrate/sample-rate/bit-depth histograms, hi-res, decades, records and the spectrum-based quality ledger with a replacement list), `server` (weekly growth from Navidrome's `createdAt`, disk usage refreshed on every request, last scan and discovery run, Soulseek success, discovery hit rate, success per recommendation engine and candidate pool) and `wrapped` (one summary per recent month and year with a comparison against the previous period and a listener type). Everything is computed server side so Android and the web draw the same numbers. Wrapped is built from the per-day play history kept by the taste panel; the listener type "Night owl" needs Last.fm scrobbles, because Navidrome has no play times. The per-engine and per-pool success columns only count discoveries made after the update that records them. Plays are those of the account the discovery daemon uses.
+
+The web page is `#/statystyki` (`web/stats.js`, `web/stats-core.js`, `web/stats.css`, hooked into `piterfy.js`; the Wrapped card is a canvas exported as PNG). Android shows the same data in a full-screen dialog (`PiterfyStatsDialog`, `PiterfyStatsClient`) and renders the Wrapped card to a bitmap for sharing. Deploy the stack files (`stats.py`, `profile_api.py`, `discover.py`) into `~/piterfy-stack/discover/` and restart `piterfy-discover` once, then publish the three web files into `discover/navidrome-ui/` together with `piterfy.js` and `piterfy.css`.
+
 ## Checks
 
 `dj_scripts.py` rotates opening and between-song variants, excluding recently used templates where possible and avoiding immediate repetition when the pool is exhausted. Only actual artist/title/album/year/genre metadata supplies factual remarks. Variant IDs remain in blocks for future selection. Up to two recent active blocks can refresh their unclaimed cached clips during upgrade; concurrent claims are rechecked before updating. Android stores explicit source markers in music metadata and a small account-scoped queue context so visible mode badges survive a process restart before session polling completes.
@@ -81,6 +87,9 @@ python -m unittest discover -s connect/server -p test_connect.py
 python -m unittest discover -s connect/server -p 'test_*.py'
 node connect/web/lyrics-core.test.cjs
 node connect/web/smart-core.test.cjs
+node --test connect/web/stats-core.test.cjs
+node --check connect/web/stats.js
+python -m unittest discover -s connect/stack/discover -p 'test_*.py'
 node --check connect/web/lyrics.js
 node --check connect/web/connect.js
 node --check connect/web/miniplayer.js

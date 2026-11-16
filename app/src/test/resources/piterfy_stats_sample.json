@@ -1,0 +1,499 @@
+{
+ "version": 1,
+ "generated": "2026-11-16T14:05+00:00",
+ "library": {
+  "tracks": 5,
+  "albums": 3,
+  "artists": 4,
+  "seconds": 815,
+  "bytes": 128000000,
+  "starred": 0,
+  "played": 1,
+  "unplayed": 4,
+  "formats": [
+   [
+    "flac",
+    2,
+    60000000
+   ],
+   [
+    "mp3",
+    2,
+    38000000
+   ],
+   [
+    "m4a",
+    1,
+    30000000
+   ]
+  ],
+  "lossless": 3,
+  "lossy": 2,
+  "lossy_bitrates": [
+   [
+    "<128",
+    0
+   ],
+   [
+    "128–191",
+    1
+   ],
+   [
+    "192–255",
+    0
+   ],
+   [
+    "256–319",
+    0
+   ],
+   [
+    "320+",
+    1
+   ]
+  ],
+  "sample_rates": [
+   [
+    "≤ 44,1",
+    4
+   ],
+   [
+    "48",
+    0
+   ],
+   [
+    "88–96",
+    1
+   ],
+   [
+    "176+",
+    0
+   ]
+  ],
+  "bit_depths": [
+   [
+    16,
+    2
+   ],
+   [
+    24,
+    1
+   ]
+  ],
+  "hires": 1,
+  "hires_upsampled": 1,
+  "decades": [
+   [
+    1990,
+    4
+   ],
+   [
+    2020,
+    1
+   ]
+  ],
+  "years": {
+   "oldest": {
+    "title": "Song 1",
+    "artist": "Alpha",
+    "year": 1991
+   },
+   "newest": {
+    "title": "Song 2",
+    "artist": "Beta",
+    "year": 2021
+   },
+   "average": 1999
+  },
+  "records": {
+   "longest": {
+    "title": "Song 1",
+    "artist": "Alpha",
+    "seconds": 200
+   },
+   "shortest": {
+    "title": "Song 3",
+    "artist": "Gamma",
+    "seconds": 15
+   },
+   "biggest": {
+    "title": "Song 1",
+    "artist": "Alpha",
+    "bytes": 30000000
+   }
+  },
+  "top_genres": [
+   [
+    "Rock",
+    5
+   ]
+  ],
+  "quality": {
+   "checked": 4,
+   "pending": 1,
+   "ok": 1,
+   "suspect": 0,
+   "fake": 1,
+   "transcoded": 1,
+   "upsampled": 1,
+   "unknown": 0,
+   "genuine_lossless": 1,
+   "replace_total": 2,
+   "replace": [
+    {
+     "id": "s4",
+     "title": "Song 4",
+     "artist": "Delta",
+     "album": "Album",
+     "format": "mp3",
+     "verdict": "fake",
+     "source_kbps": 128,
+     "plays": 9
+    },
+    {
+     "id": "s3",
+     "title": "Song 3",
+     "artist": "Gamma",
+     "album": "Album",
+     "format": "mp3",
+     "verdict": "transcoded",
+     "source_kbps": 192,
+     "plays": 0
+    }
+   ]
+  }
+ },
+ "server": {
+  "growth": {
+   "weeks": [
+    [
+     "2026-08-31",
+     0,
+     0
+    ],
+    [
+     "2026-09-07",
+     0,
+     0
+    ],
+    [
+     "2026-09-14",
+     0,
+     0
+    ],
+    [
+     "2026-09-21",
+     0,
+     0
+    ],
+    [
+     "2026-09-28",
+     0,
+     0
+    ],
+    [
+     "2026-10-05",
+     0,
+     0
+    ],
+    [
+     "2026-10-12",
+     0,
+     0
+    ],
+    [
+     "2026-10-19",
+     0,
+     0
+    ],
+    [
+     "2026-10-26",
+     0,
+     0
+    ],
+    [
+     "2026-11-02",
+     0,
+     0
+    ],
+    [
+     "2026-11-09",
+     5,
+     128000000
+    ],
+    [
+     "2026-11-16",
+     0,
+     0
+    ]
+   ],
+   "added_7": 5,
+   "added_30": 5,
+   "first": "2026-11-10"
+  },
+  "acquisition": {
+   "tried": 3,
+   "got": 2,
+   "missed": 1,
+   "pending": 1,
+   "soulseek_rate": 0.667,
+   "outcomes": {
+    "done": 1,
+    "pending": 1,
+    "trashed": 1,
+    "notfound": 1
+   },
+   "engines": {
+    "Deezer": {
+     "tried": 1,
+     "got": 0,
+     "rate": 0.0
+    },
+    "Last.fm": {
+     "tried": 2,
+     "got": 2,
+     "rate": 1.0
+    }
+   },
+   "pools": {
+    "familiar": {
+     "tried": 1,
+     "got": 0,
+     "rate": 0.0
+    },
+    "new": {
+     "tried": 2,
+     "got": 2,
+     "rate": 1.0
+    }
+   }
+  },
+  "discover": {
+   "downloaded": 2,
+   "liked": 1,
+   "trashed": 1,
+   "hit_rate": 0.5
+  },
+  "disk": {
+   "total": 1000,
+   "used": 600,
+   "free": 400
+  },
+  "trash": {
+   "files": 2,
+   "bytes": 100
+  },
+  "last_run": "2026-11-15T04:00",
+  "last_scan": "2026-11-16T09:12:00Z",
+  "scanning": false
+ },
+ "wrapped": {
+  "periods": [
+   {
+    "kind": "month",
+    "key": "2026-11",
+    "label": "Listopad 2026",
+    "start": "2026-11-01",
+    "end": "2026-11-16",
+    "partial": true,
+    "plays": 90,
+    "minutes": 208,
+    "tracks": 3,
+    "artists": 3,
+    "active_days": 15,
+    "days_elapsed": 16,
+    "longest_streak": 15,
+    "busiest_day": {
+     "day": "2026-11-15",
+     "plays": 6
+    },
+    "top_artists": [
+     {
+      "name": "Alpha",
+      "plays": 30
+     },
+     {
+      "name": "Beta",
+      "plays": 30
+     },
+     {
+      "name": "Gamma",
+      "plays": 30
+     }
+    ],
+    "top_tracks": [
+     {
+      "title": "Song 1",
+      "artist": "Alpha",
+      "plays": 30
+     },
+     {
+      "title": "Song 2",
+      "artist": "Beta",
+      "plays": 30
+     },
+     {
+      "title": "Song 3",
+      "artist": "Gamma",
+      "plays": 30
+     }
+    ],
+    "top_genres": [
+     [
+      "Rock",
+      90
+     ]
+    ],
+    "new_artists": 1,
+    "night_share": null,
+    "peak_hour": null,
+    "listener": {
+     "id": "repeater",
+     "name": "Powtarzacz",
+     "blurb": "Dobry kawałek zasługuje na dziesiąty raz.",
+     "why": [
+      "średnio 30 razy ten sam utwór"
+     ],
+     "score": 8.57
+    },
+    "compare": {
+     "plays": 125,
+     "minutes": 56,
+     "artists": 50,
+     "prev_plays": 40,
+     "prev_minutes": 133,
+     "prev_label": "2026-10-01 – 2026-10-16"
+    }
+   },
+   {
+    "kind": "month",
+    "key": "2026-10",
+    "label": "Październik 2026",
+    "start": "2026-10-01",
+    "end": "2026-10-31",
+    "partial": false,
+    "plays": 40,
+    "minutes": 133,
+    "tracks": 2,
+    "artists": 2,
+    "active_days": 10,
+    "days_elapsed": 31,
+    "longest_streak": 10,
+    "busiest_day": {
+     "day": "2026-10-10",
+     "plays": 4
+    },
+    "top_artists": [
+     {
+      "name": "Alpha",
+      "plays": 20
+     },
+     {
+      "name": "Beta",
+      "plays": 20
+     }
+    ],
+    "top_tracks": [
+     {
+      "title": "Song 1",
+      "artist": "Alpha",
+      "plays": 20
+     },
+     {
+      "title": "Song 2",
+      "artist": "Beta",
+      "plays": 20
+     }
+    ],
+    "top_genres": [
+     [
+      "Rock",
+      40
+     ]
+    ],
+    "new_artists": 2,
+    "night_share": null,
+    "peak_hour": null,
+    "listener": {
+     "id": "repeater",
+     "name": "Powtarzacz",
+     "blurb": "Dobry kawałek zasługuje na dziesiąty raz.",
+     "why": [
+      "średnio 20 razy ten sam utwór"
+     ],
+     "score": 5.71
+    },
+    "compare": null
+   },
+   {
+    "kind": "year",
+    "key": "2026",
+    "label": "Rok 2026",
+    "start": "2026-01-01",
+    "end": "2026-11-16",
+    "partial": true,
+    "plays": 130,
+    "minutes": 341,
+    "tracks": 3,
+    "artists": 3,
+    "active_days": 25,
+    "days_elapsed": 320,
+    "longest_streak": 15,
+    "busiest_day": {
+     "day": "2026-11-15",
+     "plays": 6
+    },
+    "top_artists": [
+     {
+      "name": "Alpha",
+      "plays": 50
+     },
+     {
+      "name": "Beta",
+      "plays": 50
+     },
+     {
+      "name": "Gamma",
+      "plays": 30
+     }
+    ],
+    "top_tracks": [
+     {
+      "title": "Song 1",
+      "artist": "Alpha",
+      "plays": 50
+     },
+     {
+      "title": "Song 2",
+      "artist": "Beta",
+      "plays": 50
+     },
+     {
+      "title": "Song 3",
+      "artist": "Gamma",
+      "plays": 30
+     }
+    ],
+    "top_genres": [
+     [
+      "Rock",
+      130
+     ]
+    ],
+    "new_artists": null,
+    "night_share": null,
+    "peak_hour": null,
+    "listener": {
+     "id": "repeater",
+     "name": "Powtarzacz",
+     "blurb": "Dobry kawałek zasługuje na dziesiąty raz.",
+     "why": [
+      "średnio 43,3 razy ten sam utwór"
+     ],
+     "score": 12.38
+    },
+    "compare": null
+   }
+  ],
+  "history_since": "2026-01-01"
+ }
+}
