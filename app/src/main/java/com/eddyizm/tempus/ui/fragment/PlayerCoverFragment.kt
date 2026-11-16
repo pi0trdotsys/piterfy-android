@@ -274,7 +274,12 @@ class PlayerCoverFragment : Fragment() {
     private fun setMediaBrowserListener(browser: MediaBrowser) {
         updatePlaybackState(browser.mediaMetadata, browser.currentMediaItemIndex)
 
+        bind?.nowPlayingArtworkPager?.let { com.eddyizm.tempus.util.PiterfyMotion.cover(it, browser.isPlaying, animate = false) }
         browser.addListener(object : Player.Listener {
+            override fun onIsPlayingChanged(isPlaying: Boolean) {
+                bind?.nowPlayingArtworkPager?.let { com.eddyizm.tempus.util.PiterfyMotion.cover(it, isPlaying) }
+            }
+
             override fun onMediaMetadataChanged(mediaMetadata: MediaMetadata) {
                 updatePlaybackState(mediaMetadata, browser.currentMediaItemIndex)
                 toggleOverlayVisibility(false)

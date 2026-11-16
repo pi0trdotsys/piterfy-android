@@ -18,6 +18,7 @@ from dj_buffer import BufferedSessions as Sessions, BRIDGES, cached_announcement
 from dj_reviews import Reviews
 from dj_scripts import compose
 from connect_core import Rejected
+import radio_core
 
 ROOT = Path(os.environ.get('DJ_STATE_DIR', '/state/dj'))
 sessions = Sessions(ROOT)
@@ -142,9 +143,16 @@ def run_job(job):
               + (1 if str(s.get('genre', '')).lower() in seed_genres else 0)+genre_scores.get(str(s.get('genre','')).casefold(),0), reverse=True)
     if cancelled(job):
         sessions.finish(job); return
-    seed_tracks = [dict(artist=s['artist'], title=s['title'], weight=1) for s in seeds if s['artist'] and s['title']][:3]
-    seed_artists = [dict(name=s['artist'], weight=1) for s in seeds if s['artist']][:3]
+    # Radio (smart playback) learns from the last few songs, newest first and weighted; DJ/discover keep three seeds.
+    radio = job[2] == 'radio'
+    take_seeds = radio_core.RADIO_SEEDS if radio else 3
+    seed_tracks = [dict(artist=s['artist'], title=s['title'], weight=radio_core.seed_weight(i) if radio else 1)
+                   for i, s in enumerate([s for s in seeds if s['artist'] and s['title']][:take_seeds])]
+    named = list(dict.fromkeys(s['artist'] for s in seeds if s['artist']))[:take_seeds]
+    seed_artists = [dict(name=a, weight=radio_core.seed_weight(i) if radio else 1) for i, a in enumerate(named)]
     candidates = music.recommend(seed_tracks, seed_artists)
+    # Similarity services return one seed's cluster after another; without this the same few songs are tried first.
+    candidates = radio_core.order_candidates(candidates, limit=60, blocked=music.BLOCKED_ARTISTS)
     genre = ''
     if state['exploration'] >= 35 and music.LASTFM_API_KEY:
         genres = [s['genre'].lower() for s in seeds if s['genre'] and 'podcast' not in s['genre'].lower()]

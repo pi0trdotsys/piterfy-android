@@ -463,8 +463,8 @@
     <string name="settings_audio_transcode_priority_toast">Priorytet przy transkodowaniu utworu danego serwerowi</string>
     <string name="settings_choose_download_folder">Wybierz folder dla pobranych plików muzycznych</string>
     <string name="settings_clear_download_folder">Wyczyść folder pobierania</string>
-    <string name="settings_continuous_play_summary">Pozwala muzyce odtwarzać się dalej po końcu playlisty, odtwarza podobne piosenki</string>
-    <string name="settings_continuous_play_title">Odtwarzanie bez przerwy</string>
+    <string name="settings_continuous_play_summary">Gra dalej różnorodnymi, podobnymi utworami z biblioteki, co kilka utworów dorzuca coś nowego i po cichu sprowadza podobne utwory, których jeszcze nie ma na serwerze</string>
+    <string name="settings_continuous_play_title">Inteligentne odtwarzanie</string>
     <string name="settings_number_tracks_keep_in_queue">Liczba utworów do utrzymania w kolejce</string>
     <string name="settings_number_tracks_keep_in_queue_summary">Dostosuj liczbę utworów utrzymywanych w kolejce zanim zostaną dodane utwory z odtwarzania bez przerwy</string>
     <string name="settings_fallback_to_random_tracks_summary">Odtwarzaj zastępczo losowe piosenki jeśli podobne utwory nie są dostępne</string>

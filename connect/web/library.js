@@ -10,7 +10,94 @@
     return [songs[0],...pins,...songs.slice(1)].slice(0,500);
   }
   function podcast(song){const core=typeof module==='object'&&module.exports?require('./media-kind-core.js'):window.PiterfyMediaKinds;return core?core.isPodcast(song):String(song?.type).toLowerCase()==='podcast'||/(^|[;,/])\s*(podcasts?|podcasty)\s*($|[;,/])/i.test(song?.genre||'')||/(^|[/\\])(podcasts?|podcasty)([/\\]|$)/i.test(song?.path||'');}
-  if(typeof module==='object'&&module.exports){module.exports={protectedQueue,queueIndex};return;}
+
+  // ── inteligentne odtwarzanie: czysty rdzeń wyboru (bez sieci, testowany w smart-core.test.cjs) ──
+  // Wzorem są ostatnio grane utwory (nie tylko bieżący), podobieństwa z kilku źródeł się sumują, wykonawcy z ostatniej
+  // chwili są wyciszani, a utwory losuje się ważonym losowaniem, nie biorąc zawsze początku listy.
+  const smartCore=(()=>{
+    const fold=s=>String(s||'').normalize('NFKD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
+    const artistKey=s=>fold(String(typeof s==='string'?s:s?.artist||'').split(/\s*(?:,|;|&|\bfeat\.?|\bft\.?|\bx\b)\s*/i)[0]);
+    const songKey=s=>artistKey(s)+'|'+fold(String(s?.title||'').replace(/\s*[\(\[].*?[\)\]]\s*/g,' '));
+    const DAY=864e5, MEMORY_DAYS=14, MEMORY_MAX=600;
+    /** Do kilku ostatnich wykonawców (najnowszy pierwszy), z których pytamy o podobne utwory. */
+    function seeds(history,max=4){
+      const out=[],seen=new Set();
+      for(const song of history||[]){
+        const key=artistKey(song);
+        if(!key||seen.has(key))continue;
+        seen.add(key);out.push(song);
+        if(out.length>=max)break;
+      }
+      return out;
+    }
+    /** Sumuje listy podobnych utworów: utwór polecany przez kilka wzorów dostaje większą wagę (`hits`). */
+    function merge(lists){
+      const byId=new Map();
+      lists.forEach((songs,source)=>{
+        (songs||[]).forEach((song,rank)=>{
+          if(!song?.id)return;
+          const row=byId.get(song.id)||{song,hits:0,sources:new Set(),best:rank};
+          if(!row.sources.has(source)){row.sources.add(source);row.hits+=1;}
+          row.best=Math.min(row.best,rank);
+          byId.set(song.id,row);
+        });
+      });
+      return [...byId.values()];
+    }
+    /** Pamięć „już to było”: {id: czas} z ostatnich dni, ograniczona liczbą wpisów. */
+    function remember(memory,ids,now=Date.now()){
+      const next={...(memory||{})};
+      for(const id of ids)if(id)next[id]=now;
+      const live=Object.entries(next).filter(([,at])=>now-at<MEMORY_DAYS*DAY).sort((a,b)=>b[1]-a[1]).slice(0,MEMORY_MAX);
+      return Object.fromEntries(live);
+    }
+    function recentIds(memory,now=Date.now(),days=7){return new Set(Object.entries(memory||{}).filter(([,at])=>now-at<days*DAY).map(([id])=>id));}
+    function weight(row,ctx){
+      const song=row.song,artist=artistKey(song),n=Math.max(1,ctx.size);
+      let w=1+0.6*(row.hits-1)+0.5*(1-Math.min(row.best,40)/40);
+      if(row.rank!==undefined)w+=0.8*(1-row.rank/n);                      // wyższe miejsce w rankingu gustu
+      const novelty=(ctx.exploration-50)/50,played=Number(song.playCount)>0;
+      w+=novelty*(played?-0.3:0.6);                                      // suwak odkrywania: więcej nowych albo znajomych
+      if(song.starred)w+=0.7;
+      const age=ctx.artists.indexOf(artist);
+      if(age>=0)w*=age<6?0.12:0.45;                                       // ten wykonawca grał przed chwilą
+      const genre=fold(song.genre);
+      if(genre&&ctx.genreRun>=3&&genre===ctx.lastGenre)w*=0.6;           // nie utknij w jednym gatunku
+      return Math.max(w,0.01);
+    }
+    /**
+     * candidates: [{song,hits,best,rank?}] z `merge`; ctx.history: ostatnio grane (najnowsze pierwsze);
+     * ctx.queue: id utworów w kolejce; ctx.recent: Set id z pamięci; exploration 0–100.
+     */
+    function pick({candidates,history=[],queue=[],recent=new Set(),count=5,exploration=50,maxPerArtist=1,rng=Math.random}){
+      const inQueue=new Set(queue),played=new Set(history.map(s=>s.id)),titles=new Set(history.map(songKey));
+      const seen=new Set();
+      const pool=candidates.filter(row=>{
+        const s=row.song;
+        if(!s?.id||inQueue.has(s.id)||played.has(s.id)||recent.has(s.id)||podcast(s))return false;
+        const key=songKey(s);
+        if(titles.has(key)||seen.has(key))return false;
+        seen.add(key);return true;
+      });
+      const artists=[];for(const s of history){const a=artistKey(s);if(!artists.includes(a))artists.push(a);}
+      const genres=history.map(s=>fold(s.genre)),lastGenre=genres[0]||'';
+      let genreRun=0;for(const g of genres){if(g&&g===lastGenre)genreRun++;else break;}
+      const ctx={size:pool.length,exploration:Math.max(0,Math.min(100,Number(exploration))),artists,lastGenre,genreRun};
+      // ważone losowanie bez zwracania (Efraimidis–Spirakis): klucz = u^(1/w)
+      const keyed=pool.map(row=>({row,key:Math.pow(Math.max(rng(),1e-9),1/weight(row,ctx))})).sort((a,b)=>b.key-a.key);
+      const limit=Math.max(1,pool.length<count*2?maxPerArtist+1:maxPerArtist);
+      const out=[],per=new Map();
+      for(const {row} of keyed){
+        const a=artistKey(row.song);
+        if((per.get(a)||0)>=limit)continue;
+        per.set(a,(per.get(a)||0)+1);out.push(row.song);
+        if(out.length>=count)break;
+      }
+      return out;
+    }
+    return {artistKey,songKey,seeds,merge,remember,recentIds,pick};
+  })();
+  if(typeof module==='object'&&module.exports){module.exports={protectedQueue,queueIndex,smart:smartCore};return;}
   if (window.PiterfyLibrary) return;
   let store, dialog, account = '', preferences = {}, previous, lastSave = 0, generation = 0;
   let applyingQueue = false, seekGuard = 0, saving = false, checkedAlbum = '', coverSource = '';
@@ -77,7 +164,7 @@
     const byId=new Map(unique.map(s=>[s.id,s]));
     return ranked.items.map(row=>({...byId.get(row.id),piterfyReason:row.reason}));
   }
-  window.PiterfyLibrary={rankSongs, play, prefetch:records, queue:openQueue, downloads:openDownloads, feedback:vote, exploration:()=>preferences.exploration??50, candidates:()=>subsonic('getRandomSongs',{size:100}).then(r=>r.randomSongs?.song||[])};
+  window.PiterfyLibrary={smart:smartCore, rankSongs, play, prefetch:records, queue:openQueue, downloads:openDownloads, feedback:vote, exploration:()=>preferences.exploration??50, candidates:()=>subsonic('getRandomSongs',{size:100}).then(r=>r.randomSongs?.song||[])};
   const djScript=document.createElement('script');djScript.src='/piterfy-ui/dj.js?v='+encodeURIComponent(new URL(document.currentScript?.src||location.href).searchParams.get('v')||Date.now());document.head.append(djScript);
   async function records(songs) {
     const owner=identity();if(preparedIdentity!==owner){preparedRecords.clear();preparedIdentity=owner;}

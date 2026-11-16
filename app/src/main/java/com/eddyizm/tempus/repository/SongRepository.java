@@ -17,6 +17,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -300,6 +303,75 @@ public class SongRepository {
         }
 
         return new ArrayList<>();
+    }
+
+
+    /**
+     * Piterfy: inteligentne odtwarzanie pyta o podobne utwory u kilku ostatnich wykonawcow i utworow naraz,
+     * a nie tylko u biezacego. Zwraca po jednej liscie na zrodlo (do PiterfySmartPolicy.merge); gdy brak
+     * podobnych albo jest ich za malo, dokladamy losowe utwory (opcjonalnie z gatunku biezacego).
+     */
+    public void getSmartCandidateLists(List<Child> artistSeeds, List<Child> trackSeeds, String genre,
+                                       boolean withRandom, BiConsumer<List<List<Child>>, List<Child>> done) {
+        final List<List<Child>> lists = Collections.synchronizedList(new ArrayList<>());
+        final List<List<Child>> randoms = Collections.synchronizedList(new ArrayList<>());
+        int total = artistSeeds.size() + trackSeeds.size() + (withRandom ? 2 : 0);
+        if (total == 0) {
+            done.accept(new ArrayList<>(), new ArrayList<>());
+            return;
+        }
+        final AtomicInteger pending = new AtomicInteger(total);
+        final Runnable finish = () -> {
+            if (pending.decrementAndGet() == 0) {
+                List<Child> random = new ArrayList<>();
+                synchronized (randoms) { for (List<Child> r : randoms) random.addAll(r); }
+                done.accept(new ArrayList<>(lists), random);
+            }
+        };
+        for (Child seed : artistSeeds) {
+            App.getSubsonicClientInstance(false).getBrowsingClient().getSimilarSongs2(seed.getArtistId(), 40)
+                    .enqueue(smartCallback("similarSongs2", lists, finish));
+        }
+        for (Child seed : trackSeeds) {
+            App.getSubsonicClientInstance(false).getBrowsingClient().getSimilarSongs(seed.getId(), 30)
+                    .enqueue(smartCallback("similarSongs", lists, finish));
+        }
+        if (withRandom) {
+            if (genre != null && !genre.isEmpty()) {
+                App.getSubsonicClientInstance(false).getAlbumSongListClient().getRandomSongs(40, null, null, genre)
+                        .enqueue(smartCallback("randomSongs", randoms, finish));
+            } else {
+                finish.run();
+            }
+            App.getSubsonicClientInstance(false).getAlbumSongListClient().getRandomSongs(30, null, null)
+                    .enqueue(smartCallback("randomSongs", randoms, finish));
+        }
+    }
+
+    private Callback<ApiResponse> smartCallback(String type, List<List<Child>> lists, Runnable finish) {
+        return new Callback<ApiResponse>() {
+            @Override
+            public void onResponse(@NonNull Call<ApiResponse> call, @NonNull Response<ApiResponse> response) {
+                List<Child> songs = new ArrayList<>();
+                if (type.equals("randomSongs")) {
+                    if (response.isSuccessful() && response.body() != null
+                            && response.body().getSubsonicResponse().getRandomSongs() != null
+                            && response.body().getSubsonicResponse().getRandomSongs().getSongs() != null) {
+                        songs.addAll(response.body().getSubsonicResponse().getRandomSongs().getSongs());
+                    }
+                } else {
+                    songs.addAll(extractSongs(response, type));
+                }
+                songs.removeIf(s -> s == null || s.getId() == null || com.eddyizm.tempus.util.PiterfyMedia.isPodcast(s));
+                if (!songs.isEmpty()) lists.add(songs);
+                finish.run();
+            }
+
+            @Override
+            public void onFailure(@NonNull Call<ApiResponse> call, @NonNull Throwable t) {
+                finish.run();
+            }
+        };
     }
 
     public MutableLiveData<List<Child>> getRandomSample(int number, Integer fromYear, Integer toYear) {

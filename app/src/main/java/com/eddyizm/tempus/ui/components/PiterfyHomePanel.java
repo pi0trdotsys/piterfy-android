@@ -35,6 +35,7 @@ import com.eddyizm.tempus.subsonic.models.Child;
 import com.eddyizm.tempus.subsonic.models.Playlist;
 import com.eddyizm.tempus.util.Constants;
 import com.eddyizm.tempus.util.DownloadUtil;
+import com.eddyizm.tempus.util.PiterfyMotion;
 import com.eddyizm.tempus.util.Preferences;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.snackbar.Snackbar;
@@ -203,7 +204,11 @@ public final class PiterfyHomePanel extends LinearLayout implements DefaultLifec
         icon.setColorFilter(Color.BLACK);
         int inner = dp(sizeDp * 6 / 10);
         button.addView(icon, new FrameLayout.LayoutParams(inner, inner, Gravity.CENTER));
-        button.setOnClickListener(click);
+        button.setOnClickListener(v -> {
+            PiterfyMotion.pop(v);
+            click.onClick(v);
+        });
+        PiterfyMotion.pressable(button, 0.9f);
         button.setContentDescription(getResources().getString(R.string.piterfy_play));
         return button;
     }
@@ -239,7 +244,12 @@ public final class PiterfyHomePanel extends LinearLayout implements DefaultLifec
                 if (list.isEmpty()) {
                     shelf.addView(text(getResources().getString(R.string.piterfy_discover_empty), 14, 0xFFB3B3B3, false));
                 }
-                for (Playlist p : list.subList(0, Math.min(7, list.size()))) shelf.addView(card(p));
+                int cardIndex = 0;
+                for (Playlist p : list.subList(0, Math.min(7, list.size()))) {
+                    View cardView = card(p);
+                    PiterfyMotion.enter(cardView, cardIndex++);
+                    shelf.addView(cardView);
+                }
                 buildTiles();
             }
 
@@ -256,7 +266,12 @@ public final class PiterfyHomePanel extends LinearLayout implements DefaultLifec
 
     private void showMixes(List<Playlist> list) {
         mixShelf.removeAllViews();
-        for (Playlist p : list) mixShelf.addView(card(p));
+        int index = 0;
+        for (Playlist p : list) {
+            View c = card(p);
+            PiterfyMotion.enter(c, index++);
+            mixShelf.addView(c);
+        }
         mixSection.setVisibility(list.isEmpty() ? GONE : VISIBLE);
     }
 
@@ -315,6 +330,7 @@ public final class PiterfyHomePanel extends LinearLayout implements DefaultLifec
             rowParams.bottomMargin = dp(8);
             for (int j = 0; j < 2; j++) {
                 View cell = i + j < items.size() ? items.get(i + j) : new View(getContext());
+                if (i + j < items.size()) PiterfyMotion.enter(cell, i + j, 10);
                 LayoutParams p = new LayoutParams(0, -1, 1);
                 if (j == 1) p.leftMargin = dp(8);
                 row.addView(cell, p);
@@ -346,6 +362,7 @@ public final class PiterfyHomePanel extends LinearLayout implements DefaultLifec
         label.setPadding(dp(12), 0, dp(8), 0);
         tile.addView(label, new LayoutParams(0, -2, 1));
         tile.setOnClickListener(click);
+        PiterfyMotion.pressable(tile, 0.97f);
         tile.setContentDescription(title);
         return tile;
     }
@@ -391,6 +408,7 @@ public final class PiterfyHomePanel extends LinearLayout implements DefaultLifec
         card.addView(count);
 
         card.setOnClickListener(v -> openPlaylist(p));
+        PiterfyMotion.pressable(card, 0.96f);
         card.setOnLongClickListener(v -> {
             tracks(p, card, true);  // dlugie przytrzymanie pobiera playliste offline
             return true;

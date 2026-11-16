@@ -435,6 +435,10 @@ open class BaseMediaService : MediaLibraryService(), MediaManager.QueueTarget {
                         ?.handle(player, currentMediaItem, this@BaseMediaService)
                         ?: false
 
+                    if (!handled && Preferences.isContinuousPlayEnabled()) {
+                        // Piterfy: inteligentne odtwarzanie wplata polecone i nowe utwory co kilka piosenek
+                        PiterfySmartPlayback.onTrackStarted(currentMediaItem, this@BaseMediaService)
+                    }
                     if (player.nextMediaItemIndex == C.INDEX_UNSET) {
                         if (!handled && Preferences.isContinuousPlayEnabled()) {
                             MediaManager.continuousPlay(currentMediaItem, this@BaseMediaService)

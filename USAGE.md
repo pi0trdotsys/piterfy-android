@@ -27,6 +27,8 @@ Home â†’ Podcasts is a separate catalogue of albums tagged `Podcast`. Pull 
 
 **Your mixes** on Home lists themed playlists that the server rebuilds by itself: Happy Mix, Dark Mix, Electronic Mix, Bass Boost, Chill Mix, Workout Mix, Rock Mix and Hip-Hop Mix. Each one is refreshed daily and right after new music arrives, grows with your library, favours starred and highly rated songs and rotates the rest. Tap to open, the green button plays, long-press downloads. A mix appears once the library has at least 12 matching songs; a mix you delete on the server is not recreated.
 
+**Smart playback** (Android: Settings → Smart playback, web: the sparkle button on the player bar) keeps music going with songs similar to what you have just been listening to, not only the current track: it looks at the last few artists, avoids artists and songs you have just heard, favours what you like and respects the discovery slider. One suggested song is mixed in every few tracks and more are added when the queue runs out. In the background the server also fetches similar songs you do not have yet (at most three batches per hour, shared with the DJ download budget); once imported they are added to the queue one at a time and the app says so. Playback driven by Piterfy DJ or Discover, podcasts, radio and remote receivers are left alone.
+
 The expanded player displays the current audio route and device name when Android exposes it. The source-analysis label comes from the optional Piterfy server extension; the existing codec/bitrate details describe the playback stream.
 
 Search suggestions wait briefly while typing, stale requests are cancelled, and **Play all results** fetches the complete queue on demand. GitHub update prompts now link to Piterfy releases.

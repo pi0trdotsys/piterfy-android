@@ -956,3 +956,76 @@ html[data-pf-light] .pf-chips a[aria-current="page"] { color: #ffffff; }
   .pf-gust { padding: 0 9px; margin: 0 4px; }
   .pf-gust span { display: none; }
 }
+
+/* ───── ruch i efekty: wejście kafelków i kart, unoszenie, „oddychająca” okładka, animowane przyciski ─────
+   Wszystko wyłącza się przy prefers-reduced-motion (blok na końcu). */
+@keyframes pf-rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+@keyframes pf-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes pf-pop { 0% { transform: scale(1); } 40% { transform: scale(1.35) rotate(-8deg); } 100% { transform: scale(1); } }
+@keyframes pf-breathe {
+  0%, 100% { transform: scale(1); filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.5)); }
+  50% { transform: scale(1.025); filter: drop-shadow(0 10px 26px rgba(29, 185, 84, 0.32)); }
+}
+@keyframes pf-dot { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.45; transform: scale(0.7); } }
+@keyframes pf-toast-in { from { opacity: 0; transform: translate(-50%, 18px) scale(0.96); } to { opacity: 1; transform: translate(-50%, 0); } }
+@keyframes pf-toast-out { to { opacity: 0; transform: translate(-50%, 10px); } }
+@keyframes pf-shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+
+.pf-tile, .pf-card { animation: pf-rise 0.55s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+.pf-tile:nth-child(2), .pf-card:nth-child(2) { animation-delay: 45ms; }
+.pf-tile:nth-child(3), .pf-card:nth-child(3) { animation-delay: 90ms; }
+.pf-tile:nth-child(4), .pf-card:nth-child(4) { animation-delay: 135ms; }
+.pf-tile:nth-child(5), .pf-card:nth-child(5) { animation-delay: 180ms; }
+.pf-tile:nth-child(6), .pf-card:nth-child(6) { animation-delay: 225ms; }
+.pf-tile:nth-child(7), .pf-card:nth-child(7) { animation-delay: 270ms; }
+.pf-tile:nth-child(8), .pf-card:nth-child(8) { animation-delay: 315ms; }
+.pf-tile:nth-child(9), .pf-card:nth-child(9) { animation-delay: 360ms; }
+.pf-tile:nth-child(10), .pf-card:nth-child(10) { animation-delay: 405ms; }
+.pf-tile:nth-child(11), .pf-card:nth-child(11) { animation-delay: 450ms; }
+.pf-tile:nth-child(12), .pf-card:nth-child(12) { animation-delay: 495ms; }
+.pf-card { transition: background 0.25s, transform 0.2s; }
+.pf-tile { transition: background 0.2s, transform 0.15s; }
+.pf-card:active, .pf-tile:active { transform: scale(0.985); }
+.pf-card-art { transition: transform 0.3s cubic-bezier(0.2, 0.7, 0.2, 1), box-shadow 0.3s; }
+.pf-card-art img { transition: transform 0.6s cubic-bezier(0.2, 0.7, 0.2, 1); }
+.pf-play:active { transform: scale(0.94) !important; }
+@media (hover: hover) {
+  .pf-card:hover .pf-card-art { transform: translateY(-4px); box-shadow: 0 16px 32px rgba(0, 0, 0, 0.55); }
+  .pf-card:hover .pf-card-art img { transform: scale(1.05); }
+}
+
+/* zmiana widoku: treść wjeżdża łagodnie (klasę dokłada piterfy.js przy zmianie adresu) */
+#main-content.pf-route-in { animation: pf-fade 0.35s ease-out; }
+
+/* okładka w odtwarzaczu delikatnie „oddycha”, gdy muzyka gra (piterfy.js ustawia data-pf-playing) */
+/* motyw Piterfy wyłącza animację okładki z !important, więc tu też !important i wyższa swoistość */
+html[data-pf-playing="1"]:not([data-pf-light]) .react-jinke-music-player-main .img-content { animation: pf-breathe 5s ease-in-out infinite !important; }
+
+/* inteligentne odtwarzanie: poświata włączonego przycisku, „pyknięcie” przy przełączeniu, pulsująca kropka */
+.react-jinke-music-player-main .pf-smart.pf-on svg { filter: drop-shadow(0 0 6px rgba(30, 215, 96, 0.55)); }
+.react-jinke-music-player-main .pf-smart.pf-pop svg { animation: pf-pop 0.5s ease-out; }
+.react-jinke-music-player-main .pf-smart.pf-on::after { animation: pf-dot 2.4s ease-in-out infinite; }
+.pf-rec { animation: pf-rise 0.45s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+
+/* powiadomienia wjeżdżają od dołu i znikają łagodnie */
+.pf-toast { animation: pf-toast-in 0.35s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+.pf-toast.pf-toast-out { animation: pf-toast-out 0.3s ease-in forwards; }
+
+/* szkielet ładowania (dla elementów, które czekają na dane) */
+.pf-skeleton {
+  border-radius: 6px;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.05) 25%, rgba(255, 255, 255, 0.12) 50%, rgba(255, 255, 255, 0.05) 75%);
+  background-size: 200% 100%;
+  animation: pf-shimmer 1.4s linear infinite;
+}
+html[data-pf-light] .pf-skeleton {
+  background: linear-gradient(90deg, rgba(0, 0, 0, 0.05) 25%, rgba(0, 0, 0, 0.11) 50%, rgba(0, 0, 0, 0.05) 75%);
+  background-size: 200% 100%;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pf-tile, .pf-card, .pf-rec, .pf-toast, .pf-skeleton, #main-content.pf-route-in,
+  html[data-pf-playing="1"]:not([data-pf-light]) .react-jinke-music-player-main .img-content,
+  .react-jinke-music-player-main .pf-smart svg, .react-jinke-music-player-main .pf-smart::after { animation: none !important; }
+  .pf-card, .pf-card-art, .pf-card-art img, .pf-tile { transition: none !important; transform: none !important; }
+}

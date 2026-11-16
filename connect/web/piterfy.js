@@ -550,11 +550,23 @@
   const SMART_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
     '<path d="M3 17h3.5c2 0 3-1 4.2-2.7l2.6-3.6C14.5 9 15.5 8 17.5 8H21M18 5l3 3-3 3M3 7h3.5c1.4 0 2.3.5 3.1 1.4M21 16h-3.5c-1.3 0-2.2-.4-3-1.2M18 13l3 3-3 3"></path>' +
     '<path d="M6.5 1.5l.7 1.8 1.8.7-1.8.7-.7 1.8-.7-1.8L4 4l1.8-.7z" fill="currentColor" stroke-width="1"></path></svg>';
-  const smart = { on: false, store: null, uuid: null, played: 0, busy: false, added: new Set() };
+  const smart = { on: false, store: null, uuid: null, played: 0, busy: false, memory: {}, history: [], added: new Set() };
+  const memoryNow = () => Date.now();
   try {
     smart.on = localStorage.getItem("pf-smart") === "1";
-    JSON.parse(localStorage.getItem("pf-smart-added") || "[]").forEach((id) => smart.added.add(id));
+    smart.memory = JSON.parse(localStorage.getItem("pf-smart-memory") || "{}") || {};
+    smart.history = JSON.parse(localStorage.getItem("pf-smart-history") || "[]") || [];
+    JSON.parse(localStorage.getItem("pf-smart-added") || "[]").forEach((id) => smart.added.add(id));  // znacznik „✦ Polecane”
   } catch (e) { /* bez localStorage działa do odświeżenia strony */ }
+  function saveSmart() {
+    try {
+      localStorage.setItem("pf-smart-memory", JSON.stringify(smart.memory));
+      localStorage.setItem("pf-smart-history", JSON.stringify(smart.history.slice(0, 12)));
+      localStorage.setItem("pf-smart-added", JSON.stringify(Array.from(smart.added).slice(-300)));
+    } catch (e) { /* trudno */ }
+  }
+  const smartCore = () => (window.PiterfyLibrary && window.PiterfyLibrary.smart) || null;
+  const slim = (s) => ({ id: s.id || s.trackId, artist: s.artist || "", artistId: s.artistId || "", title: s.title || "", genre: s.genre || "" });
 
   function reduxStore() {
     // Provider z react-redux trzyma magazyn w props — szukamy go w drzewie od korzenia aplikacji.
@@ -589,10 +601,10 @@
     return songs;  // zapas: dane z API Subsonic też wystarczą odtwarzaczowi
   }
 
-  async function recommend(player, count) {
+  async function recommendLegacy(player, count) {
     const current = (player.current && player.current.song) || {};
     const inQueue = new Set(player.queue.map((item) => item.trackId));
-    const fresh = (songs) => songs.filter((s) => s && s.id && !inQueue.has(s.id) && !smart.added.has(s.id) && !s.missing &&
+    const fresh = (songs) => songs.filter((s) => s && s.id && !inQueue.has(s.id) && !smart.memory[s.id] && !s.missing &&
       s.genre !== "Podcast" && !/(^|\/)Podcasty\//.test(s.path || ""));  // polecamy muzykę, nie odcinki audycji
     let songs = [];
     if (current.artistId) {
@@ -615,22 +627,147 @@
     return songRecords(ranked.slice(0, count));
   }
 
+  /** Ostatnio grane (najnowsze pierwsze): z kolejki Navidrome i z pamięci między sesjami. */
+  function playedHistory(player) {
+    const queue = player.queue || [];
+    const at = queue.findIndex((item) => item.uuid === (player.current || {}).uuid);
+    const fromQueue = at < 0 ? [] : queue.slice(Math.max(0, at - 7), at + 1).reverse().map((item) => item.song).filter(Boolean);
+    const seen = new Set();
+    return fromQueue.concat(smart.history).filter((s) => {
+      const id = s && (s.id || s.trackId);
+      if (!id || seen.has(id)) return false;
+      seen.add(id);
+      return true;
+    }).slice(0, 14);
+  }
+
+  const isMusic = (s) => s && s.id && !s.missing && s.genre !== "Podcast" && !/(^|\/)Podcasty\//.test(s.path || "");
+
+  async function recommend(player, count) {
+    const core = smartCore();
+    if (!core) return recommendLegacy(player, count);
+    const history = playedHistory(player).map((s) => Object.assign({}, s, { id: s.id || s.trackId }));
+    const current = history[0] || {};
+    const seeds = core.seeds(history, 4);
+    // podobne utwory pytamy u kilku ostatnich wykonawców i utworów, nie tylko u bieżącego
+    const calls = [];
+    seeds.forEach((seed, i) => {
+      if (seed.artistId) calls.push(subsonic("getSimilarSongs2", { id: seed.artistId, count: i === 0 ? 50 : 30 }));
+      if (i < 2 && seed.id) calls.push(subsonic("getSimilarSongs", { id: seed.id, count: 30 }));
+    });
+    const lists = (await Promise.all(calls)).map((r) => ((r.similarSongs2 || r.similarSongs || {}).song || []).filter(isMusic));
+    let rows = core.merge(lists);
+    if (rows.length < count * 4) {  // mało podobnych: dołóż utwory z tego samego gatunku i trochę losowych
+      const extra = [];
+      if (current.genre) extra.push(subsonic("getRandomSongs", { size: 40, genre: current.genre }));
+      extra.push(subsonic("getRandomSongs", { size: 30 }));
+      const more = (await Promise.all(extra)).map((r) => ((r.randomSongs || {}).song || []).filter(isMusic));
+      const have = new Set(rows.map((r) => r.song.id));
+      rows = rows.concat(core.merge(more).filter((r) => !have.has(r.song.id)).map((r) => Object.assign(r, { hits: 0.5 })));
+    }
+    const lib = window.PiterfyLibrary;
+    if (lib && lib.rankSongs && rows.length) {  // ranking gustu: odrzuca „mniej takich”, premiuje lubiane
+      try {
+        const ranked = await lib.rankSongs(rows.map((r) => r.song));
+        const order = new Map(ranked.map((s, i) => [s.id, i]));
+        rows = rows.filter((r) => order.has(r.song.id)).map((r) => Object.assign(r, { rank: order.get(r.song.id) }));
+      } catch (e) { /* bez rankingu też działa */ }
+    }
+    const picked = core.pick({
+      candidates: rows, history, queue: player.queue.map((item) => item.trackId),
+      recent: core.recentIds(smart.memory), count, exploration: lib && lib.exploration ? lib.exploration() : 50,
+    });
+    return songRecords(picked);
+  }
+
   async function smartAdd(store, type, count) {
-    if (smart.busy) return;
+    if (smart.busy) return false;
     smart.busy = true;
     try {
       const songs = await recommend(store.getState().player, count);
-      if (!songs.length) return;
+      if (!songs.length) return false;
       const data = {};
-      songs.forEach((s) => {
-        data[s.id] = s;
-        smart.added.add(s.id);
-      });
-      try { localStorage.setItem("pf-smart-added", JSON.stringify(Array.from(smart.added).slice(-300))); } catch (e) { /* trudno */ }
+      songs.forEach((s) => { data[s.id] = s; smart.added.add(s.id); });
+      const core = smartCore();
+      smart.memory = core ? core.remember(smart.memory, songs.map((s) => s.id), memoryNow()) : smart.memory;
+      saveSmart();
       store.dispatch({ type: type, data: data });
+      return true;
     } finally {
       smart.busy = false;
     }
+  }
+
+  // ── nowe utwory spoza serwera: tryb „radio” w Piterfy DJ pobiera w tle podobne i oddaje je do kolejki ──
+  // Serwer szuka podobnych (Last.fm/Deezer), ściąga je przez slskd i dopiero zaindeksowane utwory trafiają do bloku.
+  // Dokładamy je po jednym, co kilka utworów, żeby nowość nie wyparła reszty muzyki.
+  const radio = { lastStart: 0, lastGet: 0, busy: false, pending: [], since: 0 };
+
+  async function radioRequest(body) {
+    const response = await fetch("/piterfy-api/connect/dj", {
+      method: "POST", cache: "no-store",
+      headers: { "Content-Type": "application/json", "X-ND-Authorization": "Bearer " + (localStorage.getItem("token") || "") },
+      body: JSON.stringify(Object.assign({ mode: "radio", device: window.PiterfyPlayback && window.PiterfyPlayback.deviceId && window.PiterfyPlayback.deviceId() }, body)),
+      signal: AbortSignal.timeout(12000),
+    });
+    if (!response.ok) throw new Error("radio " + response.status);
+    return response.json();
+  }
+
+  async function radioTick(store, force) {
+    if (!smart.on || radio.busy || (window.PiterfyPlayback && window.PiterfyPlayback.current && (window.PiterfyPlayback.current() || {}).remote)) return;
+    const now = Date.now();
+    const refresh = force || now - radio.lastStart > 240000;
+    if (!refresh && now - radio.lastGet < 45000) return;
+    radio.busy = true;
+    try {
+      const core = smartCore();
+      const history = playedHistory(store.getState().player);
+      const seeds = (core ? core.seeds(history, 5) : history.slice(0, 5)).map(slim).filter((s) => s.artist && s.title);
+      if (!seeds.length) return;
+      let state;
+      if (refresh) {
+        const lib = window.PiterfyLibrary;
+        state = await radioRequest({ action: "start", seeds: seeds, exploration: lib && lib.exploration ? lib.exploration() : 50 });
+        radio.lastStart = now;
+      } else {
+        state = await radioRequest({ action: "get" });
+      }
+      radio.lastGet = now;
+      const block = (state.blocks || []).find((b) => b.ready !== false && !b.consumed && b.id !== state.currentBlock
+        && b.source === "discovery" && (b.tracks || []).length);
+      if (!block) return;
+      await radioRequest({ action: "select", session: state.id, block: block.id });
+      const fresh = block.tracks.filter((s) => s && s.id && !smart.memory[s.id] && isMusic(s));
+      if (fresh.length) {
+        radio.pending.push.apply(radio.pending, fresh);
+        radio.since = 2;  // pierwszy nowy utwór od razu jako następny
+        toast("Znalazłem " + fresh.length + " nowych podobnych utworów — dorzucę je do kolejki");
+      }
+    } catch (e) { /* serwer niedostępny albo odtwarzanie na innym urządzeniu — spróbujemy za chwilę */ }
+    finally { radio.busy = false; }
+  }
+
+  async function radioInject(store) {
+    const track = radio.pending.shift();
+    if (!track) return false;
+    const records = await songRecords([track]);
+    const record = records[0] || track;
+    const data = {};
+    data[record.id || track.id] = record;
+    smart.added.add(track.id);
+    const core = smartCore();
+    smart.memory = core ? core.remember(smart.memory, [track.id], memoryNow()) : smart.memory;
+    saveSmart();
+    store.dispatch({ type: "PLAYER_PLAY_NEXT", data: data });
+    toast("Nowość na serwerze: " + (track.artist || "") + " — " + (track.title || ""));
+    return true;
+  }
+
+  function radioStop() {
+    radio.pending = [];
+    radio.lastStart = radio.lastGet = 0;
+    radioRequest({ action: "stop" }).catch(() => {});
   }
 
   function smartPlay() {
@@ -644,7 +781,22 @@
     if (!current || !current.uuid || current.uuid === smart.uuid || !player.queue.length) return;
     smart.uuid = current.uuid;
     const index = player.queue.findIndex((item) => item.uuid === current.uuid);
-    if (!smart.added.has(current.trackId)) smart.played += 1;
+    // ostatnio grane trzymamy między sesjami: kolejny „start” nie zaczyna od zera
+    if (current.song && (current.song.id || current.trackId)) {
+      const entry = slim(Object.assign({}, current.song, { id: current.song.id || current.trackId }));
+      smart.history = [entry].concat(smart.history.filter((s) => s.id !== entry.id)).slice(0, 12);
+      const core = smartCore();
+      if (core) smart.memory = core.remember(smart.memory, [entry.id], memoryNow());
+      saveSmart();
+    }
+    smart.played += 1;
+    radio.since += 1;
+    radioTick(store, false);
+    if (radio.pending.length && radio.since >= 3) {
+      radio.since = 0;
+      radioInject(store).catch(() => {});
+      return;  // w tym kroku wystarczy jedna nowość
+    }
     if (index >= player.queue.length - 2) {
       smartAdd(store, "PLAYER_ADD_TRACKS", 5);  // kolejka się kończy — gramy dalej
     } else if (smart.played >= SMART_EVERY) {
@@ -652,6 +804,11 @@
       smartAdd(store, "PLAYER_PLAY_NEXT", 1);   // polecony utwór jako następny
     }
   }
+  setInterval(() => {
+    if (!smart.on) return;
+    const store = reduxStore();
+    if (store) radioTick(store, false);
+  }, 60000);
 
   function smartButton() {
     const content = document.querySelector(".react-jinke-music-player-main .music-player-panel .player-content");
@@ -670,13 +827,16 @@
         try { localStorage.setItem("pf-smart", smart.on ? "1" : "0"); } catch (err) { /* trudno */ }
         smart.uuid = null;
         smart.played = 0;
-        toast(smart.on ? "Inteligentne odtwarzanie włączone — co kilka utworów dorzucę coś podobnego i zagram dalej, gdy kolejka się skończy"
+        toast(smart.on ? "Inteligentne odtwarzanie włączone — dobieram różnorodnie z Twojej biblioteki, a w tle sprowadzam nowe podobne utwory"
           : "Inteligentne odtwarzanie wyłączone");
+        if (!smart.on) radioStop();
+        else { button.classList.remove("pf-pop"); void button.offsetWidth; button.classList.add("pf-pop"); }
         if (smart.on) {
           const store = reduxStore();
           const player = store && store.getState().player;
           const index = player ? player.queue.findIndex((item) => item.uuid === (player.current || {}).uuid) : -1;
           if (store && index >= player.queue.length - 2) smartAdd(store, "PLAYER_ADD_TRACKS", 5);
+          if (store) radioTick(store, true);
         }
         smartButton();
       };
@@ -687,7 +847,7 @@
     }
     button.classList.toggle("pf-on", smart.on);
     setAttr(button, "aria-pressed", String(smart.on));
-    setAttr(button, "title", smart.on ? "Inteligentne odtwarzanie: włączone" : "Inteligentne odtwarzanie: dorzuca podobne utwory i gra dalej, gdy kolejka się skończy");
+    setAttr(button, "title", smart.on ? "Inteligentne odtwarzanie: włączone" : "Inteligentne odtwarzanie: różnorodne podobne utwory, także nowe spoza serwera, i gra dalej po końcu kolejki");
   }
 
   // ── przycisk powtarzania (jak w Spotify: wyłączone → wszystko → jeden utwór) ──
@@ -797,7 +957,17 @@
     t.setAttribute("role", "status");
     t.textContent = text;
     document.body.appendChild(t);
+    setTimeout(() => t.classList.add("pf-toast-out"), 3700);  // łagodne zniknięcie
     setTimeout(() => t.remove(), 4000);
+  }
+
+  // Zmiana widoku: treść wjeżdża łagodnie (animacja w piterfy.css), o ile użytkownik nie wyłączył ruchu.
+  function routeFade() {
+    const main = document.getElementById("main-content");
+    if (!main || (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches)) return;
+    main.classList.remove("pf-route-in");
+    void main.offsetWidth;  // restart animacji
+    main.classList.add("pf-route-in");
   }
 
   function closeMenu() {
@@ -1318,8 +1488,12 @@
       // Po zalogowaniu — od razu na stronę startową.
       if (/#\/login(\?|$)/.test(e.oldURL) && !/^#\/login/.test(location.hash)) location.replace(HOME);
       markRoute();
+      routeFade();
       update();
     });
+    // Okładka w odtwarzaczu „oddycha”, gdy gra muzyka (CSS: html[data-pf-playing]).
+    ["play", "playing"].forEach((type) => document.addEventListener(type, () => document.documentElement.setAttribute("data-pf-playing", "1"), true));
+    ["pause", "ended", "emptied"].forEach((type) => document.addEventListener(type, () => document.documentElement.setAttribute("data-pf-playing", "0"), true));
     // Zmiana utworu często podmienia tylko teksty (bez nowych elementów) — łapiemy więc zdarzenia odtwarzacza.
     // Nie „bąbelkują”, ale przechodzą przez document w fazie przechwytywania.
     ["loadstart", "loadedmetadata"].forEach((type) => document.addEventListener(type, update, true));

@@ -2,7 +2,8 @@
 import json
 import time
 import uuid
-from dj_core import Sessions
+from dj_core import Sessions, MODES
+from radio_core import RADIO_JOBS_PER_HOUR
 from connect_core import Rejected
 from library_core import number, text
 
@@ -50,12 +51,14 @@ class BufferedSessions(Sessions):
                 (uuid.uuid4().hex, owner, mode, state['id'], time.time(), 'queued', json.dumps(payload)))
         main = sum(b.get('variant') != 'alternative' for b in available)
         alternatives = sum(b.get('variant') == 'alternative' for b in available)
-        if 'library' not in purposes and (main < 2 or alternatives < 1):
+        radio = mode == 'radio'  # smart playback picks library songs itself; the server only fetches new ones
+        if not radio and 'library' not in purposes and (main < 2 or alternatives < 1):
             enqueue('library', 'main' if main < 2 else 'alternative')
         recent = db.execute("SELECT COUNT(*) FROM jobs WHERE owner=? AND created>? AND COALESCE(json_extract(data,'$.kind'),'acquire')='acquire'", (owner, time.time()-3600)).fetchone()[0]
         # One acquired block can replace one library reserve; no endless imports when paused.
         discoveries = sum(b.get('source')=='discovery' and b.get('variant')!='alternative' for b in available)
-        if state.get('active') and discoveries < 2 and 'acquire' not in purposes and recent < 8:
+        radio_recent = db.execute("SELECT COUNT(*) FROM jobs WHERE owner=? AND mode='radio' AND created>?", (owner, time.time()-3600)).fetchone()[0] if radio else 0
+        if state.get('active') and discoveries < 2 and 'acquire' not in purposes and recent < 8 and radio_recent < RADIO_JOBS_PER_HOUR:
             enqueue('acquire')
 
     def save(self, db, owner, mode, state):
@@ -65,7 +68,7 @@ class BufferedSessions(Sessions):
 
     def handle(self, user, body):
         mode = body.get('mode', 'dj')
-        if mode not in ('dj', 'discover'):
+        if mode not in MODES:
             raise Rejected('invalid_mode', 400)
         action = body.get('action', 'get')
         if action in ('claim', 'settings'):
@@ -80,6 +83,8 @@ class BufferedSessions(Sessions):
             db.execute('BEGIN IMMEDIATE')
             row = db.execute('SELECT data FROM sessions WHERE owner=? AND mode=?', (owner, mode)).fetchone()
             state = json.loads(row[0]) if row else dict(active=False, mode=mode, blocks=[], voice=mode=='dj', revision=0)
+            if mode == 'radio':  # background discoveries never send summaries
+                state.update(voice=False, summaryEmail=False, summaryTelegram=False)
             state.setdefault('id', uuid.uuid4().hex)
             state.setdefault('seeds', [])
             state.setdefault('exploration', 50)

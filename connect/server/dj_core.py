@@ -10,6 +10,9 @@ from connect_core import Rejected
 from library_core import number, text
 
 
+MODES = ('dj', 'discover', 'radio')  # radio = smart playback: acquisition only, no voice, no mails
+
+
 class Sessions:
     def __init__(self, directory):
         Path(directory).mkdir(parents=True, exist_ok=True)
@@ -49,7 +52,7 @@ class Sessions:
     def handle(self, user, body):
         owner = self.owner(user)
         mode = body.get('mode', 'dj')
-        if mode not in ('dj', 'discover'):
+        if mode not in MODES:
             raise Rejected('invalid_mode', 400)
         action = body.get('action', 'get')
         with self.db() as db:

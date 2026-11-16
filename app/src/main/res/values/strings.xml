@@ -460,8 +460,8 @@
     <string name="settings_audio_transcode_priority_toast">Priority on transcoding of track given to server</string>
     <string name="settings_choose_download_folder">Choose a folder for downloaded music files</string>
     <string name="settings_clear_download_folder">Clear download folder</string>
-    <string name="settings_continuous_play_summary">Allows music to keep playing after a playlist has ended, playing similar songs</string>
-    <string name="settings_continuous_play_title">Continuous play</string>
+    <string name="settings_continuous_play_summary">Keeps music playing with varied similar songs from your library, mixes one in every few tracks, and quietly fetches new similar songs you do not have on the server yet</string>
+    <string name="settings_continuous_play_title">Smart playback</string>
     <string name="settings_number_tracks_keep_in_queue">Number of tracks to keep in queue</string>
     <string name="settings_number_tracks_keep_in_queue_summary">Adjust the number of tracks to keep in queue before starting to add tracks with continuous play</string>
     <string name="settings_fallback_to_random_tracks_summary">Play random songs as a fallback when similar tracks are unavailable</string>

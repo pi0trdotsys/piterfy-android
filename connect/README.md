@@ -62,6 +62,10 @@ SMTP and Telegram do not provide an idempotency key. Each channel is durably cla
 
 `discovery/patch_mail.py` restores multipart HTML daily reports without disabling discovery or changing its schedule. Stage it with `discovery/report_formatter.py` and `deploy_discovery_mail.py`, then run the deployment only while the daily worker is idle. The script backs up both sources and restarts only the discovery daemon so its loaded sender matches disk. Daily reports keep one HTML part and one readable text alternative, rather than literal Markdown in Gmail.
 
+## Smart playback: new songs from outside the library
+
+`mode: "radio"` in `/piterfy-api/connect/dj` is the acquisition lane behind smart playback in Android and the web player. It reuses the DJ worker's Last.fm/Deezer similarity, slskd search and import path, but never builds library blocks, speech or summaries. Clients send the last five distinct artists/songs (newest first, weights in `server/radio_core.py`) with `start`, poll with `get`, and `select` a ready discovery block to take it; accepted songs are then added to the queue one at a time. Candidates are interleaved across seeds with one song per artist, so consecutive downloads differ. At most three radio batches per account and hour are started, below the shared eight-batch limit, so Discover and DJ keep their capacity. Nothing runs for an account unless a client keeps the session warm, and idle sessions expire after two hours.
+
 ## Checks
 
 `dj_scripts.py` rotates opening and between-song variants, excluding recently used templates where possible and avoiding immediate repetition when the pool is exhausted. Only actual artist/title/album/year/genre metadata supplies factual remarks. Variant IDs remain in blocks for future selection. Up to two recent active blocks can refresh their unclaimed cached clips during upgrade; concurrent claims are rechecked before updating. Android stores explicit source markers in music metadata and a small account-scoped queue context so visible mode badges survive a process restart before session polling completes.
@@ -76,6 +80,7 @@ Each subsequent song has its own durable announcement claim and metadata-based s
 python -m unittest discover -s connect/server -p test_connect.py
 python -m unittest discover -s connect/server -p 'test_*.py'
 node connect/web/lyrics-core.test.cjs
+node connect/web/smart-core.test.cjs
 node --check connect/web/lyrics.js
 node --check connect/web/connect.js
 node --check connect/web/miniplayer.js

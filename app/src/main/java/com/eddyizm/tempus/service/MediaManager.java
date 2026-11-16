@@ -734,64 +734,49 @@ public class MediaManager {
             removeRange(queueTarget, 0, firstToKeep);
         }
         String trackId = mediaItem.mediaId;
-        String artistId = mediaItem.mediaMetadata.extras != null
-                ? mediaItem.mediaMetadata.extras.getString("artistId")
-                : null;
 
-        LiveData<List<Child>> instantMix =
-                getSongRepository().getContinuousMix(trackId, artistId, 25);
-
-        instantMix.observeForever(new Observer<List<Child>>() {
-            @Override
-            public void onChanged(List<Child> media) {
-                instantMix.removeObserver(this);
-
-                // Filter against current queue before deciding if we need fallback.
-                // getSimilarSongs2 doesn't know what's already queued, so it may
-                // return tracks we already have. Filter first, then decide.
-                if (media != null && !media.isEmpty()) {
-                    List<Child> filtered = dedupAgainstQueue(media, queueTarget);
-                    if (!filtered.isEmpty()) {
-                        Log.d(TAG, "Continuous Play: adding " + filtered.size() + " similar tracks");
-                        com.eddyizm.tempus.util.PiterfyLibrary.rankSongs(filtered, ranked -> {
-                            Player live = queueTarget.livePlayer();
-                            if (live != null && live.getCurrentMediaItem() != null && trackId.equals(live.getCurrentMediaItem().mediaId)) enqueue(queueTarget, ranked, true);
-                            continuousPlayIsRunning.set(false);
-                        });
-                        return;
-                    }
+        // Piterfy: inteligentne odtwarzanie - wzorem jest kilka ostatnio granych utworow, a nie tylko biezacy,
+        // z pamiecia zagranych, rankingiem gustu i roznorodnoscia wykonawcow (PiterfySmartPlayback).
+        PiterfySmartPlayback.recommend(queueTarget, 8, filtered -> {
+            Player live = queueTarget.livePlayer();
+            boolean stillCurrent = live != null && live.getCurrentMediaItem() != null
+                    && trackId.equals(live.getCurrentMediaItem().mediaId);
+            if (!filtered.isEmpty()) {
+                Log.d(TAG, "Continuous Play: adding " + filtered.size() + " similar tracks");
+                if (stillCurrent) {
+                    PiterfySmartPlayback.remember(filtered);
+                    enqueue(queueTarget, filtered, true);
                 }
-
-                if (Preferences.isFallbackToRandomTracksEnabled()) {
-                    Log.w(TAG, "Continuous Play: no new similar tracks, falling back to random songs");
-                    LiveData<List<Child>> randomSongs = getSongRepository().getRandomSample(25, null, null);
-                    randomSongs.observeForever(new Observer<List<Child>>() {
-                        @Override
-                        public void onChanged(List<Child> random) {
-                            randomSongs.removeObserver(this);
-                            if (random != null && !random.isEmpty()) {
-                                List<Child> filtered = dedupAgainstQueue(random, queueTarget);
-                                if (!filtered.isEmpty()) {
-                                    Log.d(TAG, "Continuous Play: adding " + filtered.size() + " random tracks");
-                                    com.eddyizm.tempus.util.PiterfyLibrary.rankSongs(filtered, ranked -> {
-                                        Player live = queueTarget.livePlayer();
-                                        if (live != null && live.getCurrentMediaItem() != null && trackId.equals(live.getCurrentMediaItem().mediaId)) enqueue(queueTarget, ranked, true);
-                                        continuousPlayIsRunning.set(false);
-                                    });
-                                    return;
-                                } else {
-                                    Log.w(TAG, "Continuous Play: random tracks already in queue");
-                                }
-                            } else {
-                                Log.w(TAG, "Continuous Play: random fallback also empty");
+                continuousPlayIsRunning.set(false);
+                return;
+            }
+            if (Preferences.isFallbackToRandomTracksEnabled()) {
+                Log.w(TAG, "Continuous Play: no new similar tracks, falling back to random songs");
+                LiveData<List<Child>> randomSongs = getSongRepository().getRandomSample(25, null, null);
+                randomSongs.observeForever(new Observer<List<Child>>() {
+                    @Override
+                    public void onChanged(List<Child> random) {
+                        randomSongs.removeObserver(this);
+                        if (random != null && !random.isEmpty()) {
+                            List<Child> fresh = dedupAgainstQueue(random, queueTarget);
+                            if (!fresh.isEmpty()) {
+                                com.eddyizm.tempus.util.PiterfyLibrary.rankSongs(fresh, ranked -> {
+                                    Player current = queueTarget.livePlayer();
+                                    if (current != null && current.getCurrentMediaItem() != null && trackId.equals(current.getCurrentMediaItem().mediaId)) {
+                                        PiterfySmartPlayback.remember(ranked);
+                                        enqueue(queueTarget, ranked, true);
+                                    }
+                                    continuousPlayIsRunning.set(false);
+                                });
+                                return;
                             }
-                            continuousPlayIsRunning.set(false);
                         }
-                    });
-                } else {
-                    Log.w(TAG, "Continuous Play: no new similar tracks, random fallback disabled");
-                    continuousPlayIsRunning.set(false);
-                }
+                        continuousPlayIsRunning.set(false);
+                    }
+                });
+            } else {
+                Log.w(TAG, "Continuous Play: no new similar tracks, random fallback disabled");
+                continuousPlayIsRunning.set(false);
             }
         });
     }

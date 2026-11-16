@@ -28,6 +28,8 @@ import androidx.core.splashscreen.SplashScreen;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
+import androidx.fragment.app.Fragment;
+import androidx.fragment.app.DialogFragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.lifecycle.Lifecycle;
 import androidx.lifecycle.LiveData;
@@ -259,6 +261,15 @@ public class MainActivity extends BaseActivity {
                 .getSupportFragmentManager()
                 .findFragmentById(R.id.nav_host_fragment);
         navController = Objects.requireNonNull(navHostFragment).getNavController();
+        // Piterfy: kazdy ekran wchodzi lagodnie (zanik + lekki wjazd), niezaleznie od tego, jak do niego nawigujemy
+        navHostFragment.getChildFragmentManager().registerFragmentLifecycleCallbacks(
+                new FragmentManager.FragmentLifecycleCallbacks() {
+                    @Override
+                    public void onFragmentViewCreated(@NonNull FragmentManager fm, @NonNull Fragment f,
+                                                      @NonNull View v, @Nullable Bundle savedInstanceState) {
+                        if (!(f instanceof DialogFragment)) com.eddyizm.tempus.util.PiterfyMotion.screen(v);
+                    }
+                }, false);
         /*
         navController is currently global since some legacy code still invokes it directly
         the MainActivity methods that use it must be converted to NavigationHelper methods
