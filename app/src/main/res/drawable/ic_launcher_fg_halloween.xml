@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Piterfy: pierwszy plan ikony „halloween”. Wygenerowane przez tools/appearance/generate.py; nie edytuj ręcznie. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:pathData="M54,38C44,38 38,46 38,57C38,69 45,77 54,77C63,77 70,69 70,57C70,46 64,38 54,38z"
+        android:fillColor="#FFFF8A1F" />
+    <path
+        android:pathData="M44,40C32,41 25,50 26,60C27,70 34,77 44,76C38,72 36,64 36,57C36,49 39,43 44,40z"
+        android:fillColor="#FFF26A00" />
+    <path
+        android:pathData="M64,40C76,41 83,50 82,60C81,70 74,77 64,76C70,72 72,64 72,57C72,49 69,43 64,40z"
+        android:fillColor="#FFF26A00" />
+    <path
+        android:pathData="M51,38L52,30L57,30L58,38z"
+        android:fillColor="#FF53B94F" />
+    <path
+        android:pathData="M54,46L47,53L61,53z"
+        android:fillColor="#FF2A0A3F" />
+    <path
+        android:pathData="M40,55L46,51L47,58z"
+        android:fillColor="#FF2A0A3F" />
+    <path
+        android:pathData="M68,55L62,51L61,58z"
+        android:fillColor="#FF2A0A3F" />
+    <path
+        android:pathData="M39,64L44,68L48,64L54,69L60,64L64,68L69,64L66,72L54,75L42,72z"
+        android:fillColor="#FF2A0A3F" />
+    <path
+        android:pathData="M86,21L87.3,24.6L91,26L87.3,27.4L86,31L84.7,27.4L81,26L84.7,24.6z"
+        android:fillColor="#FFFFD166" />
+    <path
+        android:pathData="M24,26L25.1,28.9L28,30L25.1,31.1L24,34L22.9,31.1L20,30L22.9,28.9z"
+        android:fillColor="#FFFFD166" />
+</vector>

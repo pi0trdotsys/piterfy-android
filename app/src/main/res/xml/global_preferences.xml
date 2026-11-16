@@ -42,6 +42,11 @@
             android:key="theme"
             android:title="@string/settings_theme"/>
 
+        <Preference
+            android:key="piterfy_appearance"
+            android:title="@string/appearance_title"
+            android:summary="@string/appearance_summary" />
+
         <SwitchPreference
             android:title="@string/settings_always_on_display"
             android:defaultValue="false"

@@ -250,6 +250,11 @@ public class SettingsContainerFragment extends PreferenceFragmentCompat {
 
         // Piterfy: aktualizacja z poziomu aplikacji dotyczy obu wariantów (oba APK są w wydaniu GitHuba)
         setupUpdateCheck();
+        Preference appearance = findPreference("piterfy_appearance");
+        if (appearance != null) appearance.setOnPreferenceClickListener(p -> {
+            new com.eddyizm.tempus.ui.dialog.PiterfyAppearanceDialog().show(getParentFragmentManager(), "piterfy_appearance");
+            return true;
+        });
 
         if (BuildConfig.FLAVOR.equals("degoogled")) {
             ClickablePreferenceCategory androidAutoCategory = findPreference("settings_androidauto_category_key");

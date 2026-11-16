@@ -56,10 +56,12 @@ public class App extends Application {
         instance = new App();
         context = getApplicationContext();
         preferences = PreferenceManager.getDefaultSharedPreferences(context);
+        com.eddyizm.tempus.helper.ThemeHelper.applyNightMode();  // Piterfy: motyw kolorystyczny może wymusić jasny lub ciemny tryb
 
         ClientCertManager.setupSslSocketFactory(context);
         com.eddyizm.tempus.service.PiterfyPodcastDownloads.schedule(context);
         com.eddyizm.tempus.service.PiterfyUpdateJob.schedule(context);
+        com.eddyizm.tempus.service.PiterfyAppearanceJob.schedule(context);
         com.eddyizm.tempus.service.PiterfyFavoriteDownloads.schedule(context);
         com.eddyizm.tempus.util.FavoriteRegistry.onAcceptedSongStar=()->com.eddyizm.tempus.service.PiterfyFavoriteDownloads.refreshSoon(context);
     }

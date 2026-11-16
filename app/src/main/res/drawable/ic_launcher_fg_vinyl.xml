@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Piterfy: pierwszy plan ikony „vinyl”. Wygenerowane przez tools/appearance/generate.py; nie edytuj ręcznie. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:pathData="M19,54a35,35 0,1 1,70,0a35,35 0,1 1,-70,0z"
+        android:fillColor="#FF0B0B0B" />
+    <path
+        android:pathData="M23,54a31,31 0,1 1,62,0a31,31 0,1 1,-62,0z"
+        android:strokeColor="#FF2C2C2C"
+        android:strokeWidth="1.2" />
+    <path
+        android:pathData="M28,54a26,26 0,1 1,52,0a26,26 0,1 1,-52,0z"
+        android:strokeColor="#FF2C2C2C"
+        android:strokeWidth="1.2" />
+    <path
+        android:pathData="M33,54a21,21 0,1 1,42,0a21,21 0,1 1,-42,0z"
+        android:strokeColor="#FF2C2C2C"
+        android:strokeWidth="1.2" />
+    <path
+        android:pathData="M54,22A32,32 0,0 1,84,43"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="2.6"
+        android:strokeAlpha="0.16"
+        android:strokeLineCap="round" />
+    <path
+        android:pathData="M41,54a13,13 0,1 1,26,0a13,13 0,1 1,-26,0z"
+        android:fillColor="#FF1DB954" />
+    <path
+        android:pathData="M51,54a3,3 0,1 1,6,0a3,3 0,1 1,-6,0z"
+        android:fillColor="#FF0B0B0B" />
+</vector>

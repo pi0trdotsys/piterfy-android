@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Piterfy: pierwszy plan ikony „christmas”. Wygenerowane przez tools/appearance/generate.py; nie edytuj ręcznie. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:pathData="M26,54a28,28 0,1 1,56,0a28,28 0,1 1,-56,0zM40.56,50.27L40.56,61.47A2.24,2.24 0,0 0,45.04,61.47L45.04,50.27A2.24,2.24 0,0 0,40.56,50.27zM48.03,42.8L48.03,65.2A2.24,2.24 0,0 0,52.51,65.2L52.51,42.8A2.24,2.24 0,0 0,48.03,42.8zM55.49,46.53L55.49,59.6A2.24,2.24 0,0 0,59.97,59.6L59.97,46.53A2.24,2.24 0,0 0,55.49,46.53zM62.96,50.27L62.96,55.87A2.24,2.24 0,0 0,67.44,55.87L67.44,50.27A2.24,2.24 0,0 0,62.96,50.27z"
+        android:fillType="evenOdd"
+        android:fillColor="#FFE63946" />
+    <path
+        android:pathData="M36,46C37,31 53,23 70,28C63,32 60,39 61,46z"
+        android:fillColor="#FFE63946" />
+    <path
+        android:pathData="M32,43L76,43A4.5,4.5 0,0 1,76,52L32,52A4.5,4.5 0,0 1,32,43z"
+        android:fillColor="#FFFFFFFF" />
+    <path
+        android:pathData="M66.5,27a5.5,5.5 0,1 1,11.0,0a5.5,5.5 0,1 1,-11.0,0z"
+        android:fillColor="#FFFFFFFF" />
+    <path
+        android:pathData="M88,70L89.1,72.9L92,74L89.1,75.1L88,78L86.9,75.1L84,74L86.9,72.9z"
+        android:fillColor="#FFFFE066" />
+    <path
+        android:pathData="M20,26L21.1,28.9L24,30L21.1,31.1L20,34L18.9,31.1L16,30L18.9,28.9z"
+        android:fillColor="#FFFFE066" />
+    <path
+        android:pathData="M22,81L22.8,83.2L25,84L22.8,84.8L22,87L21.2,84.8L19,84L21.2,83.2z"
+        android:fillColor="#FFFFFFFF" />
+</vector>

@@ -80,8 +80,10 @@
     // Tylko przy faktycznej zmianie: każde przypisanie tytułu (nawet tego samego) to nowa zmiana w <head>,
     // na którą ta funkcja znów się uruchamia — bez tego warunku strona wpadała w nieskończoną pętlę.
     if (title !== document.title) document.title = title;
+    // ikona karty: okolicznościowa albo wybrana w „Wygląd Piterfy” (library.js), inaczej logo
+    const favicon = (window.PiterfyAppearance && window.PiterfyAppearance.faviconHref()) || "";
     document.querySelectorAll('link[rel~="icon"]').forEach((l) => {
-      setAttr(l, "href", UI + "logo.svg");
+      setAttr(l, "href", favicon || UI + "logo.svg");
       setAttr(l, "type", "image/svg+xml");
     });
     document.querySelectorAll('link[rel="apple-touch-icon"]').forEach((l) => setAttr(l, "href", UI + "apple-touch-icon.png"));
@@ -1026,6 +1028,7 @@
       return li;
     };
     const items = [item(PHOTO, avatar.missing ? "Dodaj zdjęcie profilowe" : "Zmień zdjęcie profilowe", pickAvatar)];
+    items.push(item(SPARKLE, "Wygląd Piterfy: motywy i ikony", () => { if (window.PiterfyAppearance) window.PiterfyAppearance.open(); }));
     if (!avatar.missing) {
       items.push(item(TRASH, "Usuń zdjęcie profilowe", () => saveAvatar("DELETE")
         .then(() => toast("Zdjęcie profilowe usunięte"), (e) => toast("Nie udało się usunąć zdjęcia: " + e.message))));

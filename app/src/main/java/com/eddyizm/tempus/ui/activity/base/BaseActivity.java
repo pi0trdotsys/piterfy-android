@@ -62,12 +62,15 @@ public class BaseActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
         if (!ThemeHelper.themeSignature().equals(themeSignature)) {
+            ThemeHelper.applyNightMode();  // Piterfy: nowy motyw (np. okazja) może zmienić jasny/ciemny tryb
             ActivityCompat.recreate(this);
         }
     }
 
     @Override
     protected void onStop() {
+        // Piterfy: ikona okolicznościowa zmienia się, gdy aplikacja schodzi z ekranu (zmiana launchera potrafi ją zamknąć)
+        try { com.eddyizm.tempus.appearance.PiterfyAppIcon.apply(this); } catch (RuntimeException ignored) { }
         releaseBrowser();
         super.onStop();
     }

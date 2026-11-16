@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Piterfy: pierwszy plan ikony „valentine”. Wygenerowane przez tools/appearance/generate.py; nie edytuj ręcznie. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:pathData="M54,82C28,63 20,48 28,37C35,28 48,31 54,41C60,31 73,28 80,37C88,48 80,63 54,82zM40.56,50.27L40.56,61.47A2.24,2.24 0,0 0,45.04,61.47L45.04,50.27A2.24,2.24 0,0 0,40.56,50.27zM48.03,42.8L48.03,65.2A2.24,2.24 0,0 0,52.51,65.2L52.51,42.8A2.24,2.24 0,0 0,48.03,42.8zM55.49,46.53L55.49,59.6A2.24,2.24 0,0 0,59.97,59.6L59.97,46.53A2.24,2.24 0,0 0,55.49,46.53zM62.96,50.27L62.96,55.87A2.24,2.24 0,0 0,67.44,55.87L67.44,50.27A2.24,2.24 0,0 0,62.96,50.27z"
+        android:fillType="evenOdd"
+        android:fillColor="#FFFFFFFF" />
+    <path
+        android:pathData="M86,19L87.3,22.6L91,24L87.3,25.4L86,29L84.7,25.4L81,24L84.7,22.6z"
+        android:fillColor="#FFFFE0EA" />
+    <path
+        android:pathData="M22,76L23.1,78.9L26,80L23.1,81.1L22,84L20.9,81.1L18,80L20.9,78.9z"
+        android:fillColor="#FFFFE0EA" />
+</vector>

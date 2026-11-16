@@ -19,6 +19,8 @@ import androidx.core.graphics.drawable.toDrawable
 import androidx.core.graphics.toColorInt
 
 import com.eddyizm.tempus.R
+import com.eddyizm.tempus.appearance.PiterfyAppearance
+import com.eddyizm.tempus.appearance.PiterfyCatalog
 import com.eddyizm.tempus.util.Preferences.getColorAccent
 import com.eddyizm.tempus.util.Preferences.isDarkThemeBlack
 import com.eddyizm.tempus.util.Preferences.isDynamicColorAccent
@@ -53,6 +55,30 @@ object ThemeHelper {
                 setDefaultNightMode(MODE_NIGHT_FOLLOW_SYSTEM)
             }
         }
+    }
+
+    /**
+     * Piterfy: tryb jasny/ciemny z uwzględnieniem motywu kolorystycznego (motyw jasny wymusza jasny, ciemny wymusza ciemny).
+     * Bez motywu działa zwykłe ustawienie „Motyw”.
+     */
+    @JvmStatic
+    fun applyNightMode() {
+        val preset = PiterfyAppearance.effectiveTheme()
+        if (preset != null) setDefaultNightMode(if (preset.dark) MODE_NIGHT_YES else MODE_NIGHT_NO)
+        else applyTheme(getTheme())
+    }
+
+    /**
+     * Piterfy: nakłada gotowy motyw: schemat Material z ziarna koloru, a na to nakładkę z dokładnymi kolorami tła i powierzchni.
+     */
+    private fun applyPreset(activity: AppCompatActivity, preset: PiterfyCatalog.Theme) {
+        try {
+            applyCustomDynamicTheme(activity, preset.seed)
+        } catch (e: IllegalArgumentException) {
+            Log.e(TAG, e.toString())
+        }
+        activity.theme.applyStyle(preset.overlay, true)
+        activity.window.setBackgroundDrawable(preset.background.toInt().toDrawable())
     }
 
     /**
@@ -99,6 +125,7 @@ object ThemeHelper {
     @SuppressLint("UseKtx")
     @JvmStatic
     fun enableThemeSwitch(activity: AppCompatActivity) {
+        PiterfyAppearance.effectiveTheme()?.let { applyPreset(activity, it); return }
         val theme        = getTheme()
         val nightMode    = activity.resources.configuration.uiMode and UI_MODE_NIGHT_MASK
         val isSystemDark = (theme == DEFAULT_MODE && nightMode == UI_MODE_NIGHT_YES)
@@ -171,6 +198,6 @@ object ThemeHelper {
     @JvmStatic
     fun themeSignature(): String {
         val accent = if (isDynamicColorAccent()) "DYNAMIC" else getColorAccent()
-        return "${getTheme()}|${isDarkThemeBlack()}|$accent"
+        return "${getTheme()}|${isDarkThemeBlack()}|$accent|${PiterfyAppearance.effectiveThemeId()}"
     }
 }

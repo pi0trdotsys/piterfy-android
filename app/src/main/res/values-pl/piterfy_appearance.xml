@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Piterfy: nazwy motywów, ikon i okazji. Wygenerowane przez tools/appearance/generate.py. -->
+<resources>
+    <string name="appearance_overridden">Dziś działa motyw lub ikona okolicznościowa. Twój wybór zadziała po święcie albo po wyłączeniu automatu.</string>
+    <string name="appearance_title">Wygląd Piterfy: motywy i ikony</string>
+    <string name="appearance_summary">Motywy kolorystyczne, ikony aplikacji i automatyczne zmiany w dni okolicznościowe</string>
+    <string name="appearance_auto">Automatycznie w dni okolicznościowe</string>
+    <string name="appearance_auto_summary">Od 2 dni przed do 2 dni po święcie aplikacja sama przełącza motyw i ikonę</string>
+    <string name="appearance_themes">Motywy</string>
+    <string name="appearance_icons">Ikony aplikacji</string>
+    <string name="appearance_theme_classic">Piterfy</string>
+    <string name="appearance_theme_classic_note">Twoje ustawienia koloru</string>
+    <string name="appearance_today">Dziś: %1$s</string>
+    <string name="appearance_none_today">Dziś nie ma okazji. Następna: %1$s (%2$s)</string>
+    <string name="appearance_icon_note">Ikona zmieni się, gdy zamkniesz aplikację</string>
+    <string name="appearance_close">Gotowe</string>
+    <string name="appearance_theme_noir_neon">Noir Neon</string>
+    <string name="appearance_theme_synthwave">Synthwave</string>
+    <string name="appearance_theme_papier">Papier</string>
+    <string name="appearance_theme_las">Las</string>
+    <string name="appearance_theme_ocean">Ocean</string>
+    <string name="appearance_theme_sakura">Sakura</string>
+    <string name="appearance_theme_terminal">Retro Terminal</string>
+    <string name="appearance_theme_zloto">Złoto</string>
+    <string name="appearance_theme_summer">Lato</string>
+    <string name="appearance_theme_winter">Zima</string>
+    <string name="appearance_theme_halloween">Halloween</string>
+    <string name="appearance_theme_christmas">Boże Narodzenie</string>
+    <string name="appearance_theme_valentine">Walentynki</string>
+    <string name="appearance_theme_newyear">Sylwester</string>
+    <string name="appearance_theme_easter">Wiosna / Wielkanoc</string>
+    <string name="appearance_theme_independence">Biało-czerwony</string>
+    <string name="appearance_theme_birthday">Urodziny Piterfy</string>
+    <string name="appearance_icon_classic">Klasyk</string>
+    <string name="appearance_icon_neon">Neon</string>
+    <string name="appearance_icon_vinyl">Winyl</string>
+    <string name="appearance_icon_valentine">Walentynki</string>
+    <string name="appearance_icon_easter">Wielkanoc</string>
+    <string name="appearance_icon_summer">Lato</string>
+    <string name="appearance_icon_halloween">Halloween</string>
+    <string name="appearance_icon_christmas">Boże Narodzenie</string>
+    <string name="appearance_icon_newyear">Sylwester</string>
+    <string name="appearance_icon_birthday">Urodziny</string>
+    <string name="appearance_icon_independence">Biało-czerwona</string>
+    <string name="appearance_occasion_newyear">Sylwester i Nowy Rok</string>
+    <string name="appearance_occasion_valentine">Walentynki</string>
+    <string name="appearance_occasion_easter">Wielkanoc</string>
+    <string name="appearance_occasion_music">Dzień Muzyki</string>
+    <string name="appearance_occasion_independence">Dzień Niepodległości</string>
+    <string name="appearance_occasion_halloween">Halloween</string>
+    <string name="appearance_occasion_mikolajki">Mikołajki</string>
+    <string name="appearance_occasion_christmas">Boże Narodzenie</string>
+    <string name="appearance_occasion_birthday">Urodziny Piterfy</string>
+</resources>

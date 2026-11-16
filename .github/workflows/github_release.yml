@@ -34,6 +34,8 @@ jobs:
           node --check connect/web/dj.js
           node --test connect/web/dj-preroll.test.cjs
           node --test connect/web/queue-protection.test.cjs
+          node --test connect/web/smart-core.test.cjs connect/web/appearance-core.test.cjs
+          python3 -m unittest discover -s connect/stack/discover -p 'test_*.py'
           node --test connect/web/media-kind-core.test.cjs
           node --test connect/web/offline-core.test.cjs connect/web/offline-sw.test.cjs
           node --test connect/web/cast-receiver.test.cjs

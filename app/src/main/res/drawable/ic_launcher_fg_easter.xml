@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Piterfy: pierwszy plan ikony „easter”. Wygenerowane przez tools/appearance/generate.py; nie edytuj ręcznie. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:pathData="M54,22C69,22 81,45 81,62C81,77 69,86 54,86C39,86 27,77 27,62C27,45 39,22 54,22z"
+        android:fillColor="#FF9BE3B4" />
+    <path
+        android:pathData="M28,56L37,49L46,56L54,49L62,56L71,49L80,56L80,64L71,57L62,64L54,57L46,64L37,57L28,64z"
+        android:fillColor="#FFFF8FB1" />
+    <path
+        android:pathData="M32,72L40,68L48,72L56,68L64,72L72,68L78,71L77,76L72,73L64,77L56,73L48,77L40,73L33,76z"
+        android:fillColor="#FFFFFFFF"
+        android:fillAlpha="0.9" />
+    <path
+        android:pathData="M43.4,38a2.6,2.6 0,1 1,5.2,0a2.6,2.6 0,1 1,-5.2,0z"
+        android:fillColor="#FFFFE066" />
+    <path
+        android:pathData="M57.8,42a2.2,2.2 0,1 1,4.4,0a2.2,2.2 0,1 1,-4.4,0z"
+        android:fillColor="#FFFFE066" />
+</vector>

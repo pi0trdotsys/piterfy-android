@@ -11,6 +11,53 @@
   }
   function podcast(song){const core=typeof module==='object'&&module.exports?require('./media-kind-core.js'):window.PiterfyMediaKinds;return core?core.isPodcast(song):String(song?.type).toLowerCase()==='podcast'||/(^|[;,/])\s*(podcasts?|podcasty)\s*($|[;,/])/i.test(song?.genre||'')||/(^|[/\\])(podcasts?|podcasty)([/\\]|$)/i.test(song?.path||'');}
 
+  // piterfy-appearance-data:begin (wygenerowane przez tools/appearance/generate.py; nie edytuj ręcznie)
+  const APPEARANCE_DATA = {"window":2,"themes":[{"id":"noir_neon","name":"Noir Neon","dark":true,"accent":"#FF4FA3","accent2":"#00E5FF","bg":"#07070D","surface":"#12121C","text":"#F5F5FA"},{"id":"synthwave","name":"Synthwave","dark":true,"accent":"#FF6EC7","accent2":"#FFB000","bg":"#150A28","surface":"#211040","text":"#FBEFFF"},{"id":"las","name":"Las","dark":true,"accent":"#6FE3A1","accent2":"#E3C26F","bg":"#08150F","surface":"#0F2418","text":"#E8F5EC"},{"id":"ocean","name":"Ocean","dark":true,"accent":"#4FC3F7","accent2":"#26E0C1","bg":"#050E1A","surface":"#0A1D33","text":"#E6F3FF"},{"id":"terminal","name":"Retro Terminal","dark":true,"accent":"#39FF14","accent2":"#00C8FF","bg":"#000000","surface":"#06100A","text":"#B8FFC9"},{"id":"zloto","name":"Złoto","dark":true,"accent":"#E7C25B","accent2":"#B87333","bg":"#0A0803","surface":"#17120A","text":"#F6ECD2"},{"id":"summer","name":"Lato","dark":true,"accent":"#FF7A3D","accent2":"#22C3C3","bg":"#190B1C","surface":"#2A1330","text":"#FFF0E5"},{"id":"winter","name":"Zima","dark":true,"accent":"#A8E0FF","accent2":"#FFFFFF","bg":"#08121C","surface":"#11202F","text":"#EAF6FF"},{"id":"halloween","name":"Halloween","dark":true,"accent":"#FF8A1F","accent2":"#9B5DE5","bg":"#0D0614","surface":"#1A0F24","text":"#FFEFD9"},{"id":"christmas","name":"Boże Narodzenie","dark":true,"accent":"#FF4D4D","accent2":"#3DDC84","bg":"#0A1410","surface":"#13241B","text":"#FFF3F0"},{"id":"valentine","name":"Walentynki","dark":true,"accent":"#FF5C8A","accent2":"#FFB3C6","bg":"#14050B","surface":"#240B14","text":"#FFEEF3"},{"id":"newyear","name":"Sylwester","dark":true,"accent":"#F5C542","accent2":"#C0C8FF","bg":"#05070F","surface":"#0E1424","text":"#F8F5E8"},{"id":"independence","name":"Biało-czerwony","dark":true,"accent":"#E8314F","accent2":"#FFFFFF","bg":"#0E0508","surface":"#1E0C11","text":"#FFF4F5"},{"id":"birthday","name":"Urodziny Piterfy","dark":true,"accent":"#1ED760","accent2":"#FFC107","bg":"#000000","surface":"#121212","text":"#FFFFFF"}],"icons":[{"id":"classic","name":"Klasyk","svg":"<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 108 108\"><rect width=\"108\" height=\"108\" rx=\"24\" fill=\"#000000\"/><path d=\"M26,54a28,28 0,1 1,56,0a28,28 0,1 1,-56,0zM40.56,50.27L40.56,61.47A2.24,2.24 0,0 0,45.04,61.47L45.04,50.27A2.24,2.24 0,0 0,40.56,50.27zM48.03,42.8L48.03,65.2A2.24,2.24 0,0 0,52.51,65.2L52.51,42.8A2.24,2.24 0,0 0,48.03,42.8zM55.49,46.53L55.49,59.6A2.24,2.24 0,0 0,59.97,59.6L59.97,46.53A2.24,2.24 0,0 0,55.49,46.53zM62.96,50.27L62.96,55.87A2.24,2.24 0,0 0,67.44,55.87L67.44,50.27A2.24,2.24 0,0 0,62.96,50.27z\" fill=\"#1DB954\" fill-rule=\"evenodd\"/></svg>"},{"id":"neon","name":"Neon","svg":"<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 108 108\"><defs><linearGradient id=\"gibg\" gradientUnits=\"userSpaceOnUse\" x1=\"0\" y1=\"0\" x2=\"108\" y2=\"108\"><stop offset=\"0\" stop-color=\"#0B0B18\"/><stop offset=\"1\" stop-color=\"#2A0B4A\"/></linearGradient></defs><rect width=\"108\" height=\"108\" rx=\"24\" fill=\"url(#gibg)\"/><path d=\"M26,54a28,28 0,1 1,56,0a28,28 0,1 1,-56,0z\" fill=\"#FF2E93\" opacity=\"0.14\"/><path d=\"M23,54a31,31 0,1 1,62,0a31,31 0,1 1,-62,0z\" fill=\"none\" stroke=\"#FF2E93\" stroke-width=\"3\" opacity=\"0.95\"/><path d=\"M23,54a31,31 0,1 1,62,0a31,31 0,1 1,-62,0z\" fill=\"none\" stroke=\"#FF2E93\" stroke-width=\"7\" opacity=\"0.18\"/><path d=\"M40.56,50.27L40.56,61.47A2.24,2.24 0,0 0,45.04,61.47L45.04,50.27A2.24,2.24 0,0 0,40.56,50.27z\" fill=\"#00E5FF\"/><path d=\"M48.03,42.8L48.03,65.2A2.24,2.24 0,0 0,52.51,65.2L52.51,42.8A2.24,2.24 0,0 0,48.03,42.8z\" fill=\"#00E5FF\"/><path d=\"M55.49,46.53L55.49,59.6A2.24,2.24 0,0 0,59.97,59.6L59.97,46.53A2.24,2.24 0,0 0,55.49,46.53z\" fill=\"#00E5FF\"/><path d=\"M62.96,50.27L62.96,55.87A2.24,2.24 0,0 0,67.44,55.87L67.44,50.27A2.24,2.24 0,0 0,62.96,50.27z\" fill=\"#00E5FF\"/></svg>"},{"id":"vinyl","name":"Winyl","svg":"<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 108 108\"><defs><linearGradient id=\"gibg\" gradientUnits=\"userSpaceOnUse\" x1=\"0\" y1=\"0\" x2=\"108\" y2=\"108\"><stop offset=\"0\" stop-color=\"#101010\"/><stop offset=\"1\" stop-color=\"#242424\"/></linearGradient></defs><rect width=\"108\" height=\"108\" rx=\"24\" fill=\"url(#gibg)\"/><path d=\"M19,54a35,35 0,1 1,70,0a35,35 0,1 1,-70,0z\" fill=\"#0B0B0B\"/><path d=\"M23,54a31,31 0,1 1,62,0a31,31 0,1 1,-62,0z\" fill=\"none\" stroke=\"#2C2C2C\" stroke-width=\"1.2\"/><path d=\"M28,54a26,26 0,1 1,52,0a26,26 0,1 1,-52,0z\" fill=\"none\" stroke=\"#2C2C2C\" stroke-width=\"1.2\"/><path d=\"M33,54a21,21 0,1 1,42,0a21,21 0,1 1,-42,0z\" fill=\"none\" stroke=\"#2C2C2C\" stroke-width=\"1.2\"/><path d=\"M54,22A32,32 0,0 1,84,43\" fill=\"none\" stroke=\"#FFFFFF\" stroke-width=\"2.6\" stroke-linecap=\"round\" opacity=\"0.16\"/><path d=\"M41,54a13,13 0,1 1,26,0a13,13 0,1 1,-26,0z\" fill=\"#1DB954\"/><path d=\"M51,54a3,3 0,1 1,6,0a3,3 0,1 1,-6,0z\" fill=\"#0B0B0B\"/></svg>"},{"id":"valentine","name":"Walentynki","svg":"<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 108 108\"><defs><linearGradient id=\"gibg\" gradientUnits=\"userSpaceOnUse\" x1=\"0\" y1=\"0\" x2=\"108\" y2=\"108\"><stop offset=\"0\" stop-color=\"#FF5C8A\"/><stop offset=\"1\" stop-color=\"#B5123F\"/></linearGradient></defs><rect width=\"108\" height=\"108\" rx=\"24\" fill=\"url(#gibg)\"/><path d=\"M54,82C28,63 20,48 28,37C35,28 48,31 54,41C60,31 73,28 80,37C88,48 80,63 54,82zM40.56,50.27L40.56,61.47A2.24,2.24 0,0 0,45.04,61.47L45.04,50.27A2.24,2.24 0,0 0,40.56,50.27zM48.03,42.8L48.03,65.2A2.24,2.24 0,0 0,52.51,65.2L52.51,42.8A2.24,2.24 0,0 0,48.03,42.8zM55.49,46.53L55.49,59.6A2.24,2.24 0,0 0,59.97,59.6L59.97,46.53A2.24,2.24 0,0 0,55.49,46.53zM62.96,50.27L62.96,55.87A2.24,2.24 0,0 0,67.44,55.87L67.44,50.27A2.24,2.24 0,0 0,62.96,50.27z\" fill=\"#FFFFFF\" fill-rule=\"evenodd\"/><path d=\"M86,19L87.3,22.6L91,24L87.3,25.4L86,29L84.7,25.4L81,24L84.7,22.6z\" fill=\"#FFE0EA\"/><path d=\"M22,76L23.1,78.9L26,80L23.1,81.1L22,84L20.9,81.1L18,80L20.9,78.9z\" fill=\"#FFE0EA\"/></svg>"},{"id":"easter","name":"Wielkanoc","svg":"<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 108 108\"><defs><linearGradient id=\"gibg\" gradientUnits=\"userSpaceOnUse\" x1=\"0\" y1=\"0\" x2=\"108\" y2=\"108\"><stop offset=\"0\" stop-color=\"#FFF1F7\"/><stop offset=\"1\" stop-color=\"#C9E9FF\"/></linearGradient></defs><rect width=\"108\" height=\"108\" rx=\"24\" fill=\"url(#gibg)\"/><path d=\"M54,22C69,22 81,45 81,62C81,77 69,86 54,86C39,86 27,77 27,62C27,45 39,22 54,22z\" fill=\"#9BE3B4\"/><path d=\"M28,56L37,49L46,56L54,49L62,56L71,49L80,56L80,64L71,57L62,64L54,57L46,64L37,57L28,64z\" fill=\"#FF8FB1\"/><path d=\"M32,72L40,68L48,72L56,68L64,72L72,68L78,71L77,76L72,73L64,77L56,73L48,77L40,73L33,76z\" fill=\"#FFFFFF\" opacity=\"0.9\"/><path d=\"M43.4,38a2.6,2.6 0,1 1,5.2,0a2.6,2.6 0,1 1,-5.2,0z\" fill=\"#FFE066\"/><path d=\"M57.8,42a2.2,2.2 0,1 1,4.4,0a2.2,2.2 0,1 1,-4.4,0z\" fill=\"#FFE066\"/></svg>"},{"id":"summer","name":"Lato","svg":"<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 108 108\"><defs><linearGradient id=\"gibg\" gradientUnits=\"userSpaceOnUse\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"108\"><stop offset=\"0\" stop-color=\"#FFB347\"/><stop offset=\"0.55\" stop-color=\"#FF3D77\"/><stop offset=\"1\" stop-color=\"#7B2FF7\"/></linearGradient></defs><rect width=\"108\" height=\"108\" rx=\"24\" fill=\"url(#gibg)\"/><path d=\"M30,48a24,24 0,1 1,48,0a24,24 0,1 1,-48,0zM40.56,42.27L40.56,53.47A2.24,2.24,0,0,0,45.04,53.47L45.04,42.27A2.24,2.24,0,0,0,40.56,42.27zM48.03,34.8L48.03,57.2A2.24,2.24,0,0,0,52.51,57.2L52.51,34.8A2.24,2.24,0,0,0,48.03,34.8zM55.49,38.53L55.49,51.6A2.24,2.24,0,0,0,59.97,51.6L59.97,38.53A2.24,2.24,0,0,0,55.49,38.53zM62.96,42.27L62.96,47.87A2.24,2.24,0,0,0,67.44,47.87L67.44,42.27A2.24,2.24,0,0,0,62.96,42.27z\" fill=\"#FFE066\" fill-rule=\"evenodd\"/><path d=\"M20,76Q30,69 40,76T60,76T80,76T100,76\" fill=\"none\" stroke=\"#FFFFFF\" stroke-width=\"3.2\" stroke-linecap=\"round\" opacity=\"0.9\"/><path d=\"M20,86Q30,79 40,86T60,86T80,86T100,86\" fill=\"none\" stroke=\"#FFFFFF\" stroke-width=\"3.2\" stroke-linecap=\"round\" opacity=\"0.5\"/></svg>"},{"id":"halloween","name":"Halloween","svg":"<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 108 108\"><defs><linearGradient id=\"gibg\" gradientUnits=\"userSpaceOnUse\" x1=\"0\" y1=\"0\" x2=\"108\" y2=\"108\"><stop offset=\"0\" stop-color=\"#1B0B2E\"/><stop offset=\"1\" stop-color=\"#45106B\"/></linearGradient></defs><rect width=\"108\" height=\"108\" rx=\"24\" fill=\"url(#gibg)\"/><path d=\"M54,38C44,38 38,46 38,57C38,69 45,77 54,77C63,77 70,69 70,57C70,46 64,38 54,38z\" fill=\"#FF8A1F\"/><path d=\"M44,40C32,41 25,50 26,60C27,70 34,77 44,76C38,72 36,64 36,57C36,49 39,43 44,40z\" fill=\"#F26A00\"/><path d=\"M64,40C76,41 83,50 82,60C81,70 74,77 64,76C70,72 72,64 72,57C72,49 69,43 64,40z\" fill=\"#F26A00\"/><path d=\"M51,38L52,30L57,30L58,38z\" fill=\"#53B94F\"/><path d=\"M54,46L47,53L61,53z\" fill=\"#2A0A3F\"/><path d=\"M40,55L46,51L47,58z\" fill=\"#2A0A3F\"/><path d=\"M68,55L62,51L61,58z\" fill=\"#2A0A3F\"/><path d=\"M39,64L44,68L48,64L54,69L60,64L64,68L69,64L66,72L54,75L42,72z\" fill=\"#2A0A3F\"/><path d=\"M86,21L87.3,24.6L91,26L87.3,27.4L86,31L84.7,27.4L81,26L84.7,24.6z\" fill=\"#FFD166\"/><path d=\"M24,26L25.1,28.9L28,30L25.1,31.1L24,34L22.9,31.1L20,30L22.9,28.9z\" fill=\"#FFD166\"/></svg>"},{"id":"christmas","name":"Boże Narodzenie","svg":"<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 108 108\"><defs><linearGradient id=\"gibg\" gradientUnits=\"userSpaceOnUse\" x1=\"0\" y1=\"0\" x2=\"108\" y2=\"108\"><stop offset=\"0\" stop-color=\"#0E5A32\"/><stop offset=\"1\" stop-color=\"#052A19\"/></linearGradient></defs><rect width=\"108\" height=\"108\" rx=\"24\" fill=\"url(#gibg)\"/><path d=\"M26,54a28,28 0,1 1,56,0a28,28 0,1 1,-56,0zM40.56,50.27L40.56,61.47A2.24,2.24 0,0 0,45.04,61.47L45.04,50.27A2.24,2.24 0,0 0,40.56,50.27zM48.03,42.8L48.03,65.2A2.24,2.24 0,0 0,52.51,65.2L52.51,42.8A2.24,2.24 0,0 0,48.03,42.8zM55.49,46.53L55.49,59.6A2.24,2.24 0,0 0,59.97,59.6L59.97,46.53A2.24,2.24 0,0 0,55.49,46.53zM62.96,50.27L62.96,55.87A2.24,2.24 0,0 0,67.44,55.87L67.44,50.27A2.24,2.24 0,0 0,62.96,50.27z\" fill=\"#E63946\" fill-rule=\"evenodd\"/><path d=\"M36,46C37,31 53,23 70,28C63,32 60,39 61,46z\" fill=\"#E63946\"/><path d=\"M32,43L76,43A4.5,4.5 0,0 1,76,52L32,52A4.5,4.5 0,0 1,32,43z\" fill=\"#FFFFFF\"/><path d=\"M66.5,27a5.5,5.5 0,1 1,11.0,0a5.5,5.5 0,1 1,-11.0,0z\" fill=\"#FFFFFF\"/><path d=\"M88,70L89.1,72.9L92,74L89.1,75.1L88,78L86.9,75.1L84,74L86.9,72.9z\" fill=\"#FFE066\"/><path d=\"M20,26L21.1,28.9L24,30L21.1,31.1L20,34L18.9,31.1L16,30L18.9,28.9z\" fill=\"#FFE066\"/><path d=\"M22,81L22.8,83.2L25,84L22.8,84.8L22,87L21.2,84.8L19,84L21.2,83.2z\" fill=\"#FFFFFF\"/></svg>"},{"id":"newyear","name":"Sylwester","svg":"<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 108 108\"><defs><linearGradient id=\"gibg\" gradientUnits=\"userSpaceOnUse\" x1=\"0\" y1=\"0\" x2=\"108\" y2=\"108\"><stop offset=\"0\" stop-color=\"#0A0F2C\"/><stop offset=\"1\" stop-color=\"#3A1B6E\"/></linearGradient></defs><rect width=\"108\" height=\"108\" rx=\"24\" fill=\"url(#gibg)\"/><path d=\"M26,54a28,28 0,1 1,56,0a28,28 0,1 1,-56,0zM40.56,50.27L40.56,61.47A2.24,2.24 0,0 0,45.04,61.47L45.04,50.27A2.24,2.24 0,0 0,40.56,50.27zM48.03,42.8L48.03,65.2A2.24,2.24 0,0 0,52.51,65.2L52.51,42.8A2.24,2.24 0,0 0,48.03,42.8zM55.49,46.53L55.49,59.6A2.24,2.24 0,0 0,59.97,59.6L59.97,46.53A2.24,2.24 0,0 0,55.49,46.53zM62.96,50.27L62.96,55.87A2.24,2.24 0,0 0,67.44,55.87L67.44,50.27A2.24,2.24 0,0 0,62.96,50.27z\" fill=\"#F5C542\" fill-rule=\"evenodd\"/><path d=\"M24,19L25.9,24.1L31,26L25.9,27.9L24,33L22.1,27.9L17,26L22.1,24.1z\" fill=\"#FFFFFF\"/><path d=\"M86,25L87.3,28.6L91,30L87.3,31.4L86,35L84.7,31.4L81,30L84.7,28.6z\" fill=\"#F5C542\"/><path d=\"M82,80L83.6,84.4L88,86L83.6,87.6L82,92L80.4,87.6L76,86L80.4,84.4z\" fill=\"#FFFFFF\"/><path d=\"M17.6,78a2.4,2.4 0,1 1,4.8,0a2.4,2.4 0,1 1,-4.8,0z\" fill=\"#FF6EC7\"/><path d=\"M89.8,58a2.2,2.2 0,1 1,4.4,0a2.2,2.2 0,1 1,-4.4,0z\" fill=\"#00E5FF\"/><path d=\"M28,92a2,2 0,1 1,4,0a2,2 0,1 1,-4,0z\" fill=\"#F5C542\"/><path d=\"M68,20a2,2 0,1 1,4,0a2,2 0,1 1,-4,0z\" fill=\"#FF6EC7\"/></svg>"},{"id":"birthday","name":"Urodziny","svg":"<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 108 108\"><defs><linearGradient id=\"gibg\" gradientUnits=\"userSpaceOnUse\" x1=\"0\" y1=\"0\" x2=\"108\" y2=\"108\"><stop offset=\"0\" stop-color=\"#1DB954\"/><stop offset=\"1\" stop-color=\"#0B5A37\"/></linearGradient></defs><rect width=\"108\" height=\"108\" rx=\"24\" fill=\"url(#gibg)\"/><path d=\"M26,62a28,28,0,1,1,56,0a28,28,0,1,1,-56,0zM40.56,58.27L40.56,69.47A2.24,2.24,0,0,0,45.04,69.47L45.04,58.27A2.24,2.24,0,0,0,40.56,58.27zM48.03,50.8L48.03,73.2A2.24,2.24,0,0,0,52.51,73.2L52.51,50.8A2.24,2.24,0,0,0,48.03,50.8zM55.49,54.53L55.49,67.6A2.24,2.24,0,0,0,59.97,67.6L59.97,54.53A2.24,2.24,0,0,0,55.49,54.53zM62.96,58.27L62.96,63.87A2.24,2.24,0,0,0,67.44,63.87L67.44,58.27A2.24,2.24,0,0,0,62.96,58.27z\" fill=\"#FFFFFF\" fill-rule=\"evenodd\"/><path d=\"M54,14L69,42L39,42z\" fill=\"#FFC107\"/><path d=\"M46.5,28L61.5,28L65,35L43,35z\" fill=\"#FF4081\"/><path d=\"M50.4,13.5a3.6,3.6 0,1 1,7.2,0a3.6,3.6 0,1 1,-7.2,0z\" fill=\"#FF4081\"/><path d=\"M19.4,24a2.6,2.6 0,1 1,5.2,0a2.6,2.6 0,1 1,-5.2,0z\" fill=\"#FF4081\"/><path d=\"M85.4,30a2.6,2.6 0,1 1,5.2,0a2.6,2.6 0,1 1,-5.2,0z\" fill=\"#FFC107\"/><path d=\"M87.4,82a2.6,2.6 0,1 1,5.2,0a2.6,2.6 0,1 1,-5.2,0z\" fill=\"#FF4081\"/><path d=\"M15.6,80a2.4,2.4 0,1 1,4.8,0a2.4,2.4 0,1 1,-4.8,0z\" fill=\"#FFC107\"/><path d=\"M84,14L85.1,16.9L88,18L85.1,19.1L84,22L82.9,19.1L80,18L82.9,16.9z\" fill=\"#FFFFFF\"/></svg>"},{"id":"independence","name":"Biało-czerwona","svg":"<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 108 108\"><defs><linearGradient id=\"gibg\" gradientUnits=\"userSpaceOnUse\" x1=\"0\" y1=\"0\" x2=\"108\" y2=\"108\"><stop offset=\"0\" stop-color=\"#E0173A\"/><stop offset=\"1\" stop-color=\"#8E0C23\"/></linearGradient></defs><rect width=\"108\" height=\"108\" rx=\"24\" fill=\"url(#gibg)\"/><path d=\"M26,54a28,28 0,1 1,56,0a28,28 0,1 1,-56,0zM40.56,50.27L40.56,61.47A2.24,2.24 0,0 0,45.04,61.47L45.04,50.27A2.24,2.24 0,0 0,40.56,50.27zM48.03,42.8L48.03,65.2A2.24,2.24 0,0 0,52.51,65.2L52.51,42.8A2.24,2.24 0,0 0,48.03,42.8zM55.49,46.53L55.49,59.6A2.24,2.24 0,0 0,59.97,59.6L59.97,46.53A2.24,2.24 0,0 0,55.49,46.53zM62.96,50.27L62.96,55.87A2.24,2.24 0,0 0,67.44,55.87L67.44,50.27A2.24,2.24 0,0 0,62.96,50.27z\" fill=\"#FFFFFF\" fill-rule=\"evenodd\"/><path d=\"M20,26L88,26\" fill=\"none\" stroke=\"#FFFFFF\" stroke-width=\"3\" opacity=\"0\"/><path d=\"M88,23L89.3,26.6L93,28L89.3,29.4L88,33L86.7,29.4L83,28L86.7,26.6z\" fill=\"#FFFFFF\"/><path d=\"M20,80L21.1,82.9L24,84L21.1,85.1L20,88L18.9,85.1L16,84L18.9,82.9z\" fill=\"#FFFFFF\"/></svg>"}],"occasions":[{"id":"newyear","name":"Sylwester i Nowy Rok","rule":["fixed",12,31],"icon":"newyear","theme":"newyear"},{"id":"valentine","name":"Walentynki","rule":["fixed",2,14],"icon":"valentine","theme":"valentine"},{"id":"easter","name":"Wielkanoc","rule":["easter",0],"icon":"easter","theme":"las"},{"id":"music","name":"Dzień Muzyki","rule":["fixed",6,21],"icon":"neon","theme":"noir_neon"},{"id":"independence","name":"Dzień Niepodległości","rule":["fixed",11,11],"icon":"independence","theme":"independence"},{"id":"halloween","name":"Halloween","rule":["fixed",10,31],"icon":"halloween","theme":"halloween"},{"id":"mikolajki","name":"Mikołajki","rule":["fixed",12,6],"icon":"christmas","theme":"christmas"},{"id":"christmas","name":"Boże Narodzenie","rule":["fixed",12,24],"icon":"christmas","theme":"christmas"},{"id":"birthday","name":"Urodziny Piterfy","rule":["fixed",10,12],"icon":"birthday","theme":"birthday"}]};
+  // piterfy-appearance-data:end
+
+  // ── wygląd: dni okolicznościowe (±2 dni), motywy i ikony; ta sama logika co PiterfyOccasions.kt (testy: appearance-core.test.cjs) ──
+  const appearanceCore=(()=>{
+    const D=APPEARANCE_DATA;
+    const epochDay=(y,m,d)=>{
+      const yy=m<=2?y-1:y,era=Math.floor(yy/400),yoe=yy-era*400;
+      const doy=Math.floor((153*(m+(m>2?-3:9))+2)/5)+d-1,doe=yoe*365+Math.floor(yoe/4)-Math.floor(yoe/100)+doy;
+      return era*146097+doe-719468;
+    };
+    const easter=y=>{
+      const a=y%19,b=Math.floor(y/100),c=y%100,d=Math.floor(b/4),e=b%4,f=Math.floor((b+8)/25),g=Math.floor((b-f+1)/3);
+      const h=(19*a+b-d-g+15)%30,i=Math.floor(c/4),k=c%4,l=(32+2*e+2*i-h-k)%7,m=Math.floor((a+11*h+22*l)/451);
+      return [Math.floor((h+l-7*m+114)/31),(h+l-7*m+114)%31+1];
+    };
+    const eventDay=(rule,y)=>rule[0]==='fixed'?epochDay(y,rule[1],rule[2]):(([m,d])=>epochDay(y,m,d))(easter(y))+rule[1];
+    /** Okazja aktywna danego dnia (od `window` dni przed świętem do `window` dni po) albo null; przy zazębieniu wygrywa bliższa. */
+    function active(y,m,d,list=D.occasions,window=D.window){
+      const today=epochDay(y,m,d);let best=null;
+      for(const o of list)for(let yy=y-1;yy<=y+1;yy++){
+        const delta=today-eventDay(o.rule,yy);
+        if(delta<-window||delta>window)continue;
+        if(!best||Math.abs(delta)<Math.abs(best.daysFromEvent))best={occasion:o,daysFromEvent:delta};
+      }
+      return best;
+    }
+    /** Najbliższa przyszła okazja (od jutra): {occasion, inDays} do podpisu w oknie wyboru. */
+    function next(y,m,d,list=D.occasions,window=D.window){
+      const today=epochDay(y,m,d);let best=null;
+      for(const o of list)for(let yy=y;yy<=y+1;yy++){
+        const until=eventDay(o.rule,yy)-window-today;
+        if(until>0&&(!best||until<best.inDays))best={occasion:o,inDays:until};
+      }
+      return best;
+    }
+    const theme=id=>D.themes.find(t=>t.id===id)||null;
+    const icon=id=>D.icons.find(i=>i.id===id)||null;
+    /** Motyw i ikona na dany dzień: okazja (gdy automat włączony) ma pierwszeństwo przed własnym wyborem. */
+    function effective(prefs,y,m,d){
+      const hit=prefs.auto===false?null:active(y,m,d);
+      const themeId=hit?hit.occasion.theme:prefs.theme,iconId=hit?hit.occasion.icon:prefs.icon;
+      return {theme:theme(themeId)?themeId:'classic',icon:icon(iconId)?iconId:'classic',occasion:hit?hit.occasion:null};
+    }
+    return {epochDay,easter,active,next,effective,theme,icon,data:D};
+  })();
   // ── inteligentne odtwarzanie: czysty rdzeń wyboru (bez sieci, testowany w smart-core.test.cjs) ──
   // Wzorem są ostatnio grane utwory (nie tylko bieżący), podobieństwa z kilku źródeł się sumują, wykonawcy z ostatniej
   // chwili są wyciszani, a utwory losuje się ważonym losowaniem, nie biorąc zawsze początku listy.
@@ -97,7 +144,7 @@
     }
     return {artistKey,songKey,seeds,merge,remember,recentIds,pick};
   })();
-  if(typeof module==='object'&&module.exports){module.exports={protectedQueue,queueIndex,smart:smartCore};return;}
+  if(typeof module==='object'&&module.exports){module.exports={protectedQueue,queueIndex,smart:smartCore,appearance:appearanceCore};return;}
   if (window.PiterfyLibrary) return;
   let store, dialog, account = '', preferences = {}, previous, lastSave = 0, generation = 0;
   let applyingQueue = false, seekGuard = 0, saving = false, checkedAlbum = '', coverSource = '';
@@ -164,6 +211,78 @@
     const byId=new Map(unique.map(s=>[s.id,s]));
     return ranked.items.map(row=>({...byId.get(row.id),piterfyReason:row.reason}));
   }
+
+  // ── wygląd (przeglądarka): zastosowanie motywu i ikony oraz okno wyboru ──
+  const APPEARANCE_KEY='pf-appearance';
+  function appearancePrefs(){
+    const base={auto:true,theme:'classic',icon:'classic'};
+    try{return {...base,...JSON.parse(localStorage.getItem(APPEARANCE_KEY)||'{}')};}catch(_){return base;}
+  }
+  function saveAppearance(prefs){try{localStorage.setItem(APPEARANCE_KEY,JSON.stringify(prefs));}catch(_){/* bez zapisu działa do odświeżenia */}}
+  function currentAppearance(){const d=new Date();return appearanceCore.effective(appearancePrefs(),d.getFullYear(),d.getMonth()+1,d.getDate());}
+  function faviconHref(){
+    const e=currentAppearance();if(e.icon==='classic')return '';
+    const i=appearanceCore.icon(e.icon);return i?'data:image/svg+xml,'+encodeURIComponent(i.svg):'';
+  }
+  let appliedAppearance='';
+  function applyAppearance(force){
+    const e=currentAppearance(),key=e.theme+'|'+e.icon;
+    if(!force&&key===appliedAppearance)return;
+    appliedAppearance=key;
+    const root=document.documentElement;
+    if(e.theme==='classic')root.removeAttribute('data-pf-theme');else root.setAttribute('data-pf-theme',e.theme);
+    const href=faviconHref();
+    document.querySelectorAll('link[rel~="icon"]').forEach(l=>{l.setAttribute('href',href||'/piterfy-ui/logo.svg');l.setAttribute('type','image/svg+xml');});
+    const meta=appearanceCore.theme(e.theme);
+    document.querySelectorAll('meta[name="theme-color"]').forEach(m=>m.setAttribute('content',meta?meta.bg:'#000000'));
+  }
+  function occasionNote(){
+    const d=new Date(),y=d.getFullYear(),m=d.getMonth()+1,day=d.getDate(),hit=appearanceCore.active(y,m,day);
+    if(hit)return 'Dziś: '+hit.occasion.name;
+    const n=appearanceCore.next(y,m,day);if(!n)return '';
+    const when=new Date(d.getFullYear(),d.getMonth(),day+n.inDays);
+    return 'Najbliższa okazja: '+n.occasion.name+' (od '+when.getDate()+'.'+String(when.getMonth()+1).padStart(2,'0')+')';
+  }
+  function openAppearance(){
+    document.querySelector('.pf-ap-dialog')?.remove();
+    const dlg=el('dialog','',document.body,'pf-ap-dialog');
+    const render=()=>{
+      dlg.replaceChildren();
+      const prefs=appearancePrefs(),eff=currentAppearance();
+      el('h2','Wygląd Piterfy',dlg);
+      const auto=el('label','',dlg,'pf-ap-auto'),box=el('input','',auto);box.type='checkbox';box.checked=prefs.auto!==false;
+      const labels=el('span','',auto);el('strong','Automatycznie w dni okolicznościowe',labels);
+      el('small','Od 2 dni przed do 2 dni po święcie motyw i ikona zmieniają się same',labels);
+      box.addEventListener('change',()=>{saveAppearance({...appearancePrefs(),auto:box.checked});applyAppearance(true);render();});
+      const note=occasionNote();if(note)el('p',note,dlg,'pf-ap-note');
+      el('h3','Motywy',dlg);
+      const themes=el('div','',dlg,'pf-ap-grid');
+      const pick=(group,id)=>{saveAppearance({...appearancePrefs(),[group]:id});applyAppearance(true);render();};
+      const classic=el('button','',themes,'pf-ap-card'+(prefs.theme==='classic'?' pf-sel':''));classic.type='button';
+      classic.style.cssText='--c0:#000;--c1:#1db954;--c2:#a4edc2;--ct:#fff';
+      el('span','',classic,'pf-ap-chips');el('b','Piterfy',classic);classic.addEventListener('click',()=>pick('theme','classic'));
+      for(const t of appearanceCore.data.themes){
+        const card=el('button','',themes,'pf-ap-card'+(prefs.theme===t.id?' pf-sel':''));card.type='button';
+        card.style.cssText='--c0:'+t.bg+';--c1:'+t.accent+';--c2:'+t.accent2+';--ct:'+t.text;
+        el('span','',card,'pf-ap-chips');el('b',t.name,card);card.addEventListener('click',()=>pick('theme',t.id));
+      }
+      el('h3','Ikony (karta przeglądarki)',dlg);
+      const icons=el('div','',dlg,'pf-ap-grid pf-ap-icons');
+      for(const i of appearanceCore.data.icons){
+        const card=el('button','',icons,'pf-ap-icon'+(prefs.icon===i.id?' pf-sel':''));card.type='button';
+        const img=el('img','',card);img.alt='';img.src='data:image/svg+xml,'+encodeURIComponent(i.svg);
+        el('b',i.name,card);card.addEventListener('click',()=>pick('icon',i.id));
+      }
+      if(eff.occasion&&prefs.auto!==false)el('p','Dziś działa motyw i ikona okolicznościowa. Twój wybór zadziała po święcie albo po wyłączeniu automatu.',dlg,'pf-ap-note');
+      const close=el('button','Gotowe',dlg,'pf-library-button');close.type='button';close.addEventListener('click',()=>dlg.close());
+    };
+    dlg.addEventListener('close',()=>dlg.remove(),{once:true});
+    render();dlg.showModal();
+  }
+  window.PiterfyAppearance={faviconHref,apply:applyAppearance,open:openAppearance,current:currentAppearance};
+  applyAppearance(true);
+  setInterval(()=>applyAppearance(false),60000);  // zmiana dnia o północy
+
   window.PiterfyLibrary={smart:smartCore, rankSongs, play, prefetch:records, queue:openQueue, downloads:openDownloads, feedback:vote, exploration:()=>preferences.exploration??50, candidates:()=>subsonic('getRandomSongs',{size:100}).then(r=>r.randomSongs?.song||[])};
   const djScript=document.createElement('script');djScript.src='/piterfy-ui/dj.js?v='+encodeURIComponent(new URL(document.currentScript?.src||location.href).searchParams.get('v')||Date.now());document.head.append(djScript);
   async function records(songs) {

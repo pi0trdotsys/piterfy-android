@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Piterfy: pierwszy plan ikony „independence”. Wygenerowane przez tools/appearance/generate.py; nie edytuj ręcznie. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:pathData="M26,54a28,28 0,1 1,56,0a28,28 0,1 1,-56,0zM40.56,50.27L40.56,61.47A2.24,2.24 0,0 0,45.04,61.47L45.04,50.27A2.24,2.24 0,0 0,40.56,50.27zM48.03,42.8L48.03,65.2A2.24,2.24 0,0 0,52.51,65.2L52.51,42.8A2.24,2.24 0,0 0,48.03,42.8zM55.49,46.53L55.49,59.6A2.24,2.24 0,0 0,59.97,59.6L59.97,46.53A2.24,2.24 0,0 0,55.49,46.53zM62.96,50.27L62.96,55.87A2.24,2.24 0,0 0,67.44,55.87L67.44,50.27A2.24,2.24 0,0 0,62.96,50.27z"
+        android:fillType="evenOdd"
+        android:fillColor="#FFFFFFFF" />
+    <path
+        android:pathData="M20,26L88,26"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="3"
+        android:strokeAlpha="0" />
+    <path
+        android:pathData="M88,23L89.3,26.6L93,28L89.3,29.4L88,33L86.7,29.4L83,28L86.7,26.6z"
+        android:fillColor="#FFFFFFFF" />
+    <path
+        android:pathData="M20,80L21.1,82.9L24,84L21.1,85.1L20,88L18.9,85.1L16,84L18.9,82.9z"
+        android:fillColor="#FFFFFFFF" />
+</vector>

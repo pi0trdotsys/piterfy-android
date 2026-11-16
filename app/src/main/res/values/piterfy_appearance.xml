@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Piterfy: nazwy motywów, ikon i okazji. Wygenerowane przez tools/appearance/generate.py. -->
+<resources>
+    <string name="appearance_overridden">A holiday theme or icon is active today. Your choice applies after the holiday or when you turn the automatic mode off.</string>
+    <string name="appearance_title">Piterfy look: themes and icons</string>
+    <string name="appearance_summary">Colour themes, app icons and automatic changes on special days</string>
+    <string name="appearance_auto">Switch automatically on special days</string>
+    <string name="appearance_auto_summary">From 2 days before to 2 days after a holiday the app switches its theme and icon by itself</string>
+    <string name="appearance_themes">Themes</string>
+    <string name="appearance_icons">App icons</string>
+    <string name="appearance_theme_classic">Piterfy</string>
+    <string name="appearance_theme_classic_note">Your own colour settings</string>
+    <string name="appearance_today">Today: %1$s</string>
+    <string name="appearance_none_today">No occasion today. Next: %1$s (%2$s)</string>
+    <string name="appearance_icon_note">The icon changes when you close the app</string>
+    <string name="appearance_close">Done</string>
+    <string name="appearance_theme_noir_neon">Noir Neon</string>
+    <string name="appearance_theme_synthwave">Synthwave</string>
+    <string name="appearance_theme_papier">Paper</string>
+    <string name="appearance_theme_las">Forest</string>
+    <string name="appearance_theme_ocean">Ocean</string>
+    <string name="appearance_theme_sakura">Sakura</string>
+    <string name="appearance_theme_terminal">Retro Terminal</string>
+    <string name="appearance_theme_zloto">Gold</string>
+    <string name="appearance_theme_summer">Summer</string>
+    <string name="appearance_theme_winter">Winter</string>
+    <string name="appearance_theme_halloween">Halloween</string>
+    <string name="appearance_theme_christmas">Christmas</string>
+    <string name="appearance_theme_valentine">Valentine\'s</string>
+    <string name="appearance_theme_newyear">New Year</string>
+    <string name="appearance_theme_easter">Spring / Easter</string>
+    <string name="appearance_theme_independence">Red and white</string>
+    <string name="appearance_theme_birthday">Piterfy birthday</string>
+    <string name="appearance_icon_classic">Classic</string>
+    <string name="appearance_icon_neon">Neon</string>
+    <string name="appearance_icon_vinyl">Vinyl</string>
+    <string name="appearance_icon_valentine">Valentine\'s</string>
+    <string name="appearance_icon_easter">Easter</string>
+    <string name="appearance_icon_summer">Summer</string>
+    <string name="appearance_icon_halloween">Halloween</string>
+    <string name="appearance_icon_christmas">Christmas</string>
+    <string name="appearance_icon_newyear">New Year</string>
+    <string name="appearance_icon_birthday">Birthday</string>
+    <string name="appearance_icon_independence">Red and white</string>
+    <string name="appearance_occasion_newyear">New Year\'s Eve</string>
+    <string name="appearance_occasion_valentine">Valentine\'s Day</string>
+    <string name="appearance_occasion_easter">Easter</string>
+    <string name="appearance_occasion_music">Music Day</string>
+    <string name="appearance_occasion_independence">Independence Day</string>
+    <string name="appearance_occasion_halloween">Halloween</string>
+    <string name="appearance_occasion_mikolajki">St. Nicholas Day</string>
+    <string name="appearance_occasion_christmas">Christmas</string>
+    <string name="appearance_occasion_birthday">Piterfy birthday</string>
+</resources>

@@ -67,7 +67,7 @@ html:not([data-pf-light]) {
     margin: 0 8px 8px;
     min-width: 0;
     overflow-x: auto;  /* szeroka tabela przewija się w panelu, a nie rozpycha całą stronę */
-    background: linear-gradient(180deg, #1c3b2b 0, var(--pf-panel) 320px) !important;
+    background: linear-gradient(180deg, var(--pf-tint, #1c3b2b) 0, var(--pf-panel) 320px) !important;
   }
 
   /* menu (i nasza pozycja „Start”): szare, aktywne białe na ciemniejszym tle */
@@ -188,7 +188,7 @@ html:not([data-pf-light]) {
 
   /* strona startowa w kolorach Noir: zielona poświata u góry jak w Spotify */
   &[data-pf-route="start"] #main-content {
-    background: linear-gradient(180deg, #1f4a33 0, #15291e 180px, var(--pf-panel) 420px) !important;
+    background: linear-gradient(180deg, var(--pf-tint-2, #1f4a33) 0, var(--pf-tint, #15291e) 180px, var(--pf-panel) 420px) !important;
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -529,7 +529,7 @@ html[data-pf-light] .pf-chips a[aria-current="page"] { color: #ffffff; }
   transition: opacity 0.2s, transform 0.2s, background 0.15s;
 }
 .pf-play svg { width: 24px; height: 24px; }
-.pf-play:hover { background: #1ed760; transform: scale(1.06) !important; }
+.pf-play:hover { background: var(--pf-accent-hover, #1ed760); transform: scale(1.06) !important; }
 
 /* szybki dostęp: kafelki 2 × 4 */
 .pf-tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
@@ -560,7 +560,7 @@ html[data-pf-light] .pf-chips a[aria-current="page"] { color: #ffffff; }
 }
 .pf-tile-art img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .pf-tile-art svg { width: 24px; height: 24px; }
-.pf-tile-daily { background: linear-gradient(135deg, #1db954, #0b5a37); color: #000000; }
+.pf-tile-daily { background: linear-gradient(135deg, var(--pf-h-green, #1db954), var(--pf-deep, #0b5a37)); color: #000000; }
 .pf-tile-mix { background: linear-gradient(135deg, #7b2ff7, #1db954); }
 .pf-tile-liked { background: linear-gradient(135deg, #450af5, #c4efd9); }
 .pf-tile-name { flex: 1; min-width: 0; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
@@ -605,7 +605,7 @@ html[data-pf-light] .pf-chips a[aria-current="page"] { color: #ffffff; }
 }
 .pf-card-art img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .pf-card-art[data-pf-art="mix"] { background: linear-gradient(135deg, #7b2ff7, #1db954); }
-.pf-card-art[data-pf-art="daily"] { background: linear-gradient(135deg, #1db954, #0b5a37); }
+.pf-card-art[data-pf-art="daily"] { background: linear-gradient(135deg, var(--pf-h-green, #1db954), var(--pf-deep, #0b5a37)); }
 .pf-card-art[data-pf-art="daily"]::before {
   content: "Odkrywaj";
   position: absolute;
@@ -1135,3 +1135,133 @@ html:not([data-pf-light]) body .react-jinke-music-player-main .music-player-pane
   .pf-sec-head h2::after { width: 40px; }
   .pf-card:hover .pf-card-art, .pf-card:hover .pf-card-art::before, .pf-tile:hover, .pf-tile:hover .pf-tile-art, .pf-chips a:hover { transform: none !important; animation: none !important; }
 }
+
+/* ═════ Okno „Wygląd Piterfy”: wybór motywu i ikony ═════ */
+.pf-ap-dialog { width: min(680px, calc(100vw - 32px)); max-height: calc(100vh - 48px); overflow: auto; padding: 22px; border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 18px;
+  background: #121212; color: #fff; font-family: Figtree, system-ui, sans-serif; box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6); }
+.pf-ap-dialog::backdrop { background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(4px); }
+.pf-ap-dialog h2 { margin: 0 0 14px; font-size: 22px; letter-spacing: -0.02em; }
+.pf-ap-dialog h3 { margin: 20px 0 10px; font-size: 14px; color: #b3b3b3; text-transform: uppercase; letter-spacing: 0.06em; }
+.pf-ap-auto { display: flex; gap: 12px; align-items: center; padding: 12px 14px; border-radius: 12px; background: rgba(255, 255, 255, 0.06); cursor: pointer; }
+.pf-ap-auto input { width: 20px; height: 20px; accent-color: #1db954; }
+.pf-ap-auto small { display: block; margin-top: 2px; color: #b3b3b3; }
+.pf-ap-note { margin: 10px 2px 0; color: #b3b3b3; font-size: 13px; }
+.pf-ap-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px; }
+.pf-ap-card { display: flex; flex-direction: column; gap: 14px; padding: 12px; border: 2px solid rgba(255, 255, 255, 0.1); border-radius: 14px; background: var(--c0); color: var(--ct);
+  font: inherit; text-align: left; cursor: pointer; transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), border-color 0.15s; }
+.pf-ap-card:hover { transform: translateY(-3px); }
+.pf-ap-card.pf-sel, .pf-ap-icon.pf-sel { border-color: #1db954; box-shadow: 0 0 0 3px rgba(29, 185, 84, 0.25); }
+.pf-ap-chips { display: flex; gap: 6px; }
+.pf-ap-chips::before, .pf-ap-chips::after { content: ""; height: 12px; border-radius: 6px; }
+.pf-ap-chips::before { width: 34px; background: var(--c1); }
+.pf-ap-chips::after { width: 20px; background: var(--c2); }
+.pf-ap-card b { font-size: 12.5px; }
+.pf-ap-icons { grid-template-columns: repeat(auto-fill, minmax(86px, 1fr)); }
+.pf-ap-icon { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 8px; border: 2px solid transparent; border-radius: 14px; background: transparent; color: inherit;
+  font: inherit; cursor: pointer; transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1); }
+.pf-ap-icon:hover { transform: translateY(-3px) scale(1.04); }
+.pf-ap-icon img { width: 64px; height: 64px; }
+.pf-ap-icon b { font-size: 12px; font-weight: 600; }
+.pf-ap-dialog .pf-library-button { margin-top: 18px; }
+@media (prefers-reduced-motion: reduce) { .pf-ap-card, .pf-ap-icon { transition: none !important; transform: none !important; } }
+
+/* piterfy-themes:begin (wygenerowane przez tools/appearance/generate.py; nie edytuj ręcznie) */
+html[data-pf-theme="noir_neon"] { --pf-bg: #07070D; --pf-panel: #12121C; --pf-card: #12121C; --pf-card-hover: #1D1D2C; --pf-text: #F5F5FA; --pf-muted: #A6A6BD; --pf-accent: #FF4FA3; --pf-accent-2: #00E5FF; --pf-tint: #461F3A; --pf-tint-2: #63274A; --pf-deep: #772750; --pf-accent-hover: #FF6FB4; }
+html[data-pf-theme="noir_neon"] .pf-home { --pf-h-text: #F5F5FA; --pf-h-muted: #A6A6BD; --pf-h-surface: #18181E; --pf-h-hover: #26262C; --pf-h-green: #FF4FA3; }
+html[data-pf-theme="noir_neon"]:not([data-pf-light]) .pf-hello { background: linear-gradient(92deg, #F5F5FA 25%, #FF4FA3 85%); -webkit-background-clip: text; background-clip: text; }
+html[data-pf-theme="noir_neon"] .pf-home-head::before { background: radial-gradient(closest-side, #FF4FA3A6, transparent); }
+html[data-pf-theme="noir_neon"] .pf-home-head::after { background: radial-gradient(closest-side, #00E5FF80, transparent); }
+html[data-pf-theme="noir_neon"] .pf-play { background: #FF4FA3; color: #FFFFFF; }
+html[data-pf-theme="noir_neon"] body .react-jinke-music-player-main .music-player-panel { background: #12121CCC !important; }
+html[data-pf-theme="synthwave"] { --pf-bg: #150A28; --pf-panel: #211040; --pf-card: #211040; --pf-card-hover: #2E1A57; --pf-text: #FBEFFF; --pf-muted: #BFA8DB; --pf-accent: #FF6EC7; --pf-accent-2: #FFB000; --pf-tint: #52255E; --pf-tint-2: #6C306E; --pf-deep: #7E3770; --pf-accent-hover: #FF88D1; }
+html[data-pf-theme="synthwave"] .pf-home { --pf-h-text: #FBEFFF; --pf-h-muted: #BFA8DB; --pf-h-surface: #251A37; --pf-h-hover: #332844; --pf-h-green: #FF6EC7; }
+html[data-pf-theme="synthwave"]:not([data-pf-light]) .pf-hello { background: linear-gradient(92deg, #FBEFFF 25%, #FF6EC7 85%); -webkit-background-clip: text; background-clip: text; }
+html[data-pf-theme="synthwave"] .pf-home-head::before { background: radial-gradient(closest-side, #FF6EC7A6, transparent); }
+html[data-pf-theme="synthwave"] .pf-home-head::after { background: radial-gradient(closest-side, #FFB00080, transparent); }
+html[data-pf-theme="synthwave"] .pf-play { background: #FF6EC7; color: #000000; }
+html[data-pf-theme="synthwave"] body .react-jinke-music-player-main .music-player-panel { background: #211040CC !important; }
+html[data-pf-theme="las"] { --pf-bg: #08150F; --pf-panel: #0F2418; --pf-card: #0F2418; --pf-card-hover: #173324; --pf-text: #E8F5EC; --pf-muted: #93B5A0; --pf-accent: #6FE3A1; --pf-accent-2: #E3C26F; --pf-tint: #244E36; --pf-tint-2: #306547; --pf-deep: #367251; --pf-accent-hover: #89E8B2; }
+html[data-pf-theme="las"] .pf-home { --pf-h-text: #E8F5EC; --pf-h-muted: #93B5A0; --pf-h-surface: #18251E; --pf-h-hover: #25322C; --pf-h-green: #6FE3A1; }
+html[data-pf-theme="las"]:not([data-pf-light]) .pf-hello { background: linear-gradient(92deg, #E8F5EC 25%, #6FE3A1 85%); -webkit-background-clip: text; background-clip: text; }
+html[data-pf-theme="las"] .pf-home-head::before { background: radial-gradient(closest-side, #6FE3A1A6, transparent); }
+html[data-pf-theme="las"] .pf-home-head::after { background: radial-gradient(closest-side, #E3C26F80, transparent); }
+html[data-pf-theme="las"] .pf-play { background: #6FE3A1; color: #000000; }
+html[data-pf-theme="las"] body .react-jinke-music-player-main .music-player-panel { background: #0F2418CC !important; }
+html[data-pf-theme="ocean"] { --pf-bg: #050E1A; --pf-panel: #0A1D33; --pf-card: #0A1D33; --pf-card-hover: #112C4A; --pf-text: #E6F3FF; --pf-muted: #8FB2D1; --pf-accent: #4FC3F7; --pf-accent-2: #26E0C1; --pf-tint: #19425E; --pf-tint-2: #215576; --pf-deep: #265F7D; --pf-accent-hover: #6FCEF8; }
+html[data-pf-theme="ocean"] .pf-home { --pf-h-text: #E6F3FF; --pf-h-muted: #8FB2D1; --pf-h-surface: #151E2A; --pf-h-hover: #222C38; --pf-h-green: #4FC3F7; }
+html[data-pf-theme="ocean"]:not([data-pf-light]) .pf-hello { background: linear-gradient(92deg, #E6F3FF 25%, #4FC3F7 85%); -webkit-background-clip: text; background-clip: text; }
+html[data-pf-theme="ocean"] .pf-home-head::before { background: radial-gradient(closest-side, #4FC3F7A6, transparent); }
+html[data-pf-theme="ocean"] .pf-home-head::after { background: radial-gradient(closest-side, #26E0C180, transparent); }
+html[data-pf-theme="ocean"] .pf-play { background: #4FC3F7; color: #000000; }
+html[data-pf-theme="ocean"] body .react-jinke-music-player-main .music-player-panel { background: #0A1D33CC !important; }
+html[data-pf-theme="terminal"] { --pf-bg: #000000; --pf-panel: #06100A; --pf-card: #06100A; --pf-card-hover: #0C1D12; --pf-text: #B8FFC9; --pf-muted: #5FA874; --pf-accent: #39FF14; --pf-accent-2: #00C8FF; --pf-tint: #11450C; --pf-tint-2: #17610D; --pf-deep: #1A7309; --pf-accent-hover: #5DFF3E; }
+html[data-pf-theme="terminal"] .pf-home { --pf-h-text: #B8FFC9; --pf-h-muted: #5FA874; --pf-h-surface: #0D120E; --pf-h-hover: #18211A; --pf-h-green: #39FF14; }
+html[data-pf-theme="terminal"]:not([data-pf-light]) .pf-hello { background: linear-gradient(92deg, #B8FFC9 25%, #39FF14 85%); -webkit-background-clip: text; background-clip: text; }
+html[data-pf-theme="terminal"] .pf-home-head::before { background: radial-gradient(closest-side, #39FF14A6, transparent); }
+html[data-pf-theme="terminal"] .pf-home-head::after { background: radial-gradient(closest-side, #00C8FF80, transparent); }
+html[data-pf-theme="terminal"] .pf-play { background: #39FF14; color: #000000; }
+html[data-pf-theme="terminal"] body .react-jinke-music-player-main .music-player-panel { background: #06100ACC !important; }
+html[data-pf-theme="zloto"] { --pf-bg: #0A0803; --pf-panel: #17120A; --pf-card: #17120A; --pf-card-hover: #231B0E; --pf-text: #F6ECD2; --pf-muted: #B7A77C; --pf-accent: #E7C25B; --pf-accent-2: #B87333; --pf-tint: #45391C; --pf-tint-2: #5E4E26; --pf-deep: #6D5C2B; --pf-accent-hover: #EBCD79; }
+html[data-pf-theme="zloto"] .pf-home { --pf-h-text: #F6ECD2; --pf-h-muted: #B7A77C; --pf-h-surface: #1B1811; --pf-h-hover: #29261E; --pf-h-green: #E7C25B; }
+html[data-pf-theme="zloto"]:not([data-pf-light]) .pf-hello { background: linear-gradient(92deg, #F6ECD2 25%, #E7C25B 85%); -webkit-background-clip: text; background-clip: text; }
+html[data-pf-theme="zloto"] .pf-home-head::before { background: radial-gradient(closest-side, #E7C25BA6, transparent); }
+html[data-pf-theme="zloto"] .pf-home-head::after { background: radial-gradient(closest-side, #B8733380, transparent); }
+html[data-pf-theme="zloto"] .pf-play { background: #E7C25B; color: #000000; }
+html[data-pf-theme="zloto"] body .react-jinke-music-player-main .music-player-panel { background: #17120ACC !important; }
+html[data-pf-theme="summer"] { --pf-bg: #190B1C; --pf-panel: #2A1330; --pf-card: #2A1330; --pf-card-hover: #3B1B43; --pf-text: #FFF0E5; --pf-muted: #D1A9A0; --pf-accent: #FF7A3D; --pf-accent-2: #22C3C3; --pf-tint: #592A33; --pf-tint-2: #723634; --pf-deep: #803D2B; --pf-accent-hover: #FF9260; }
+html[data-pf-theme="summer"] .pf-home { --pf-h-text: #FFF0E5; --pf-h-muted: #D1A9A0; --pf-h-surface: #291B2A; --pf-h-hover: #372936; --pf-h-green: #FF7A3D; }
+html[data-pf-theme="summer"]:not([data-pf-light]) .pf-hello { background: linear-gradient(92deg, #FFF0E5 25%, #FF7A3D 85%); -webkit-background-clip: text; background-clip: text; }
+html[data-pf-theme="summer"] .pf-home-head::before { background: radial-gradient(closest-side, #FF7A3DA6, transparent); }
+html[data-pf-theme="summer"] .pf-home-head::after { background: radial-gradient(closest-side, #22C3C380, transparent); }
+html[data-pf-theme="summer"] .pf-play { background: #FF7A3D; color: #000000; }
+html[data-pf-theme="summer"] body .react-jinke-music-player-main .music-player-panel { background: #2A1330CC !important; }
+html[data-pf-theme="winter"] { --pf-bg: #08121C; --pf-panel: #11202F; --pf-card: #11202F; --pf-card-hover: #1A3045; --pf-text: #EAF6FF; --pf-muted: #9AB7CC; --pf-accent: #A8E0FF; --pf-accent-2: #FFFFFF; --pf-tint: #324A5D; --pf-tint-2: #446176; --pf-deep: #506F82; --pf-accent-hover: #B8E6FF; }
+html[data-pf-theme="winter"] .pf-home { --pf-h-text: #EAF6FF; --pf-h-muted: #9AB7CC; --pf-h-surface: #18222C; --pf-h-hover: #25303A; --pf-h-green: #A8E0FF; }
+html[data-pf-theme="winter"]:not([data-pf-light]) .pf-hello { background: linear-gradient(92deg, #EAF6FF 25%, #A8E0FF 85%); -webkit-background-clip: text; background-clip: text; }
+html[data-pf-theme="winter"] .pf-home-head::before { background: radial-gradient(closest-side, #A8E0FFA6, transparent); }
+html[data-pf-theme="winter"] .pf-home-head::after { background: radial-gradient(closest-side, #FFFFFF80, transparent); }
+html[data-pf-theme="winter"] .pf-play { background: #A8E0FF; color: #000000; }
+html[data-pf-theme="winter"] body .react-jinke-music-player-main .music-player-panel { background: #11202FCC !important; }
+html[data-pf-theme="halloween"] { --pf-bg: #0D0614; --pf-panel: #1A0F24; --pf-card: #1A0F24; --pf-card-hover: #281738; --pf-text: #FFEFD9; --pf-muted: #C2A58B; --pf-accent: #FF8A1F; --pf-accent-2: #9B5DE5; --pf-tint: #4C2A23; --pf-tint-2: #683922; --pf-deep: #7A4119; --pf-accent-hover: #FF9F47; }
+html[data-pf-theme="halloween"] .pf-home { --pf-h-text: #FFEFD9; --pf-h-muted: #C2A58B; --pf-h-surface: #1E1622; --pf-h-hover: #2C242E; --pf-h-green: #FF8A1F; }
+html[data-pf-theme="halloween"]:not([data-pf-light]) .pf-hello { background: linear-gradient(92deg, #FFEFD9 25%, #FF8A1F 85%); -webkit-background-clip: text; background-clip: text; }
+html[data-pf-theme="halloween"] .pf-home-head::before { background: radial-gradient(closest-side, #FF8A1FA6, transparent); }
+html[data-pf-theme="halloween"] .pf-home-head::after { background: radial-gradient(closest-side, #9B5DE580, transparent); }
+html[data-pf-theme="halloween"] .pf-play { background: #FF8A1F; color: #000000; }
+html[data-pf-theme="halloween"] body .react-jinke-music-player-main .music-player-panel { background: #1A0F24CC !important; }
+html[data-pf-theme="christmas"] { --pf-bg: #0A1410; --pf-panel: #13241B; --pf-card: #13241B; --pf-card-hover: #1C3326; --pf-text: #FFF3F0; --pf-muted: #B7C7BC; --pf-accent: #FF4D4D; --pf-accent-2: #3DDC84; --pf-tint: #472D26; --pf-tint-2: #63322C; --pf-deep: #782E2B; --pf-accent-hover: #FF6D6D; }
+html[data-pf-theme="christmas"] .pf-home { --pf-h-text: #FFF3F0; --pf-h-muted: #B7C7BC; --pf-h-surface: #1B2420; --pf-h-hover: #2A312D; --pf-h-green: #FF4D4D; }
+html[data-pf-theme="christmas"]:not([data-pf-light]) .pf-hello { background: linear-gradient(92deg, #FFF3F0 25%, #FF4D4D 85%); -webkit-background-clip: text; background-clip: text; }
+html[data-pf-theme="christmas"] .pf-home-head::before { background: radial-gradient(closest-side, #FF4D4DA6, transparent); }
+html[data-pf-theme="christmas"] .pf-home-head::after { background: radial-gradient(closest-side, #3DDC8480, transparent); }
+html[data-pf-theme="christmas"] .pf-play { background: #FF4D4D; color: #FFFFFF; }
+html[data-pf-theme="christmas"] body .react-jinke-music-player-main .music-player-panel { background: #13241BCC !important; }
+html[data-pf-theme="valentine"] { --pf-bg: #14050B; --pf-panel: #240B14; --pf-card: #240B14; --pf-card-hover: #34121F; --pf-text: #FFEEF3; --pf-muted: #D09AAB; --pf-accent: #FF5C8A; --pf-accent-2: #FFB3C6; --pf-tint: #541D2E; --pf-tint-2: #6E273C; --pf-deep: #7E2C44; --pf-accent-hover: #FF799F; }
+html[data-pf-theme="valentine"] .pf-home { --pf-h-text: #FFEEF3; --pf-h-muted: #D09AAB; --pf-h-surface: #24151B; --pf-h-hover: #332329; --pf-h-green: #FF5C8A; }
+html[data-pf-theme="valentine"]:not([data-pf-light]) .pf-hello { background: linear-gradient(92deg, #FFEEF3 25%, #FF5C8A 85%); -webkit-background-clip: text; background-clip: text; }
+html[data-pf-theme="valentine"] .pf-home-head::before { background: radial-gradient(closest-side, #FF5C8AA6, transparent); }
+html[data-pf-theme="valentine"] .pf-home-head::after { background: radial-gradient(closest-side, #FFB3C680, transparent); }
+html[data-pf-theme="valentine"] .pf-play { background: #FF5C8A; color: #000000; }
+html[data-pf-theme="valentine"] body .react-jinke-music-player-main .music-player-panel { background: #240B14CC !important; }
+html[data-pf-theme="newyear"] { --pf-bg: #05070F; --pf-panel: #0E1424; --pf-card: #0E1424; --pf-card-hover: #17203A; --pf-text: #F8F5E8; --pf-muted: #A9B0C8; --pf-accent: #F5C542; --pf-accent-2: #C0C8FF; --pf-tint: #413B2B; --pf-tint-2: #5D502E; --pf-deep: #715C26; --pf-accent-hover: #F7CF64; }
+html[data-pf-theme="newyear"] .pf-home { --pf-h-text: #F8F5E8; --pf-h-muted: #A9B0C8; --pf-h-surface: #16181E; --pf-h-hover: #25262B; --pf-h-green: #F5C542; }
+html[data-pf-theme="newyear"]:not([data-pf-light]) .pf-hello { background: linear-gradient(92deg, #F8F5E8 25%, #F5C542 85%); -webkit-background-clip: text; background-clip: text; }
+html[data-pf-theme="newyear"] .pf-home-head::before { background: radial-gradient(closest-side, #F5C542A6, transparent); }
+html[data-pf-theme="newyear"] .pf-home-head::after { background: radial-gradient(closest-side, #C0C8FF80, transparent); }
+html[data-pf-theme="newyear"] .pf-play { background: #F5C542; color: #000000; }
+html[data-pf-theme="newyear"] body .react-jinke-music-player-main .music-player-panel { background: #0E1424CC !important; }
+html[data-pf-theme="independence"] { --pf-bg: #0E0508; --pf-panel: #1E0C11; --pf-card: #1E0C11; --pf-card-hover: #2C1219; --pf-text: #FFF4F5; --pf-muted: #C79BA2; --pf-accent: #E8314F; --pf-accent-2: #FFFFFF; --pf-tint: #4A141F; --pf-tint-2: #631926; --pf-deep: #701928; --pf-accent-hover: #EC566F; }
+html[data-pf-theme="independence"] .pf-home { --pf-h-text: #FFF4F5; --pf-h-muted: #C79BA2; --pf-h-surface: #1F1619; --pf-h-hover: #2D2427; --pf-h-green: #E8314F; }
+html[data-pf-theme="independence"]:not([data-pf-light]) .pf-hello { background: linear-gradient(92deg, #FFF4F5 25%, #E8314F 85%); -webkit-background-clip: text; background-clip: text; }
+html[data-pf-theme="independence"] .pf-home-head::before { background: radial-gradient(closest-side, #E8314FA6, transparent); }
+html[data-pf-theme="independence"] .pf-home-head::after { background: radial-gradient(closest-side, #FFFFFF80, transparent); }
+html[data-pf-theme="independence"] .pf-play { background: #E8314F; color: #FFFFFF; }
+html[data-pf-theme="independence"] body .react-jinke-music-player-main .music-player-panel { background: #1E0C11CC !important; }
+html[data-pf-theme="birthday"] { --pf-bg: #000000; --pf-panel: #121212; --pf-card: #121212; --pf-card-hover: #1E1E1E; --pf-text: #FFFFFF; --pf-muted: #B3B3B3; --pf-accent: #1ED760; --pf-accent-2: #FFC107; --pf-tint: #153D23; --pf-tint-2: #16552D; --pf-deep: #0E612B; --pf-accent-hover: #46DE7D; }
+html[data-pf-theme="birthday"] .pf-home { --pf-h-text: #FFFFFF; --pf-h-muted: #B3B3B3; --pf-h-surface: #121212; --pf-h-hover: #212121; --pf-h-green: #1ED760; }
+html[data-pf-theme="birthday"]:not([data-pf-light]) .pf-hello { background: linear-gradient(92deg, #FFFFFF 25%, #1ED760 85%); -webkit-background-clip: text; background-clip: text; }
+html[data-pf-theme="birthday"] .pf-home-head::before { background: radial-gradient(closest-side, #1ED760A6, transparent); }
+html[data-pf-theme="birthday"] .pf-home-head::after { background: radial-gradient(closest-side, #FFC10780, transparent); }
+html[data-pf-theme="birthday"] .pf-play { background: #1ED760; color: #000000; }
+html[data-pf-theme="birthday"] body .react-jinke-music-player-main .music-player-panel { background: #121212CC !important; }
+/* piterfy-themes:end */
