@@ -37,6 +37,9 @@ import androidx.navigation.fragment.NavHostFragment;
 import androidx.preference.EditTextPreference;
 import androidx.preference.ListPreference;
 import androidx.preference.Preference;
+import com.eddyizm.tempus.github.utils.PiterfyUpdateLogic;
+import com.eddyizm.tempus.github.utils.PiterfyUpdateManager;
+import com.eddyizm.tempus.ui.dialog.PiterfyUpdateDialog;
 import androidx.preference.PreferenceCategory;
 import androidx.preference.PreferenceFragmentCompat;
 import androidx.preference.PreferenceManager;
@@ -205,17 +208,48 @@ public class SettingsContainerFragment extends PreferenceFragmentCompat {
         musicFoldersObserved = false;
     }
 
+    /** Piterfy: „Sprawdź aktualizacje teraz”: ręczne pytanie GitHuba i to samo okno co przy automatycznym sprawdzeniu. */
+    private void setupUpdateCheck() {
+        Preference check = findPreference("github_update_check_now");
+        if (check == null) return;
+        String installed = PiterfyUpdateManager.INSTANCE.installedVersionName(requireContext());
+        check.setSummary(getString(R.string.update_check_now_summary, installed));
+        check.setOnPreferenceClickListener(preference -> {
+            if (!PiterfyUpdateManager.INSTANCE.supported()) {
+                Toast.makeText(requireContext(), R.string.update_debug_build, Toast.LENGTH_LONG).show();
+                return true;
+            }
+            preference.setSummary(R.string.update_checking);
+            android.content.Context app = requireContext().getApplicationContext();
+            java.util.concurrent.Executors.newSingleThreadExecutor().execute(() -> {
+                PiterfyUpdateLogic.Update update = null;
+                boolean failed = false;
+                try {
+                    update = PiterfyUpdateManager.INSTANCE.checkNow(app);
+                } catch (java.io.IOException e) {
+                    failed = true;
+                }
+                final PiterfyUpdateLogic.Update found = update;
+                final boolean error = failed;
+                if (!isAdded() || getActivity() == null) return;
+                requireActivity().runOnUiThread(() -> {
+                    preference.setSummary(getString(R.string.update_check_now_summary, installed));
+                    if (error) Toast.makeText(requireContext(), R.string.update_check_failed, Toast.LENGTH_LONG).show();
+                    else if (found == null) Toast.makeText(requireContext(), R.string.update_latest, Toast.LENGTH_SHORT).show();
+                    else PiterfyUpdateDialog.show(requireActivity(), found);
+                });
+            });
+            return true;
+        });
+    }
+
     @Override
     public void onCreatePreferences(Bundle savedInstanceState, String rootKey) {
         setPreferencesFromResource(R.xml.global_preferences, rootKey);
         com.eddyizm.tempus.ui.components.PiterfyPlaybackPreferences.install(getPreferenceScreen());
 
-        if (!BuildConfig.FLAVOR.equals("tempus")) {
-            PreferenceCategory githubUpdateCategory = findPreference("settings_github_update_category_key");
-            if (githubUpdateCategory != null) {
-                getPreferenceScreen().removePreference(githubUpdateCategory);
-            }
-        }
+        // Piterfy: aktualizacja z poziomu aplikacji dotyczy obu wariantów (oba APK są w wydaniu GitHuba)
+        setupUpdateCheck();
 
         if (BuildConfig.FLAVOR.equals("degoogled")) {
             ClickablePreferenceCategory androidAutoCategory = findPreference("settings_androidauto_category_key");

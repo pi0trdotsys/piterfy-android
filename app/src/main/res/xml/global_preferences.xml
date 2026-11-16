@@ -651,6 +651,9 @@
             android:title="@string/settings_github_update_title"
             android:defaultValue="true"
             android:key="github_update_check" />
+        <Preference
+            android:key="github_update_check_now"
+            android:title="@string/update_check_now" />
     </com.eddyizm.tempus.util.ClickablePreferenceCategory>
 
     <com.eddyizm.tempus.util.ClickablePreferenceCategory app:title="@string/settings_about_title">

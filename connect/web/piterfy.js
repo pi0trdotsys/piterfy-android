@@ -1160,6 +1160,8 @@
     const playlists = (lists.playlists && lists.playlists.playlist) || [];
     const daily = playlists.filter((p) => DAILY.test(p.name))
       .sort((a, b) => String(b.created).localeCompare(String(a.created)));
+    const isMix = (p) => /^Piterfy Mix/.test(p.comment || "");
+    const mixes = playlists.filter(isMix).sort((a, b) => String(a.created).localeCompare(String(b.created)));
     const fresh = daily[0] ? ((await subsonic("getPlaylist", { id: daily[0].id })).playlist || {}).entry || [] : [];
     const artists = taste && taste.top_artists ? (await Promise.all(taste.top_artists.slice(0, 10).map(async (a) => {
       const found = ((await subsonic("search3", { query: a.name, artistCount: 5, albumCount: 0, songCount: 0 }))
@@ -1170,7 +1172,8 @@
     return {
       recent: albums(recent), frequent: albums(frequent), newest: albums(newest),
       daily: daily, mix: playlists.find((p) => p.name === "Odkrywaj"), fresh: fresh,
-      own: playlists.filter((p) => p.name !== "Odkrywaj" && !DAILY.test(p.name)),
+      mixes: mixes,
+      own: playlists.filter((p) => p.name !== "Odkrywaj" && !DAILY.test(p.name) && !isMix(p)),
       artists: artists, taste: taste,
     };
   }
@@ -1199,11 +1202,11 @@
       '</span><span class="pf-card-title">' + esc(title) + '</span><span class="pf-card-sub">' + esc(sub) + "</span></a>";
   }
 
-  function section(title, more, cards, kicker) {
+  function section(title, more, cards, kicker, rowClass) {
     if (!cards.length) return "";
     return '<section class="pf-sec"><div class="pf-sec-head"><div>' +
       (kicker ? '<span class="pf-sec-kicker">' + esc(kicker) + "</span>" : "") + "<h2>" + esc(title) + "</h2></div>" +
-      (more ? '<a href="' + esc(more) + '">Pokaż wszystko</a>' : "") + '</div><div class="pf-row">' + cards.join("") + "</div></section>";
+      (more ? '<a href="' + esc(more) + '">Pokaż wszystko</a>' : "") + '</div><div class="pf-row' + (rowClass ? " " + rowClass : "") + '">' + cards.join("") + "</div></section>";
   }
 
   function renderHome(box, d) {
@@ -1233,6 +1236,10 @@
       '<span class="pf-banner-stats"><b>' + t.plays + "</b> odsłuchów · <b>" + Math.round(t.minutes / 60) + "</b> godz. · <b>" +
       t.artists + '</b> wykonawców</span><span class="pf-banner-cta">Zobacz podsumowanie ↗</span></span></a>' : "";
 
+    // tematyczne miksy (Happy Mix, Dark Mix...) odświeżane przez serwer: gradientowe okładki z dużym podpisem
+    const mixSlug = (name) => name.toLowerCase().replace(/\s*mix$/, "").replace(/[^a-z]+/g, "-").replace(/^-|-$/g, "");
+    const mixCards = (d.mixes || []).map((p) => card("#/playlist/" + p.id + "/show", p.name,
+      songs(p), "", { art: "mix-" + mixSlug(p.name), label: p.name.replace(/\s*Mix$/i, "") }));
     const madeForYou = (d.mix ? [playlistCard(d.mix, "Wszystko, co dla Ciebie znalazłem", "mix")] : [])
       .concat(d.daily.slice(0, 7).map((p) => playlistCard(p, songs(p) + " · nowe dla Ciebie", "daily")));
 
@@ -1241,6 +1248,7 @@
       '<nav class="pf-chips">' + chips.map((c) => '<a href="' + esc(c[1]) + '"' + (c[2] ? ' aria-current="page"' : "") + ">" + c[0] + "</a>").join("") +
       "</nav></header>" +
       '<div class="pf-tiles">' + tiles.join("") + "</div>" +
+      section("Twoje miksy", "#/playlist", mixCards, "Odświeżane codziennie", "pf-row-mixes") +
       section("Odkryte dla Ciebie", "#/playlist", madeForYou, "Stworzone dla Ciebie") +
       section("Świeże odkrycia", d.daily[0] ? "#/playlist/" + d.daily[0].id + "/show" : "",
         d.fresh.map((s) => card("#/album/" + s.albumId + "/show", s.title, s.artist || "", cover(s.coverArt))), d.daily[0] && d.daily[0].name) +
@@ -1357,6 +1365,43 @@
     podcasty: { state: { data: null, at: 0, loading: false }, ttl: 120000, load: loadPodcasts, render: renderPodcasts },
   };
 
+  // Szkielet strony startowej: ten sam układ co gotowa strona, z pulsującymi blokami, dopóki nie dojdą dane.
+  function homeSkeleton() {
+    const row = (n) => '<div class="pf-row">' + Array.from({ length: n }, () =>
+      '<div class="pf-card"><span class="pf-card-art pf-skeleton"></span><span class="pf-skeleton pf-skel-line"></span>' +
+      '<span class="pf-skeleton pf-skel-line pf-skel-short"></span></div>').join("") + "</div>";
+    return '<header class="pf-home-head"><h1 class="pf-hello pf-skeleton pf-skel-title">&nbsp;</h1></header>' +
+      '<div class="pf-tiles">' + Array.from({ length: 8 }, () => '<div class="pf-tile pf-skeleton"></div>').join("") + "</div>" +
+      '<section class="pf-sec"><div class="pf-sec-head"><h2 class="pf-skeleton pf-skel-heading">&nbsp;</h2></div>' + row(7) + "</section>";
+  }
+
+  // Sekcje pojawiają się, gdy wjeżdżają w ekran (bez IntersectionObserver albo przy ograniczonym ruchu zostają widoczne).
+  let revealer = null;
+  let revealAlive = false;
+  function revealSections(box) {
+    if (!("IntersectionObserver" in window) || (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches)) return;
+    if (!revealer) {
+      revealer = new IntersectionObserver((entries) => {
+        revealAlive = true;
+        entries.forEach((e) => {
+          if (e.isIntersecting) { e.target.classList.add("pf-in"); revealer.unobserve(e.target); }
+        });
+      }, { rootMargin: "0px 0px -8% 0px" });
+    }
+    box.querySelectorAll(".pf-sec, .pf-banner").forEach((el) => {
+      if (el.classList.contains("pf-in")) return;
+      el.classList.add("pf-reveal");
+      revealer.observe(el);
+    });
+    // Zabezpieczenie: obserwator zawsze odpowiada od razu po zaczęciu obserwacji. Jeśli milczy (wstrzymana karta,
+    // nietypowa przeglądarka), efekt się wyłącza, żeby żadna sekcja nie została niewidoczna.
+    setTimeout(() => {
+      if (revealAlive) return;
+      revealer.disconnect();
+      document.querySelectorAll(".pf-reveal").forEach((el) => el.classList.remove("pf-reveal"));
+    }, 1500);
+  }
+
   function customPage() {
     const route = root.dataset.pfRoute;
     const page = PAGES[route];
@@ -1379,6 +1424,9 @@
       if (st.data) {
         page.render(box, st.data);
         st.sig = page.sig ? page.sig(st.data) : "";
+        revealSections(box);
+      } else if (route === "start") {
+        box.innerHTML = homeSkeleton();
       }
     }
     if (!st.loading && Date.now() - st.at > page.ttl) {
@@ -1393,6 +1441,7 @@
         if (current && (sig === null || sig !== st.sig || !current.firstChild)) {
           page.render(current, data);
           st.sig = sig;
+          revealSections(current);
         }
       }, () => { st.loading = false; st.at = Date.now() - page.ttl + 10000; });
     }

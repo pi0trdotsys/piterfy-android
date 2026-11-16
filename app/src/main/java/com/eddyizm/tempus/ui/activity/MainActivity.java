@@ -47,7 +47,8 @@ import com.eddyizm.tempus.BuildConfig;
 import com.eddyizm.tempus.R;
 import com.eddyizm.tempus.broadcast.receiver.ConnectivityStatusBroadcastReceiver;
 import com.eddyizm.tempus.databinding.ActivityMainBinding;
-import com.eddyizm.tempus.github.utils.UpdateUtil;
+import com.eddyizm.tempus.github.utils.PiterfyUpdateLogic;
+import com.eddyizm.tempus.github.utils.PiterfyUpdateManager;
 import com.eddyizm.tempus.helper.ThemeHelper;
 import com.eddyizm.tempus.navigation.NavigationController;
 import com.eddyizm.tempus.navigation.NavigationHelper;
@@ -57,7 +58,7 @@ import com.eddyizm.tempus.ui.activity.base.BaseActivity;
 import com.eddyizm.tempus.navigation.BottomSheetController;
 import com.eddyizm.tempus.navigation.BottomSheetHelper;
 import com.eddyizm.tempus.ui.dialog.ConnectionAlertDialog;
-import com.eddyizm.tempus.ui.dialog.GithubTempoUpdateDialog;
+import com.eddyizm.tempus.ui.dialog.PiterfyUpdateDialog;
 import com.eddyizm.tempus.ui.dialog.ServerUnreachableDialog;
 import com.eddyizm.tempus.ui.fragment.PlayerBottomSheetFragment;
 import com.eddyizm.tempus.ui.fragment.SettingsFragment;
@@ -186,6 +187,7 @@ public class MainActivity extends BaseActivity {
         AlbumArtistBackfill.backfillIfNeeded();
 
         maybeSchedulePlaybackIntent(getIntent());
+        openUpdateFromIntent(getIntent());
         setupLoginActivity();
     }
 
@@ -203,6 +205,7 @@ public class MainActivity extends BaseActivity {
     protected void onResume() {
         super.onResume();
         pingServer();
+        checkTempusUpdate();  // Piterfy: pytanie o aktualizację najwyżej co 3 godziny
         toggleNavigationDrawerLockOnOrientationChange();
     }
 
@@ -234,6 +237,7 @@ public class MainActivity extends BaseActivity {
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
         setIntent(intent);
+        openUpdateFromIntent(intent);
         maybeSchedulePlaybackIntent(intent);
         consumePendingPlaybackIntent();
         consumePendingNowPlayingIntent();
@@ -773,15 +777,31 @@ public class MainActivity extends BaseActivity {
         }
     }
 
+    private static String promptedUpdateVersion = "";
+
+    /**
+     * Piterfy: aktualizacja z poziomu aplikacji (PiterfyUpdateManager, jak w Szpili i Kropi). Pyta GitHuba przy starcie
+     * i powrocie do aplikacji (najwyżej co 3 godziny), a okno z propozycją pokazuje raz na wersję w jednym uruchomieniu.
+     */
     private void checkTempusUpdate() {
-        if (BuildConfig.FLAVOR.equals("tempus") && Preferences.isGithubUpdateEnabled() && Preferences.showTempusUpdateDialog()) {
-            mainViewModel.checkTempusUpdate().observe(this, latestRelease -> {
-                if (latestRelease != null && UpdateUtil.showUpdateDialog(latestRelease)) {
-                    GithubTempoUpdateDialog dialog = new GithubTempoUpdateDialog(latestRelease);
-                    dialog.show(getSupportFragmentManager(), null);
-                }
+        if (!Preferences.isGithubUpdateEnabled() || !PiterfyUpdateManager.INSTANCE.supported()) return;
+        java.util.concurrent.Executors.newSingleThreadExecutor().execute(() -> {
+            PiterfyUpdateLogic.Update update = PiterfyUpdateManager.INSTANCE.autoCheck(getApplicationContext());
+            if (update == null || update.getVersion().equals(promptedUpdateVersion)) return;
+            runOnUiThread(() -> {
+                if (isFinishing() || isDestroyed()) return;
+                promptedUpdateVersion = update.getVersion();
+                PiterfyUpdateDialog.show(this, update);
             });
-        }
+        });
+    }
+
+    /** Dotknięcie powiadomienia o aktualizacji otwiera okno aktualizacji. */
+    private void openUpdateFromIntent(Intent intent) {
+        if (intent == null || !intent.getBooleanExtra(PiterfyUpdateManager.EXTRA_OPEN_UPDATE, false)) return;
+        intent.removeExtra(PiterfyUpdateManager.EXTRA_OPEN_UPDATE);
+        PiterfyUpdateLogic.Update update = PiterfyUpdateManager.INSTANCE.hint(getApplicationContext());
+        if (update != null) PiterfyUpdateDialog.show(this, update);
     }
 
     private void checkConnectionType() {

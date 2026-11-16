@@ -1029,3 +1029,109 @@ html[data-pf-light] .pf-skeleton {
   .react-jinke-music-player-main .pf-smart svg, .react-jinke-music-player-main .pf-smart::after { animation: none !important; }
   .pf-card, .pf-card-art, .pf-card-art img, .pf-tile { transition: none !important; transform: none !important; }
 }
+
+/* ═════ Wyraźniejszy interfejs: półka miksów, ruchome tło nagłówka, połysk kart, szkielet ładowania, odsłanianie sekcji ═════ */
+@keyframes pf-aurora { 0%, 100% { transform: translate3d(0, 0, 0) scale(1); } 50% { transform: translate3d(6%, 8%, 0) scale(1.15); } }
+@keyframes pf-gradient { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+@keyframes pf-shine { from { opacity: 1; transform: translateX(-120%) skewX(-18deg); } to { opacity: 1; transform: translateX(220%) skewX(-18deg); } }
+@keyframes pf-bar { from { width: 0; } to { width: 40px; } }
+
+/* nagłówek: żywe, powoli dryfujące kolorowe światło za powitaniem */
+.pf-home-head { position: relative; isolation: isolate; padding: 8px 0 4px; }
+.pf-home-head::before, .pf-home-head::after {
+  content: ""; position: absolute; z-index: -1; pointer-events: none; border-radius: 50%; filter: blur(60px); opacity: 0.55;
+  animation: pf-aurora 18s ease-in-out infinite;
+}
+.pf-home-head::before { top: -90px; left: -60px; width: 340px; height: 240px; background: radial-gradient(closest-side, rgba(29, 185, 84, 0.65), transparent); }
+.pf-home-head::after { top: -70px; left: 220px; width: 320px; height: 220px; background: radial-gradient(closest-side, rgba(123, 47, 247, 0.5), transparent); animation-delay: -9s; }
+html:not([data-pf-light]) .pf-hello {
+  font-size: 44px; letter-spacing: -0.04em;
+  background: linear-gradient(92deg, #ffffff 25%, #9bffc4 75%); -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent; color: transparent;
+}
+.pf-chips a { transition: background 0.15s, transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s; }
+.pf-chips a:hover { transform: translateY(-2px); }
+.pf-chips a[aria-current="page"] { box-shadow: 0 6px 18px rgba(29, 185, 84, 0.35); }
+
+/* tytuły sekcji z rosnącym zielonym akcentem */
+.pf-sec-head h2 { position: relative; padding-bottom: 8px; }
+.pf-sec-head h2::after { content: ""; position: absolute; left: 0; bottom: 0; height: 3px; width: 0; border-radius: 3px; background: var(--pf-h-green); }
+.pf-sec.pf-in .pf-sec-head h2::after, .pf-sec:not(.pf-reveal) .pf-sec-head h2::after { animation: pf-bar 0.7s 0.15s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+.pf-sec-head > a { transition: color 0.15s, transform 0.2s; }
+.pf-sec-head > a:hover { transform: translateX(3px); }
+
+/* odsłanianie sekcji przy przewijaniu (klasy dokłada piterfy.js) */
+.pf-reveal { opacity: 0; transform: translateY(32px); }
+.pf-reveal.pf-in { opacity: 1; transform: none; transition: opacity 0.6s ease, transform 0.8s cubic-bezier(0.2, 0.7, 0.2, 1); }
+
+/* karty: wyższe uniesienie, kolorowa poświata, połysk i sprężysty przycisk play */
+.pf-card-art { position: relative; }
+.pf-card-art::after {
+  content: ""; position: absolute; top: 0; bottom: 0; left: 0; width: 45%; z-index: 1; pointer-events: none;
+  background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.28), transparent); transform: translateX(-120%) skewX(-18deg); opacity: 0;
+}
+.pf-card .pf-play { transition: opacity 0.2s, transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.15s; }
+@media (hover: hover) {
+  .pf-card:hover .pf-card-art { transform: translateY(-7px) scale(1.015); box-shadow: 0 22px 40px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.06); }
+  .pf-card:hover .pf-card-art::after { animation: pf-shine 0.9s ease; }
+  .pf-card:hover .pf-card-art[data-pf-art^="mix"] { animation: pf-gradient 5s ease infinite; box-shadow: 0 24px 44px rgba(0, 0, 0, 0.6), 0 0 36px rgba(255, 255, 255, 0.12); }
+  .pf-tile:hover { box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4); transform: translateY(-2px); }
+  .pf-tile:hover .pf-tile-art { transform: scale(1.06); }
+}
+.pf-tile-art { transition: transform 0.3s cubic-bezier(0.2, 0.7, 0.2, 1); }
+
+/* okładki miksów: gradient, wielki podpis i znak w rogu */
+.pf-card-art[data-pf-art^="mix-"] .pf-card-label {
+  top: 0; bottom: auto; padding: 14px 14px 36px; background: linear-gradient(180deg, rgba(0, 0, 0, 0.28), transparent);
+  font-size: clamp(20px, 2.1vw, 28px); line-height: 1.05; text-shadow: 0 2px 12px rgba(0, 0, 0, 0.35);
+  overflow-wrap: anywhere; hyphens: auto;
+}
+.pf-card-art[data-pf-art^="mix-"]::before {
+  position: absolute; right: 10px; bottom: 6px; z-index: 0; font-size: 64px; line-height: 1; opacity: 0.9; filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.35));
+  transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.pf-card:hover .pf-card-art[data-pf-art^="mix-"]::before { transform: scale(1.18) rotate(-8deg); }
+.pf-card-art[data-pf-art="mix-happy"] { background: linear-gradient(135deg, #ffb800, #ff5e62); background-size: 220% 220%; }
+.pf-card-art[data-pf-art="mix-happy"]::before { content: "😊"; }
+.pf-card-art[data-pf-art="mix-dark"] { background: linear-gradient(135deg, #0f0c29, #7b2ff7); background-size: 220% 220%; }
+.pf-card-art[data-pf-art="mix-dark"]::before { content: "🌑"; }
+.pf-card-art[data-pf-art="mix-electronic"] { background: linear-gradient(135deg, #00d4ff, #7209b7); background-size: 220% 220%; }
+.pf-card-art[data-pf-art="mix-electronic"]::before { content: "⚡"; }
+.pf-card-art[data-pf-art="mix-bass-boost"] { background: linear-gradient(135deg, #ff0844, #5b21b6); background-size: 220% 220%; }
+.pf-card-art[data-pf-art="mix-bass-boost"]::before { content: "🔊"; }
+.pf-card-art[data-pf-art="mix-chill"] { background: linear-gradient(135deg, #11998e, #38ef7d); background-size: 220% 220%; }
+.pf-card-art[data-pf-art="mix-chill"]::before { content: "🌊"; }
+.pf-card-art[data-pf-art="mix-workout"] { background: linear-gradient(135deg, #f12711, #f5af19); background-size: 220% 220%; }
+.pf-card-art[data-pf-art="mix-workout"]::before { content: "🔥"; }
+.pf-card-art[data-pf-art="mix-rock"] { background: linear-gradient(135deg, #232526, #c31432); background-size: 220% 220%; }
+.pf-card-art[data-pf-art="mix-rock"]::before { content: "🎸"; }
+.pf-card-art[data-pf-art="mix-hip-hop"] { background: linear-gradient(135deg, #f7971e, #8e2de2); background-size: 220% 220%; }
+.pf-card-art[data-pf-art="mix-hip-hop"]::before { content: "🎤"; }
+
+/* wiersze kart mają zapas u góry, żeby uniesiona okładka nie była ucięta przez overflow */
+.pf-row { padding-top: 10px; margin-top: -10px; }
+
+/* półka miksów pokazuje wszystkie miksy (zawija się, zamiast chować nadmiar) */
+.pf-row.pf-row-mixes { grid-template-columns: repeat(auto-fill, minmax(138px, 1fr)); grid-auto-rows: auto; overflow: visible; }
+
+/* szkielet ładowania strony startowej */
+.pf-skel-line { display: block; height: 14px; width: 80%; margin-top: 10px; }
+.pf-skel-short { width: 50%; height: 11px; }
+.pf-skel-title { width: 280px; height: 44px; margin: 4px 0 20px; }
+.pf-skel-heading { width: 220px; height: 26px; margin: 0; }
+.pf-tile.pf-skeleton { height: 56px; }
+.pf-card-art.pf-skeleton { box-shadow: none; }
+
+/* przeźroczysty, rozmyty pasek odtwarzacza z miękkim cieniem u góry */
+html:not([data-pf-light]) body .react-jinke-music-player-main .music-player-panel {
+  background: rgba(10, 10, 10, 0.78) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(1.6); backdrop-filter: blur(24px) saturate(1.6);
+  box-shadow: 0 -14px 40px rgba(0, 0, 0, 0.55) !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pf-home-head::before, .pf-home-head::after, .pf-card-art::after, .pf-sec-head h2::after { animation: none !important; }
+  .pf-reveal { opacity: 1 !important; transform: none !important; }
+  .pf-sec-head h2::after { width: 40px; }
+  .pf-card:hover .pf-card-art, .pf-card:hover .pf-card-art::before, .pf-tile:hover, .pf-tile:hover .pf-tile-art, .pf-chips a:hover { transform: none !important; animation: none !important; }
+}

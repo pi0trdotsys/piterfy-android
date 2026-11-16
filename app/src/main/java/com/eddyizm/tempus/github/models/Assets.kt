@@ -30,5 +30,8 @@ data class Assets(
         @SerializedName("updated_at")
         var updatedAt: String? = null,
         @SerializedName("browser_download_url")
-        var browserDownloadUrl: String? = null
+        var browserDownloadUrl: String? = null,
+        /** „sha256:…”: skrót, który GitHub liczy dla pliku wydania (używany do weryfikacji pobranego APK). */
+        @SerializedName("digest")
+        var digest: String? = null
 )
