@@ -34,8 +34,8 @@ android {
         //noinspection OldTargetApi
         targetSdk = 37
 
-        versionCode 66
-        versionName '4.29.0-piterfy.18'  // Piterfy: wersja Tempus + numer wydania Piterfy
+        versionCode 67
+        versionName '4.29.0-piterfy.19'  // Piterfy: wersja Tempus + numer wydania Piterfy
         testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
 
         javaCompileOptions {
