@@ -158,12 +158,12 @@ public class BaseActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * Piterfy: jedna sygnatura motywu dla zapisu (onCreate) i porownania (onResume). Wczesniej byly dwie osobne
+     * implementacje; po dopisaniu motywu kolorystycznego do jednej z nich ekran przebudowywal sie przy kazdym
+     * wznowieniu w nieskonczonosc.
+     */
     private String generateThemeSignature() {
-        String accent = (Preferences.isDynamicColorAccent())
-                ? "DYNAMIC"
-                : Preferences.getColorAccent();
-        String theme = Preferences.getTheme();
-        String black = String.valueOf(Preferences.isDarkThemeBlack());
-        return theme + "|" + black + "|" + accent;
+        return ThemeHelper.themeSignature();
     }
 }

@@ -63,6 +63,8 @@ public class HomeFragment extends Fragment {
 
     @Override
     public void onDestroyView() {
+        // Piterfy: odlozone przeliczenie chipsow nie moze zadzialac na odlaczonym fragmencie (getResources() rzuca wyjatek)
+        if (tabLayout != null) tabLayout.removeCallbacks(restyleChips);
         super.onDestroyView();
         bind = null;
     }
@@ -83,9 +85,11 @@ public class HomeFragment extends Fragment {
     }
 
     /** Piterfy: odstepy chipsow (margines) i wewnetrzny padding tekstu - tekst ma byc na srodku pigulki. */
+    private final Runnable restyleChips = this::styleChips;
+
     private void styleChips() {
-        if (tabLayout == null) return;
-        float density = getResources().getDisplayMetrics().density;
+        if (tabLayout == null || !isAdded()) return;
+        float density = tabLayout.getResources().getDisplayMetrics().density;
         int sideMargin = Math.round(4 * density), verticalMargin = Math.round(6 * density);
         int sidePadding = Math.round(16 * density), verticalPadding = Math.round(8 * density);
         for (int i = 0; i < tabLayout.getTabCount(); i++) {
@@ -125,7 +129,7 @@ public class HomeFragment extends Fragment {
         ).attach();
 
         styleChips();
-        tabLayout.postDelayed(this::styleChips, 400);  // font wczytuje sie chwile - przelicz chipsy ponownie
+        tabLayout.postDelayed(restyleChips, 400);  // font wczytuje sie chwile - przelicz chipsy ponownie
         tabLayout.setVisibility(View.VISIBLE);
         tabLayout.setTabIndicatorFullWidth(false);
         tabLayout.setSelectedTabIndicatorColor(android.graphics.Color.TRANSPARENT);
