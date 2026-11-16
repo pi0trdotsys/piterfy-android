@@ -148,3 +148,27 @@ html[data-pf-light] .pf-st-periods button[aria-selected="true"] { color: #fff; }
   .pf-st-bar > i, .pf-st-stack > i, .pf-st-colbar > i, .pf-st-ring, .pf-st-card { animation: none !important; }
   .pf-st-tile, .pf-st-btn { transition: none; }
 }
+
+/* ── Wrapped story (pełnoekranowe slajdy 9:16) ── */
+html.pf-story-open { overflow: hidden; }
+.pf-story { position: fixed; inset: 0; z-index: 100000; display: flex; align-items: center; justify-content: center; background: rgba(0, 0, 0, 0.96); animation: pf-story-in 0.25s ease-out both; }
+.pf-story-stage { position: relative; height: min(100vh, 100dvh, calc(100vw * 16 / 9)); aspect-ratio: 9 / 16; max-width: 100vw; background: #000; overflow: hidden; border-radius: 0; touch-action: pan-y; user-select: none; -webkit-user-select: none; outline: none; }
+@media (min-width: 700px) and (min-height: 600px) { .pf-story-stage { border-radius: 22px; box-shadow: 0 30px 90px rgba(0, 0, 0, 0.6); } }
+.pf-story-canvas { display: block; width: 100%; height: 100%; }
+.pf-story-bars { position: absolute; top: calc(env(safe-area-inset-top, 0px) + 12px); left: 14px; right: 14px; display: flex; gap: 5px; pointer-events: none; }
+.pf-story-bars span { flex: 1; height: 4px; border-radius: 2px; background: rgba(255, 255, 255, 0.28); overflow: hidden; }
+.pf-story-bars i { display: block; width: 100%; height: 100%; background: #fff; transform: scaleX(0); transform-origin: left; }
+.pf-story-top { position: absolute; top: calc(env(safe-area-inset-top, 0px) + 26px); right: 10px; display: flex; gap: 6px; }
+.pf-story-btn { width: 40px; height: 40px; border: 0; border-radius: 50%; background: rgba(0, 0, 0, 0.45); color: #fff; font: 600 18px/1 system-ui, sans-serif; cursor: pointer; display: grid; place-items: center; -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
+.pf-story-btn:hover { background: rgba(0, 0, 0, 0.65); }
+.pf-story-btn:focus-visible, .pf-story-nav:focus-visible { outline: 2px solid var(--pf-accent, #1db954); outline-offset: 2px; }
+.pf-story-btn[hidden] { display: none; }
+.pf-story-nav { position: absolute; top: 50%; transform: translateY(-50%); width: 44px; height: 44px; border: 0; border-radius: 50%; background: rgba(0, 0, 0, 0.4); color: #fff; font: 500 30px/1 system-ui, sans-serif; cursor: pointer; opacity: 0; transition: opacity 0.2s; }
+.pf-story-nav.prev { left: 8px; } .pf-story-nav.next { right: 8px; }
+.pf-story-stage:hover .pf-story-nav { opacity: 0.85; }
+@media (hover: none) { .pf-story-nav { display: none; } }
+.pf-story-end { position: absolute; left: 14px; right: 14px; bottom: calc(env(safe-area-inset-bottom, 0px) + 18px); display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+.pf-story-end[hidden] { display: none; }
+.pf-story-live { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; margin: 0; }
+@keyframes pf-story-in { from { opacity: 0; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .pf-story { animation: none; } .pf-story-nav { transition: none; } }

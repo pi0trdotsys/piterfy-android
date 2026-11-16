@@ -190,8 +190,68 @@
     return lines;
   }
 
+  // ── „story”: slajdy Wrapped w pionie (9:16) ──
+  const SLIDE_MS = 7000, TRACK_SLIDE_MS = 12000;
+  const PREVIEW_SECONDS = 25, PREVIEW_FADE_IN = 0.8, PREVIEW_FADE_OUT = 0.6;
+
+  /** Lista slajdów dla okresu; slajdy bez danych (gatunki, typ słuchacza, porównanie) są pomijane. */
+  function storySlides(period) {
+    if (!period) return [];
+    const slides = [{ id: "intro", ms: SLIDE_MS }, { id: "time", ms: SLIDE_MS }];
+    if ((period.top_artists || []).length) slides.push({ id: "artist", ms: SLIDE_MS });
+    if ((period.top_tracks || []).length) slides.push({ id: "tracks", ms: TRACK_SLIDE_MS, music: true });
+    if ((period.top_genres || []).length) slides.push({ id: "genres", ms: SLIDE_MS });
+    if (period.listener) slides.push({ id: "listener", ms: SLIDE_MS });
+    if (period.compare && (period.compare.plays != null || period.compare.minutes != null || period.compare.artists != null)) {
+      slides.push({ id: "compare", ms: SLIDE_MS });
+    }
+    slides.push({ id: "finale", ms: 0 }); // finał zostaje na ekranie (bez automatycznego przejścia)
+    return slides;
+  }
+
+  /** Okno podglądu utworu: od 35% długości (od początku przy krótkich), najwyżej 25 s i nie dalej niż koniec. */
+  function previewWindow(seconds) {
+    const total = Math.max(0, num(seconds));
+    const start = total >= 60 ? Math.floor(total * 0.35) : 0;
+    const length = total > 0 ? Math.min(PREVIEW_SECONDS, total - start) : PREVIEW_SECONDS;
+    return { start, length: Math.max(1, length) };
+  }
+
+  /** Głośność podglądu (0–1) po t sekundach od startu: wejście 0,8 s, wyjście 0,6 s przed końcem okna. */
+  function previewGain(t, length) {
+    const fadeIn = Math.min(1, Math.max(0, t / PREVIEW_FADE_IN));
+    const fadeOut = Math.min(1, Math.max(0, (length - t) / PREVIEW_FADE_OUT));
+    return Math.min(fadeIn, fadeOut);
+  }
+
+  /** Średni kolor nasyconych pikseli (RGBA z miniatury okładki) jako „#rrggbb”; null, gdy obraz jest szary/pusty. */
+  function dominantColor(rgba) {
+    let r = 0, g = 0, b = 0, weight = 0;
+    for (let i = 0; i + 3 < rgba.length; i += 4) {
+      if (rgba[i + 3] < 200) continue;
+      const max = Math.max(rgba[i], rgba[i + 1], rgba[i + 2]), min = Math.min(rgba[i], rgba[i + 1], rgba[i + 2]);
+      const sat = max ? (max - min) / max : 0;
+      const light = max / 255;
+      const w = sat * sat * (light > 0.15 && light < 0.98 ? 1 : 0.1);
+      r += rgba[i] * w; g += rgba[i + 1] * w; b += rgba[i + 2] * w; weight += w;
+    }
+    if (weight < 0.5) return null;
+    const hex = (v) => Math.round(Math.min(255, v / weight)).toString(16).padStart(2, "0");
+    return "#" + hex(r) + hex(g) + hex(b);
+  }
+
+  /** Jasność akcentu do tekstu: rozjaśnia za ciemne kolory (min. luminancja ~0,45), żeby napisy były czytelne. */
+  function readableAccent(hex, fallback) {
+    const m = /^#?([0-9a-f]{6})$/i.exec(String(hex || ""));
+    if (!m) return fallback;
+    let [r, g, b] = [0, 2, 4].map((i) => parseInt(m[1].slice(i, i + 2), 16));
+    for (let k = 0; k < 6 && 0.299 * r + 0.587 * g + 0.114 * b < 115; k++) { r += (255 - r) * 0.2; g += (255 - g) * 0.2; b += (255 - b) * 0.2; }
+    return "#" + [r, g, b].map((v) => Math.round(v).toString(16).padStart(2, "0")).join("");
+  }
+
   return {
     fmtNum, fmtDec, fmtBytes, fmtDuration, fmtListening, fmtPercent, deltaText, fmtDay, fmtShortDay, fmtStamp,
     barPercent, bars, qualityBreakdown, growthSeries, diskBreakdown, outcomeRows, cardModel, wrapText,
+    storySlides, previewWindow, previewGain, dominantColor, readableAccent, SLIDE_MS, TRACK_SLIDE_MS,
   };
 });

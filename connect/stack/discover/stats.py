@@ -336,6 +336,13 @@ def archetype(m):
     return {"id": kind, "name": name, "blurb": blurb, "why": why, "score": round(score, 2)}
 
 
+def cover_of(song):
+    """Identyfikator okładki dla getCoverArt: okładka albumu, a w ostateczności sam utwór."""
+    if song.get("coverArt"):
+        return song["coverArt"]
+    return f"al-{song['albumId']}" if song.get("albumId") else song.get("id")
+
+
 def summarize(days, by_id, start, end, first_seen, history_since, scrobbles, now_year):
     """Liczby jednego okna czasu [start, end] (obie daty włącznie)."""
     plays, per_day = Counter(), {}
@@ -372,14 +379,20 @@ def summarize(days, by_id, start, end, first_seen, history_since, scrobbles, now
     peak = Counter(hours).most_common(1)[0][0] if len(hours) >= MIN_SCROBBLES else None
 
     top_tracks = sorted(plays.items(), key=lambda kv: (-kv[1], by_id[kv[0]].get("title") or ""))[:5]
+    best_of = {}  # najczęściej słuchany utwór każdego wykonawcy: z niego bierzemy okładkę wykonawcy
+    for sid, n in sorted(plays.items(), key=lambda kv: (-kv[1], by_id[kv[0]].get("title") or "")):
+        best_of.setdefault(artist_of(by_id[sid]), sid)
     return {
         "plays": total, "minutes": round(seconds / 60), "tracks": len(plays), "artists": len(artists),
         "active_days": len(per_day), "days_elapsed": (end - start).days + 1,
         "longest_streak": best,
         "busiest_day": {"day": busiest[0], "plays": busiest[1]} if busiest else None,
-        "top_artists": [{"name": name, "plays": n} for name, n in artists.most_common(5) if name],
-        "top_tracks": [{"title": by_id[sid].get("title"), "artist": artist_of(by_id[sid]), "plays": n} for sid, n in top_tracks],
-        "top_genres": genres.most_common(3),
+        "top_artists": [{"name": name, "plays": n, "cover": cover_of(by_id[best_of[name]])}
+                        for name, n in artists.most_common(5) if name],
+        "top_tracks": [{"id": sid, "title": by_id[sid].get("title"), "artist": artist_of(by_id[sid]), "plays": n,
+                        "cover": cover_of(by_id[sid]), "seconds": round(by_id[sid].get("duration") or 0)}
+                       for sid, n in top_tracks],
+        "top_genres": genres.most_common(5),
         "new_artists": new, "night_share": None if night is None else round(night, 3), "peak_hour": peak,
         "dated_plays": dated, "old_plays": old, "recent_plays": recent,
     }

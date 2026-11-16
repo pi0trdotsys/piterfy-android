@@ -12,7 +12,8 @@ import com.google.gson.JsonParser
  * jest prawdziwym wynikiem stats.build.
  */
 object PiterfyStatsModel {
-    data class Count(val label: String, val n: Long)
+    /** [cover] to identyfikator okładki do getCoverArt (tylko wykonawcy we Wrapped); poza tym zawsze null. */
+    data class Count(val label: String, val n: Long, val cover: String? = null)
     data class Record(val title: String, val artist: String, val year: Int?, val seconds: Int?, val bytes: Long?)
     data class Replace(val id: String, val title: String, val artist: String, val format: String, val sourceKbps: Int?, val plays: Int)
     data class Quality(
@@ -41,12 +42,13 @@ object PiterfyStatsModel {
     )
     data class Listener(val id: String, val name: String, val blurb: String, val why: List<String>)
     data class Compare(val plays: Int?, val minutes: Int?, val artists: Int?, val prevPlays: Int)
-    data class Track(val title: String, val artist: String, val plays: Int)
+    data class Track(val title: String, val artist: String, val plays: Int, val id: String = "", val cover: String? = null, val seconds: Int = 0)
     data class Period(
         val kind: String, val key: String, val label: String, val start: String, val end: String, val partial: Boolean,
         val plays: Long, val minutes: Long, val tracks: Int, val artists: Int, val activeDays: Int, val longestStreak: Int,
         val busiestDay: String?, val busiestPlays: Int, val topArtists: List<Count>, val topTracks: List<Track>,
         val newArtists: Int?, val nightShare: Double?, val peakHour: Int?, val listener: Listener?, val compare: Compare?,
+        val topGenres: List<Count> = emptyList(),
     )
     data class Stats(val generated: String?, val library: Library, val server: Server, val periods: List<Period>, val historySince: String?)
 
@@ -126,9 +128,12 @@ object PiterfyStatsModel {
             o.str("kind").orEmpty(), o.str("key").orEmpty(), o.str("label").orEmpty(), o.str("start").orEmpty(), o.str("end").orEmpty(),
             o.bool("partial"), o.long("plays"), o.long("minutes"), o.int("tracks"), o.int("artists"), o.int("active_days"),
             o.int("longest_streak"), busiest?.str("day"), busiest?.int("plays") ?: 0,
-            o.arr("top_artists").objects().map { Count(it.str("name").orEmpty(), it.long("plays")) },
-            o.arr("top_tracks").objects().map { Track(it.str("title").orEmpty(), it.str("artist").orEmpty(), it.int("plays")) },
+            o.arr("top_artists").objects().map { Count(it.str("name").orEmpty(), it.long("plays"), it.str("cover")) },
+            o.arr("top_tracks").objects().map {
+                Track(it.str("title").orEmpty(), it.str("artist").orEmpty(), it.int("plays"), it.str("id").orEmpty(), it.str("cover"), it.int("seconds"))
+            },
             o.intOrNull("new_artists"), o.doubleOrNull("night_share"), o.intOrNull("peak_hour"), listener, compare,
+            counts(o.arr("top_genres")),
         )
     }
 

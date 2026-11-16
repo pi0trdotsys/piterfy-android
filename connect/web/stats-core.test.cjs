@@ -128,3 +128,47 @@ test("wrapText wraps by measured width and ellipsizes the last line", () => {
   assert.deepEqual(core.wrapText("", 100, measure, 2), []);
   assert.deepEqual(core.wrapText("superdługiejednosłowo", 50, measure, 2), ["superdługiejednosłowo"]);
 });
+
+test("story slides skip empty ones and keep the finale last", () => {
+  const full = { top_artists: [{}], top_tracks: [{}], top_genres: [["Rock", 3]], listener: { name: "x" }, compare: { plays: 5 } };
+  assert.deepEqual(core.storySlides(full).map((s) => s.id),
+    ["intro", "time", "artist", "tracks", "genres", "listener", "compare", "finale"]);
+  assert.deepEqual(core.storySlides({ top_artists: [], top_tracks: [], top_genres: [], listener: null, compare: null }).map((s) => s.id),
+    ["intro", "time", "finale"]);
+  assert.deepEqual(core.storySlides({ compare: { plays: null, minutes: null, artists: null } }).map((s) => s.id), ["intro", "time", "finale"]);
+  assert.equal(core.storySlides(null).length, 0);
+  const slides = core.storySlides(full);
+  assert.equal(slides.find((s) => s.id === "tracks").ms, 12000);
+  assert.equal(slides.find((s) => s.id === "tracks").music, true);
+  assert.equal(slides[slides.length - 1].ms, 0);
+});
+
+test("preview window and fades", () => {
+  assert.deepEqual(core.previewWindow(200), { start: 70, length: 25 });
+  assert.deepEqual(core.previewWindow(40), { start: 0, length: 25 });
+  assert.deepEqual(core.previewWindow(10), { start: 0, length: 10 });
+  assert.deepEqual(core.previewWindow(61), { start: 21, length: 25 });
+  assert.deepEqual(core.previewWindow(0), { start: 0, length: 25 });
+  assert.equal(core.previewGain(0, 25), 0);
+  assert.equal(core.previewGain(0.4, 25), 0.5);
+  assert.equal(core.previewGain(10, 25), 1);
+  assert.ok(Math.abs(core.previewGain(24.7, 25) - 0.5) < 1e-9);
+  assert.equal(core.previewGain(25, 25), 0);
+});
+
+test("dominant colour favours saturated pixels and ignores grey", () => {
+  const px = (r, g, b, a = 255) => [r, g, b, a];
+  assert.equal(core.dominantColor([].concat(px(200, 20, 20), px(210, 30, 25), px(90, 90, 90), px(240, 240, 240))), "#cd1916");
+  assert.equal(core.dominantColor([].concat(px(90, 90, 90), px(10, 10, 10))), null);
+  assert.equal(core.dominantColor([].concat(px(200, 20, 20, 0))), null);
+  assert.equal(core.dominantColor([]), null);
+});
+
+test("readable accent lightens dark colours only", () => {
+  assert.equal(core.readableAccent("#ff8800", "#fff"), "#ff8800");
+  assert.equal(core.readableAccent("nope", "#abc"), "#abc");
+  const lifted = core.readableAccent("#101040", "#fff");
+  const lum = (h) => 0.299 * parseInt(h.slice(1, 3), 16) + 0.587 * parseInt(h.slice(3, 5), 16) + 0.114 * parseInt(h.slice(5, 7), 16);
+  assert.ok(lum(lifted) >= 115 || lifted === "#ffffff");
+  assert.ok(lum(lifted) > lum("#101040"));
+});

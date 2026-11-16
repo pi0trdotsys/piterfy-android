@@ -412,6 +412,11 @@ class PiterfyStatsDialog : DialogFragment() {
         }
         add(HorizontalScrollView(requireContext()).apply { isHorizontalScrollBarEnabled = false; addView(chips) })
 
+        add(com.google.android.material.button.MaterialButton(requireContext()).apply {
+            text = s(R.string.story_play); isAllCaps = false; cornerRadius = dp(24); minHeight = dp(52)
+            setOnClickListener { PiterfyStoryDialog.newInstance(period.key).show(parentFragmentManager, PiterfyStoryDialog.TAG) }
+        }, 14)
+
         val image = ImageView(requireContext()).apply {
             adjustViewBounds = true; scaleType = ImageView.ScaleType.FIT_CENTER
             val width = minOf(resources.displayMetrics.widthPixels - dp(32), 720)
@@ -420,7 +425,7 @@ class PiterfyStatsDialog : DialogFragment() {
             clipToOutline = true; outlineProvider = android.view.ViewOutlineProvider.BACKGROUND
             background = rounded(Color.TRANSPARENT, 20)
         }
-        add(image, 14)
+        add(image, 12)
         add(com.google.android.material.button.MaterialButton(requireContext()).apply {
             text = s(R.string.stats_share); isAllCaps = false; cornerRadius = dp(24); minHeight = dp(48)
             setOnClickListener { share(period) }

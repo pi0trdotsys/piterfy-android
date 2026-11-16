@@ -117,7 +117,7 @@ Navidrome + Last.fm ──► discover ──► slskd ──► incoming/ ─�
       (polubione z ocenionych) oraz skuteczność według silnika rekomendacji (Last.fm albo Deezer) i puli (nowi albo
       znani wykonawcy). Podział na silnik i pulę liczy się dopiero od wersji z statystykami: `remember()` zapisuje te pola
       w historii od teraz, starsze wpisy ich nie mają.
-    - **Wrapped**: podsumowanie każdego z ostatnich 13 miesięcy i dwóch lat z dziennej historii odsłuchów panelu gustu
+    - **Wrapped**: podsumowanie każdego z ostatnich 13 miesięcy i dwóch lat z dziennej historii odsłuchów panelu gustu (także jako „story”: przesuwane slajdy z okładkami i 25-sekundowym fragmentem najczęściej słuchanego utworu)
       (czas słuchania, odsłuchy, top wykonawcy i utwory, nowi wykonawcy, seria dni, rekordowy dzień) wraz z porównaniem do
       poprzedniego miesiąca albo roku (przy trwającym okresie: do tej samej liczby dni) i **typem słuchacza**
       (Eksplorator, Wierny fan, Nocny marek, Maratończyk, Powtarzacz, Podróżnik w czasie, Na fali albo Równy rytm).

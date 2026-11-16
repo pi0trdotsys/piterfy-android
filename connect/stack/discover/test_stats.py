@@ -187,6 +187,23 @@ class WrappedTest(unittest.TestCase):
         self.assertEqual(nov["new_artists"], 2)                   # Artist3 i Artist0 dochodzą dopiero w listopadzie
         self.assertEqual(nov["top_artists"][0]["name"], "Artist3")
 
+    def test_tracks_and_artists_carry_ids_and_covers_for_story_slides(self):
+        songs = [song("1", "A", albumId="alX", duration=181), song("2", "A", albumId="alY"),
+                 song("3", "B", albumId="", coverArt="mf-3")]
+        days = {"2026-11-05": {"1": 3, "2": 9, "3": 4}}
+        nov = stats.wrapped(songs, self.taste(days), [], NOW)["periods"][0]
+        self.assertEqual([t["id"] for t in nov["top_tracks"]], ["2", "3", "1"])
+        self.assertEqual([t["cover"] for t in nov["top_tracks"]], ["al-alY", "mf-3", "al-alX"])
+        self.assertEqual(nov["top_tracks"][2]["seconds"], 181)
+        # okładka wykonawcy to okładka jego najczęściej słuchanego utworu (A: utwór 2 → alY)
+        self.assertEqual([(a["name"], a["cover"]) for a in nov["top_artists"]], [("A", "al-alY"), ("B", "mf-3")])
+
+    def test_genres_are_limited_to_five(self):
+        songs = [song(str(i), f"A{i}", genre=f"G{i}") for i in range(1, 8)]
+        days = {"2026-11-05": {str(i): 8 - i for i in range(1, 8)}}
+        nov = stats.wrapped(songs, self.taste(days), [], NOW)["periods"][0]
+        self.assertEqual([g[0] for g in nov["top_genres"]], ["G1", "G2", "G3", "G4", "G5"])
+
     def test_compare_hidden_when_history_does_not_cover_previous_period(self):
         days = {"2026-11-05": {"1": 3}}
         out = stats.wrapped(self.songs, self.taste(days, since="2026-11-01"), [], NOW)

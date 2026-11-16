@@ -309,32 +309,44 @@
     "top_artists": [
      {
       "name": "Alpha",
-      "plays": 30
+      "plays": 30,
+      "cover": "al-al1"
      },
      {
       "name": "Beta",
-      "plays": 30
+      "plays": 30,
+      "cover": "al-al0"
      },
      {
       "name": "Gamma",
-      "plays": 30
+      "plays": 30,
+      "cover": "al-al1"
      }
     ],
     "top_tracks": [
      {
+      "id": "s1",
       "title": "Song 1",
       "artist": "Alpha",
-      "plays": 30
+      "plays": 30,
+      "cover": "al-al1",
+      "seconds": 200
      },
      {
+      "id": "s2",
       "title": "Song 2",
       "artist": "Beta",
-      "plays": 30
+      "plays": 30,
+      "cover": "al-al0",
+      "seconds": 200
      },
      {
+      "id": "s3",
       "title": "Song 3",
       "artist": "Gamma",
-      "plays": 30
+      "plays": 30,
+      "cover": "al-al1",
+      "seconds": 15
      }
     ],
     "top_genres": [
@@ -385,23 +397,31 @@
     "top_artists": [
      {
       "name": "Alpha",
-      "plays": 20
+      "plays": 20,
+      "cover": "al-al1"
      },
      {
       "name": "Beta",
-      "plays": 20
+      "plays": 20,
+      "cover": "al-al0"
      }
     ],
     "top_tracks": [
      {
+      "id": "s1",
       "title": "Song 1",
       "artist": "Alpha",
-      "plays": 20
+      "plays": 20,
+      "cover": "al-al1",
+      "seconds": 200
      },
      {
+      "id": "s2",
       "title": "Song 2",
       "artist": "Beta",
-      "plays": 20
+      "plays": 20,
+      "cover": "al-al0",
+      "seconds": 200
      }
     ],
     "top_genres": [
@@ -445,32 +465,44 @@
     "top_artists": [
      {
       "name": "Alpha",
-      "plays": 50
+      "plays": 50,
+      "cover": "al-al1"
      },
      {
       "name": "Beta",
-      "plays": 50
+      "plays": 50,
+      "cover": "al-al0"
      },
      {
       "name": "Gamma",
-      "plays": 30
+      "plays": 30,
+      "cover": "al-al1"
      }
     ],
     "top_tracks": [
      {
+      "id": "s1",
       "title": "Song 1",
       "artist": "Alpha",
-      "plays": 50
+      "plays": 50,
+      "cover": "al-al1",
+      "seconds": 200
      },
      {
+      "id": "s2",
       "title": "Song 2",
       "artist": "Beta",
-      "plays": 50
+      "plays": 50,
+      "cover": "al-al0",
+      "seconds": 200
      },
      {
+      "id": "s3",
       "title": "Song 3",
       "artist": "Gamma",
-      "plays": 30
+      "plays": 30,
+      "cover": "al-al1",
+      "seconds": 15
      }
     ],
     "top_genres": [

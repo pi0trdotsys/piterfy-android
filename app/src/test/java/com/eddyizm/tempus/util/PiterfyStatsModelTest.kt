@@ -105,6 +105,29 @@ class PiterfyStatsModelTest {
         assertEquals("2026-01-01", stats.historySince)
     }
 
+    @Test fun storyFieldsCoversIdsAndGenresComeFromTheServer() {
+        val nov = stats.periods.first()
+        val track = nov.topTracks.first()
+        assertEquals("s1", track.id)
+        assertEquals("Song 1", track.title)
+        assertEquals("al-al1", track.cover)
+        assertEquals(200, track.seconds)
+        assertEquals(listOf("al-al1", "al-al0", "al-al1"), nov.topArtists.map { it.cover })
+        assertEquals(listOf("Rock"), nov.topGenres.map { it.label })
+        assertEquals(90L, nov.topGenres.first().n)
+    }
+
+    @Test fun storyFieldsAreOptionalForOlderServers() {
+        val json = """{"library":{},"wrapped":{"periods":[{"key":"2026-11","label":"Listopad 2026","plays":5,
+            "top_artists":[{"name":"A","plays":5}],"top_tracks":[{"title":"T","artist":"A","plays":5}]}]}}"""
+        val p = PiterfyStatsModel.parse(json)!!.periods.single()
+        assertNull(p.topArtists.single().cover)
+        assertEquals("", p.topTracks.single().id)
+        assertNull(p.topTracks.single().cover)
+        assertEquals(0, p.topTracks.single().seconds)
+        assertTrue(p.topGenres.isEmpty())
+    }
+
     @Test fun garbageIsRejectedNotCrashed() {
         assertNull(PiterfyStatsModel.parse(null))
         assertNull(PiterfyStatsModel.parse(""))

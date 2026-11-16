@@ -211,7 +211,8 @@
     return '<div class="pf-st-periods" role="tablist">' + periods.map((x) =>
       '<button type="button" role="tab" data-st-period="' + esc(x.key) + '"' + (x.key === p.key ? ' aria-selected="true"' : "") + ">" + esc(x.label) + "</button>").join("") + "</div>" +
       '<div class="pf-st-wrapped"><div class="pf-st-card-wrap"><canvas class="pf-st-card" width="1080" height="1350" aria-label="Karta Wrapped: ' + esc(m.title) + '"></canvas>' +
-      '<div class="pf-st-actions"><button type="button" class="pf-st-btn" data-st-act="share">Udostępnij</button>' +
+      '<div class="pf-st-actions"><button type="button" class="pf-st-btn" data-st-act="story">▶ Odtwórz story</button>' +
+      '<button type="button" class="pf-st-btn pf-st-btn-ghost" data-st-act="share">Udostępnij</button>' +
       '<button type="button" class="pf-st-btn pf-st-btn-ghost" data-st-act="download">Pobierz obrazek</button></div></div>' +
       '<div class="pf-st-wdetails">' +
       (p.listener ? '<div class="pf-st-listener"><span class="pf-st-label">Twój typ słuchacza</span><b>' + esc(p.listener.name) + "</b><p>" + esc(p.listener.blurb) + "</p><ul>" +
@@ -369,6 +370,28 @@
     }, "image/png");
   }
 
+  // ── story (osobny plik, ładowany przy pierwszym użyciu) ──
+  let storyLoading = null;
+  function ensureStory() {
+    if (window.PiterfyStory) return Promise.resolve();
+    if (!storyLoading) {
+      storyLoading = new Promise((resolve, reject) => {
+        const s = document.createElement("script");
+        s.src = UI + "stats-story.js" + (VERSION ? "?v=" + VERSION : "");
+        s.onload = resolve;
+        s.onerror = () => { storyLoading = null; reject(new Error("stats-story.js")); };
+        document.head.appendChild(s);
+      });
+    }
+    return storyLoading;
+  }
+
+  function playStory() {
+    const p = current && currentPeriod(current.wrapped);
+    if (!p) return;
+    ensureStory().then(() => window.PiterfyStory.open(p)).catch(() => {});
+  }
+
   // ── ekran ──
   function animateCounts(root) {
     root.querySelectorAll("[data-count]").forEach((el) => {
@@ -413,6 +436,7 @@
       if (t.dataset.stRetry !== undefined) { box.innerHTML = skeleton(); load().then((d) => render(box, d)); return; }
       if (t.dataset.stTab) { e.preventDefault(); view.tab = t.dataset.stTab; paintBody(box); return; }
       if (t.dataset.stPeriod) { view.period = t.dataset.stPeriod; paintBody(box); return; }
+      if (t.dataset.stAct === "story") { playStory(); return; }
       if (t.dataset.stAct) saveCard(box, t.dataset.stAct === "share");
     });
   }
