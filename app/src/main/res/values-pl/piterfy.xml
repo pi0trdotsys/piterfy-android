@@ -12,6 +12,7 @@
  <string name="piterfy_taste">Mój gust ↗</string>
  <string name="piterfy_discover">Odkryte dla Ciebie</string>
  <string name="piterfy_discover_empty">Playlisty z odkryciami pojawią się tutaj po kolejnym odświeżeniu na serwerze.</string>
+ <string name="piterfy_mixes">Twoje miksy</string>
  <string name="piterfy_play">Odtwórz</string>
  <string name="piterfy_download">Pobierz</string>
  <string name="piterfy_queued">Dodano do pobierania: %1$d utworów</string>

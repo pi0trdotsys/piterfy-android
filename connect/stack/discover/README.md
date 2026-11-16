@@ -89,6 +89,22 @@ Navidrome + Last.fm ──► discover ──► slskd ──► incoming/ ─�
       `--year RRRR` bierze odcinki z danego roku, `--match REGEX` pasujące tytuły (np. serię). Bez `--year` i `--match`
       weźmie całą audycję — podgląd pokaże, ile to odcinków i ile GB.
     - Sprawdzenie od ręki: `docker compose run --rm --no-deps piterfy-discover --podcasts`.
+    - Domyślna lista zawiera audycje o Ameryce (NPR, The Daily, Americast, American History Tellers, Throughline,
+      „Ameryka dla Zaawansowanych”, AmerykaPL i inne). `last=N` po adresie RSS ogranicza liczbę trzymanych odcinków;
+      dzienne serwisy mają ich tylko kilka.
+11. **Tematyczne miksy.** `mixes.py` układa z całej biblioteki playlisty „Happy Mix”, „Dark Mix”, „Electronic Mix”,
+    „Bass Boost”, „Chill Mix”, „Workout Mix”, „Rock Mix” i „Hip-Hop Mix”:
+    - Utwór wchodzi do miksu według gatunku (tagi w bibliotece, a gdy jest eksport Spotify, także jego gatunki) albo
+      nastroju z eksportu (energia, walencja, tempo). Wykluczenia mają pierwszeństwo: w „Happy Mix” nie ma death metalu,
+      a w „Dark Mix” wesołego popu. „Bass Boost” bierze też szybką elektronikę (tag BPM od 124).
+    - Miks odświeża się co 24 godziny i od razu po pobraniu nowych utworów. Za każdym razem losuje od nowa z całej
+      biblioteki, więc rośnie razem z nią (od 40 do 100 utworów, ok. piątej części puli). Ulubione (★, ocena 4–5,
+      dużo odsłuchań) i świeże odkrycia wracają częściej, a utwory z poprzedniej wersji są karane, żeby playlista się obracała.
+    - Najwyżej 3 utwory jednego wykonawcy. Pomija utwory ocenione na 1★, podcasty oraz krótsze niż minuta i dłuższe niż 12 minut.
+    - Miks bez co najmniej 12 pasujących utworów nie powstaje. Playlista usunięta w Navidrome nie wraca, a cudza
+      playlista o tej samej nazwie nie jest nadpisywana.
+    - Aplikacja pokazuje miksy w półce „Twoje miksy” na ekranie głównym (rozpoznaje je po początku komentarza „Piterfy Mix”).
+    - Odświeżenie od ręki: `docker compose run --rm --no-deps piterfy-discover --mixes`.
 
 ## Pliki
 
@@ -101,6 +117,7 @@ Navidrome + Last.fm ──► discover ──► slskd ──► incoming/ ─�
 | `discover-trash/` | kosz: odrzucone odkrycia; po `DISCOVER_TRASH_DAYS` dniach są kasowane |
 | `reports/discover-*.md` | raport z każdego przebiegu (ta sama treść co w mailu) |
 | `discover/taste.py` | generator panelu gustu (uruchamia go discover co noc) |
+| `discover/mixes.py` | tematyczne miksy (Happy Mix, Dark Mix, Electronic Mix, Bass Boost...): reguły gatunków i nastroju oraz dobór utworów |
 | `discover/podcasts.py`, `discover/podcasts.txt` | podcasty: moduł (RSS → pliki audio z tagami) i lista audycji |
 | `library/Podcasty/` | odcinki podcastów, po jednym folderze na audycję |
 | `discover/profile_api.py` | serwer zdjęć profilowych i jakości utworów (port 8090 w sieci Dockera; uruchamia go discover) |
@@ -136,6 +153,10 @@ Po zmianie uruchom `docker compose up -d piterfy-discover`.
 | `DISCOVER_PODCAST_EVERY_HOURS` | `3` | co ile godzin sprawdza kanały podcastów |
 | `DISCOVER_PODCAST_LATEST` | `20` | ile najnowszych odcinków audycji trzyma |
 | `DISCOVER_PODCAST_KEEP_DAYS` | `30` | po ilu dniach od odsłuchania odcinek znika |
+| `DISCOVER_MIXES` | `all` | które miksy tworzyć: `all`, lista nazw po `;` (np. `Happy Mix;Bass Boost`) albo pusta = bez miksów |
+| `DISCOVER_MIX_EVERY_HOURS` | `24` | co ile godzin miksy dobierają utwory od nowa |
+| `DISCOVER_MIX_SIZE` / `DISCOVER_MIX_SIZE_MAX` | `40` / `100` | najmniejsza i największa liczba utworów w miksie |
+| `DISCOVER_MIX_MAX_PER_ARTIST` | `3` | najwyżej tylu utworów jednego wykonawcy w miksie |
 | `DISCOVER_BLOCK` | | wykonawcy do pomijania, rozdzieleni `;` |
 | `DISCOVER_DOWNLOAD_TIMEOUT_MIN` | `90` | ile minut czekać na pobrania (reszta dociągnie się później) |
 | `LASTFM_API_KEY` / `LASTFM_SECRET` | | klucz API Last.fm: rekomendacje w discover i scrobblowanie w Navidrome |
@@ -153,6 +174,7 @@ docker compose run --rm --no-deps piterfy-discover --dry-run        # co by pobr
 docker compose run --rm piterfy-discover --search "Artysta - Tytuł"  # jedno próbne wyszukiwanie w Soulseek
 docker compose run --rm --no-deps piterfy-discover --test-mail      # próbny mail
 docker compose run --rm --no-deps piterfy-discover --taste          # odśwież panel gustu od razu
+docker compose run --rm --no-deps piterfy-discover --mixes          # odśwież miksy (Happy Mix, Dark Mix...) od razu
 docker compose run --rm piterfy-discover --now                      # przebieg poza harmonogramem
 docker logs -f piterfy-discover                                      # co robi discover
 docker logs -f piterfy-beets                                         # co importuje beets

@@ -11,3 +11,19 @@ Jaja w kuchni | https://pinecast.com/feed/jaja-w-kuchni
 Stacja Dywagacja | https://anchor.fm/s/f36a56b4/podcast/rss
 Stacja Warszawa | https://pinecast.com/feed/stacja-warszawa
 Ekonomia Szczęścia | https://feed.podbean.com/ekonomiaszczescia/feed.xml
+
+# Ameryka: wiadomości, polityka i historia USA (adresy RSS sprawdzone 2026-11-16).
+# last=N ogranicza liczbę najnowszych odcinków trzymanych na dysku — dzienne serwisy mają ich mało, bo szybko się dezaktualizują.
+Up First (NPR) | https://feeds.npr.org/510318/podcast.xml | last=5
+Consider This (NPR) | https://feeds.npr.org/510355/podcast.xml | last=5
+The NPR Politics Podcast | https://feeds.npr.org/510310/podcast.xml | last=5
+The Daily (New York Times) | https://feeds.simplecast.com/Sl5CSM3S | last=5
+Americast (BBC) | https://podcasts.files.bbci.co.uk/p07h19zz.rss | last=5
+Throughline (NPR) | https://feeds.npr.org/510333/podcast.xml | last=8
+American History Tellers | https://rss.art19.com/american-history-tellers | last=8
+American Scandal | https://rss.art19.com/american-scandal | last=6
+Sidedoor (Smithsonian) | http://feeds.si.edu/SmithsonianSidedoor | last=5
+Accent on America | https://anchor.fm/s/115525e34/podcast/rss | last=4
+Ameryka dla Zaawansowanych | https://anchor.fm/s/119257258/podcast/rss | last=10
+AmerykaPL (Wiadomości) | https://anchor.fm/s/10f0c8b94/podcast/rss | last=7
+Ameryka i ja (RMF Classic) | https://static.rmf.pl/portal/podcasts/xml/ameryka-i-ja-lidia-krawczuk.xml | last=4

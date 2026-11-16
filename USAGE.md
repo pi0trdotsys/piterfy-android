@@ -25,6 +25,8 @@ Home â†’ Music shows the latest server **Odkrywaj** playlists. Each card op
 
 Home â†’ Podcasts is a separate catalogue of albums tagged `Podcast`. Pull to refresh or retry a failed request; a cached catalogue remains visible while refreshing. **Downloaded** shows episodes available locally. Played episodes resume from their saved position, and **Continue episode** provides direct access to unfinished listening.
 
+**Your mixes** on Home lists themed playlists that the server rebuilds by itself: Happy Mix, Dark Mix, Electronic Mix, Bass Boost, Chill Mix, Workout Mix, Rock Mix and Hip-Hop Mix. Each one is refreshed daily and right after new music arrives, grows with your library, favours starred and highly rated songs and rotates the rest. Tap to open, the green button plays, long-press downloads. A mix appears once the library has at least 12 matching songs; a mix you delete on the server is not recreated.
+
 The expanded player displays the current audio route and device name when Android exposes it. The source-analysis label comes from the optional Piterfy server extension; the existing codec/bitrate details describe the playback stream.
 
 Search suggestions wait briefly while typing, stale requests are cancelled, and **Play all results** fetches the complete queue on demand. GitHub update prompts now link to Piterfy releases.

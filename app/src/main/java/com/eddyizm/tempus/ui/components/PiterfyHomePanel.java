@@ -64,6 +64,8 @@ public final class PiterfyHomePanel extends LinearLayout implements DefaultLifec
     private final List<Call<ApiResponse>> calls = new ArrayList<>();
     private final LinearLayout tiles;
     private final LinearLayout shelf;
+    private final LinearLayout mixShelf;
+    private final View mixSection;
     private final Typeface regular;
     private final Typeface bold;
     private boolean destroyed;
@@ -130,6 +132,23 @@ public final class PiterfyHomePanel extends LinearLayout implements DefaultLifec
         shelfScroll.setOverScrollMode(OVER_SCROLL_NEVER);
         shelfScroll.addView(shelf);
         addView(shelfScroll);
+
+        // Piterfy: tematyczne miksy (Happy Mix, Dark Mix, Bass Boost...) - serwer odswieza je sam
+        LinearLayout mixSectionBox = new LinearLayout(getContext());
+        mixSectionBox.setOrientation(VERTICAL);
+        TextView mixHeading = text(getResources().getString(R.string.piterfy_mixes), 22, Color.WHITE, true);
+        mixHeading.setPadding(dp(4), dp(28), 0, dp(12));
+        mixSectionBox.addView(mixHeading);
+        mixShelf = new LinearLayout(getContext());
+        mixShelf.setOrientation(HORIZONTAL);
+        HorizontalScrollView mixScroll = new HorizontalScrollView(getContext());
+        mixScroll.setHorizontalScrollBarEnabled(false);
+        mixScroll.setOverScrollMode(OVER_SCROLL_NEVER);
+        mixScroll.addView(mixShelf);
+        mixSectionBox.addView(mixScroll);
+        mixSectionBox.setVisibility(GONE);
+        mixSection = mixSectionBox;
+        addView(mixSectionBox);
 
         load();
         loadRecentAlbums();
@@ -206,10 +225,15 @@ public final class PiterfyHomePanel extends LinearLayout implements DefaultLifec
                     return;
                 }
                 List<Playlist> list = new ArrayList<>();
-                if (sr.getPlaylists().getPlaylists() != null) for (Playlist p : sr.getPlaylists().getPlaylists())
-                    if (p.getName() != null && (p.getName().equalsIgnoreCase("Odkrywaj") || p.getName().startsWith("Odkrywaj ")))
+                List<Playlist> mixList = new ArrayList<>();
+                if (sr.getPlaylists().getPlaylists() != null) for (Playlist p : sr.getPlaylists().getPlaylists()) {
+                    if (isMix(p)) mixList.add(p);
+                    else if (p.getName() != null && (p.getName().equalsIgnoreCase("Odkrywaj") || p.getName().startsWith("Odkrywaj ")))
                         list.add(p);
+                }
                 list.sort(Comparator.comparing((Playlist p) -> p.getCreated() == null ? new Date(0) : p.getCreated()).reversed());
+                mixList.sort(Comparator.comparing((Playlist p) -> p.getCreated() == null ? new Date(0) : p.getCreated()));
+                showMixes(mixList);
                 discover = list;
                 shelf.removeAllViews();
                 if (list.isEmpty()) {
@@ -223,6 +247,17 @@ public final class PiterfyHomePanel extends LinearLayout implements DefaultLifec
                 if (alive() && !c.isCanceled()) error();
             }
         });
+    }
+
+    /** Serwer oznacza playlisty-miksy poczatkiem komentarza (connect/stack/discover/mixes.py, COMMENT_PREFIX). */
+    static boolean isMix(Playlist p) {
+        return p != null && p.getComment() != null && p.getComment().startsWith("Piterfy Mix");
+    }
+
+    private void showMixes(List<Playlist> list) {
+        mixShelf.removeAllViews();
+        for (Playlist p : list) mixShelf.addView(card(p));
+        mixSection.setVisibility(list.isEmpty() ? GONE : VISIBLE);
     }
 
     private void loadRecentAlbums() {

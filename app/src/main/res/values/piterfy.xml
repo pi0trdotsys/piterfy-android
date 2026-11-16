@@ -12,6 +12,7 @@
  <string name="piterfy_taste">My taste ↗</string>
  <string name="piterfy_discover">Discovered for you</string>
  <string name="piterfy_discover_empty">Your discovery playlists will appear here after the next server update.</string>
+ <string name="piterfy_mixes">Your mixes</string>
  <string name="piterfy_play">Play</string>
  <string name="piterfy_download">Download</string>
  <string name="piterfy_queued">Queued: %1$d tracks</string>

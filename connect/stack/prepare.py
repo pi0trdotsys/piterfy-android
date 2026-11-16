@@ -20,7 +20,7 @@ def main():
     for name in ("compose.yaml", "Caddyfile", ".env.example"):
         shutil.copyfile(source / name, destination / name)
     for name in (
-        "discover/README.md", "discover/discover.py", "discover/podcasts.py",
+        "discover/README.md", "discover/discover.py", "discover/mixes.py", "discover/podcasts.py",
         "discover/podcasts.txt", "discover/profile_api.py", "discover/taste.py",
         "discover/beets/.dockerignore", "discover/beets/Dockerfile", "discover/beets/config.yaml",
         "discover/beets/fix_library.py", "discover/beets/import_loop.py",

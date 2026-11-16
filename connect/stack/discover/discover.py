@@ -83,6 +83,11 @@ PODCASTS_FILE    = Path(os.environ.get("PODCASTS_FILE", "/app/podcasts.txt"))  #
 PODCAST_EVERY_HOURS = env_float("DISCOVER_PODCAST_EVERY_HOURS", 3)  # co ile godzin sprawdza kanały RSS
 PODCAST_LATEST   = env_int("DISCOVER_PODCAST_LATEST", 20)      # tyle najnowszych odcinków audycji trzyma
 PODCAST_KEEP_DAYS = env_int("DISCOVER_PODCAST_KEEP_DAYS", 30)  # odsłuchany odcinek znika po tylu dniach
+MIXES            = os.environ.get("DISCOVER_MIXES", "all")      # „all”, lista nazw po średniku albo pusta = bez miksów (mixes.py)
+MIX_EVERY_HOURS  = env_float("DISCOVER_MIX_EVERY_HOURS", 24)    # co ile godzin miksy dobierają utwory od nowa
+MIX_SIZE         = env_int("DISCOVER_MIX_SIZE", 40)             # najmniejsza liczba utworów w miksie (rośnie z biblioteką)
+MIX_SIZE_MAX     = env_int("DISCOVER_MIX_SIZE_MAX", 100)        # największa liczba utworów w miksie
+MIX_MAX_PER_ARTIST = env_int("DISCOVER_MIX_MAX_PER_ARTIST", 3)  # tylu utworów jednego wykonawcy najwyżej w miksie
 
 SEED_TRACKS   = 15        # ile najczęściej słuchanych utworów bierze za punkt wyjścia
 SEED_ARTISTS  = 12        # ile najczęściej słuchanych wykonawców
@@ -106,6 +111,7 @@ NOISE_WORDS = {"live", "remix", "rmx", "karaoke", "instrumental", "cover", "acou
 FILLER_WORDS = {"the", "and", "feat", "ft"}
 # „Wykonawcy”, którzy nie są wykonawcami: składanki i pliki bez tagu (Navidrome pokazuje je jako [Unknown Artist])
 import podcasts  # noqa: E402  (podcasty: ściąganie odcinków RSS jako pliki audio w bibliotece)
+import mixes  # noqa: E402  (tematyczne miksy: Happy Mix, Dark Mix, Electronic Mix, Bass Boost...)
 
 VARIOUS_ARTISTS = {"various artists", "various", "va", "unknown artist", "unknown", ""}
 
@@ -1235,6 +1241,9 @@ def run(dry_run=False):
     update_playlist(nd, history)
     update_daily_playlists(nd, state, started, jobs)
     save_state(state)
+    if any(j["status"] == "done" for j in jobs):  # nowa muzyka od razu wpada do miksów
+        refresh_mixes(state, force=True)
+        save_state(state)
 
     lines = report_lines(started, seed_artists, jobs, liked, trashed, free, low_space, fakes)
     write_report(started, lines)
@@ -1285,6 +1294,82 @@ def refresh_taste(state, force=False):
     except Exception as e:  # panel nie może zatrzymać odkrywania
         log(f"Panel gustu się nie odświeżył: {e} — spróbuję za godzinę.")
         taste_state["retry_at"] = time.time() + 3600
+
+
+# ── tematyczne miksy ─────────────────────────────────────────────────────────
+
+def mix_feature_lookup():
+    """Cechy audio z eksportu Spotify (nastrój) — opcjonalne; bez pliku miksy opierają się na gatunkach."""
+    try:
+        import taste  # jak przy panelu gustu: osobny moduł, który sam korzysta z discover
+        features = taste.spotify_features()
+        if features:
+            return lambda song: features.get(track_key(taste.song_artist(song), song.get("title") or ""))
+    except Exception as e:
+        log(f"Miksy: bez cech nastroju ({e}) — dobieram tylko po gatunkach.")
+    return lambda song: None
+
+
+def selected_mixes():
+    if not MIXES.strip():
+        return []
+    return mixes.by_names([] if MIXES.strip().lower() == "all" else MIXES.split(";"))
+
+
+def refresh_mixes(state, force=False):
+    """Happy Mix, Dark Mix, Electronic Mix, Bass Boost i inne: playlisty dobierane od nowa co MIX_EVERY_HOURS godzin
+    (oraz zaraz po pobraniu nowych utworów) z całej biblioteki. Playlisty usunięte ręcznie nie wracają."""
+    chosen = selected_mixes()
+    if not chosen or not force and time.time() - state.get("mixes_checked", 0) < MIX_EVERY_HOURS * 3600:
+        return
+    try:
+        nd = Navidrome()
+        songs = [s for s in all_native_songs(nd) if not podcasts.is_podcast(s)]
+        feature_of = mix_feature_lookup()
+        playlists = as_list(nd.call("getPlaylists").get("playlists", {}).get("playlist"))
+        by_id = {p["id"]: p for p in playlists}
+        by_name = {p.get("name"): p for p in playlists}
+        saved = state.setdefault("mixes", {})
+        now = datetime.now(timezone.utc)
+        for mix in chosen:
+            record = saved.setdefault(mix.name, {})
+            if record.get("removed"):
+                continue
+            existing = by_id.get(record.get("id"))
+            if existing is None and record.get("id"):
+                record["removed"] = True  # playlista usunięta ręcznie w Navidrome — nie odtwarzamy jej
+                log(f"Miks „{mix.name}” został usunięty w Navidrome — więcej go nie tworzę.")
+                continue
+            if existing is None and mix.name in by_name:
+                if not (by_name[mix.name].get("comment") or "").startswith(mixes.COMMENT_PREFIX):
+                    log(f"Miks „{mix.name}”: playlista o tej nazwie jest Twoja — nie nadpisuję jej.")
+                    record["removed"] = True
+                    continue
+                existing = by_name[mix.name]
+            ids = mixes.pick(mix, songs, feature_of, previous=record.get("ids", []), now=now,
+                             base=MIX_SIZE, cap=MIX_SIZE_MAX, max_per_artist=MIX_MAX_PER_ARTIST)
+            if not ids:
+                log(f"Miks „{mix.name}”: za mało pasujących utworów w bibliotece ({mixes.MIN_POOL} potrzeba).")
+                continue
+            try:
+                if existing:
+                    nd.call("createPlaylist", playlistId=existing["id"], songId=ids)
+                    playlist_id = existing["id"]
+                else:
+                    playlist_id = nd.call("createPlaylist", name=mix.name, songId=ids).get("playlist", {}).get("id")
+                if playlist_id:
+                    try:
+                        nd.call("updatePlaylist", playlistId=playlist_id, comment=mixes.comment(mix, len(ids), datetime.now()))
+                    except RuntimeError:
+                        pass
+                    record.update(id=playlist_id, ids=ids, updated=now.isoformat(timespec="minutes"))
+                    log(f"Miks „{mix.name}” — utworów: {len(ids)}.")
+            except RuntimeError as e:
+                log(f"Miks „{mix.name}”: {e}")
+        state["mixes_checked"] = time.time()
+    except Exception as e:  # miksy nie mogą zatrzymać odkrywania muzyki
+        log(f"Miksy się nie odświeżyły: {e} — spróbuję za godzinę.")
+        state["mixes_checked"] = time.time() - MIX_EVERY_HOURS * 3600 + 3600
 
 
 # ── podcasty ─────────────────────────────────────────────────────────────────
@@ -1367,6 +1452,7 @@ def main():
     parser.add_argument("--test-mail", action="store_true", help="wyślij próbnego maila")
     parser.add_argument("--taste", action="store_true", help="odśwież panel gustu od razu")
     parser.add_argument("--podcasts", action="store_true", help="sprawdź kanały podcastów od razu")
+    parser.add_argument("--mixes", action="store_true", help="odśwież tematyczne miksy (Happy Mix, Dark Mix...) od razu")
     parser.add_argument("--podcast-fetch", metavar="AUDYCJA", help="pobierz starsze odcinki audycji (podgląd, dopóki nie dodasz --yes)")
     parser.add_argument("--year", type=int, help="z --podcast-fetch: tylko odcinki z tego roku")
     parser.add_argument("--match", metavar="REGEX", help="z --podcast-fetch: tylko odcinki z pasującym tytułem (np. serię)")
@@ -1378,6 +1464,11 @@ def main():
     if args.podcasts:
         state = load_state()
         refresh_podcasts(state, force=True)
+        save_state(state)
+        return
+    if args.mixes:
+        state = load_state()
+        refresh_mixes(state, force=True)
         save_state(state)
         return
     if args.taste:
@@ -1410,6 +1501,7 @@ def main():
         check_slskd(state)
         refresh_taste(state)
         refresh_podcasts(state)
+        refresh_mixes(state)
         save_state(state)
         if time.time() >= retry_at and is_due(state, datetime.now()):
             try:

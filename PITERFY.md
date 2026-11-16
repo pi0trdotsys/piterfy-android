@@ -22,6 +22,7 @@ Zmiany Piterfy są opisane poniżej; wiele miejsc oznaczono komentarzem `Piterfy
 | Pola adresu serwera jako adres URL (klawiatura nie zmienia liter), ekran powitalny podpowiada Piterfy | `res/layout/fragment_login_server.xml`, `dialog_server_signup.xml`, `ui/login/LoginServerFragment.kt` |
 | **Poprawka:** prośba systemu o okładkę przed końcem startu aplikacji wywracała dostawcę okładek | `provider/AlbumArtContentProvider.java`, `App.java` (`isReady`) |
 | **Podcasty:** zakładka „Podcasty” pokazuje audycje z biblioteki (albumy z gatunkiem „Podcast”, które zapisuje `podcasts.py` na serwerze) zamiast pola RSS z Tempus, bo Navidrome nie obsługuje podcastów z API Subsonic. Odcinki w audycji są od najnowszego | `ui/fragment/HomeTabPiterfyPodcastFragment.java`, `ui/fragment/HomeFragment.java`, `ui/fragment/AlbumPageFragment.java`, `subsonic/api/albumsonglist/*` (`getAlbumListByGenre`) |
+| **Miksy:** półka „Twoje miksy” na ekranie głównym pokazuje tematyczne playlisty (Happy Mix, Dark Mix, Electronic Mix, Bass Boost, Chill, Workout, Rock, Hip-Hop), które serwer sam odświeża i rozszerza razem z biblioteką; app rozpoznaje je po komentarzu „Piterfy Mix”. Lista podcastów zawiera też audycje o Ameryce | `ui/components/PiterfyHomePanel.java`, `connect/stack/discover/mixes.py`, `discover.py` (`refresh_mixes`), `podcasts.txt` |
 | Tryb nocny przy starcie aplikacji domyślnie ciemny (spójnie z resztą motywu) | `App.java` |
 
 ## Budowanie
