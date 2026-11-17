@@ -248,6 +248,14 @@ The player's format and bitrate label gives what was actually decoded, not the t
 
 Downloaded tracks show the format on disk. When Tempus transcodes a download, the row and the track info dialog carry the transcoded format and bitrate instead of the source values.
 
+**Canvas (Android)**
+
+The full-screen player has an animated backdrop that Piterfy draws from the cover colours: auras, waves, fireflies, sonar rings, soft gradients or a vinyl glow. Every track always gets the same style, picked from its ID. It moves only while the player is expanded and the music is playing, never runs faster than 30 frames per second, and stays a still picture in battery saver or when system animations are off. Turn it off in **Settings → Piterfy · odtwarzanie i odkrywanie → Canvas** (the backdrop is also skipped on Android TV, for radio, podcasts and while playing on another device).
+
+**Canvas (web)**
+
+On the web page the **◉ Teraz gra** button (next to the lyrics button, visible while something plays) opens a full-screen Now Playing view with the same kind of animated backdrop, the cover, title, progress bar (click or use the arrow keys to seek) and previous / play / next buttons. The wave button in the corner turns the animation off (remembered in the browser); it also stays still when your system asks for reduced motion, and moves only while the view is open and the music plays. Esc closes the view.
+
 ### Podcasts  
 If your server supports it - add a podcast rss feed
 <p align="left">

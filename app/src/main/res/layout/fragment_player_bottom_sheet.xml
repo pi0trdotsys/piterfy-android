@@ -2,6 +2,22 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
+    <!-- Piterfy: Canvas — animowane tlo pod trescia pelnego odtwarzacza (widoczne tylko przy wlaczonym ustawieniu) -->
+    <com.eddyizm.tempus.ui.components.PiterfyCanvasView
+        android:id="@+id/player_canvas_view"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:importantForAccessibility="no"
+        android:visibility="gone" />
+
+    <View
+        android:id="@+id/player_canvas_scrim"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@drawable/piterfy_canvas_scrim"
+        android:importantForAccessibility="no"
+        android:visibility="gone" />
+
     <include
         android:id="@+id/player_body_layout"
         layout="@layout/player_body_bottom_sheet"

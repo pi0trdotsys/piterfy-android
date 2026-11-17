@@ -6,6 +6,10 @@ import androidx.preference.*;
 @androidx.annotation.OptIn(markerClass=androidx.media3.common.util.UnstableApi.class)
 public final class PiterfyPlaybackPreferences {
     private PiterfyPlaybackPreferences(){}
+    public static final String FILE="piterfy_playback";
+    public static final String CANVAS_KEY="canvas_enabled";
+    /** Canvas (animowane tlo pelnego odtwarzacza) jest domyslnie wlaczony. */
+    public static boolean isCanvasEnabled(Context context){return context.getSharedPreferences(FILE,0).getBoolean(CANVAS_KEY,true);}
     public static void install(PreferenceScreen screen) {
         Context context=screen.getContext();
         var prefs=context.getSharedPreferences("piterfy_playback",0);
@@ -14,6 +18,7 @@ public final class PiterfyPlaybackPreferences {
         SeekBarPreference length=new SeekBarPreference(context);length.setTitle("Długość przejścia · sekundy");length.setMin(1);length.setMax(10);length.setShowSeekBarValue(true);length.setPersistent(false);length.setValue(prefs.getInt("crossfade_seconds",5));length.setEnabled(fade.isChecked());category.addPreference(length);
         fade.setOnPreferenceChangeListener((p,value)->{com.eddyizm.tempus.service.PiterfyCrossfade.cancelActive();prefs.edit().putBoolean("crossfade_enabled",(Boolean)value).apply();length.setEnabled((Boolean)value);return true;});
         length.setOnPreferenceChangeListener((p,value)->{com.eddyizm.tempus.service.PiterfyCrossfade.cancelActive();prefs.edit().putInt("crossfade_seconds",(Integer)value).apply();return true;});
+        SwitchPreference canvas=new SwitchPreference(context);canvas.setTitle(com.eddyizm.tempus.R.string.settings_canvas_title);canvas.setSummary(com.eddyizm.tempus.R.string.settings_canvas_summary);canvas.setPersistent(false);canvas.setChecked(isCanvasEnabled(context));canvas.setOnPreferenceChangeListener((p,value)->{prefs.edit().putBoolean(CANVAS_KEY,(Boolean)value).apply();return true;});category.addPreference(canvas);
         Preference discover=new Preference(context);discover.setTitle("Odkrywaj · dopasuj swój gust");discover.setSummary("Więcej / mniej takich i poziom eksperymentowania");discover.setOnPreferenceClickListener(p->{com.eddyizm.tempus.ui.dialog.PiterfyDiscoveryDialog.show(context,null);return true;});category.addPreference(discover);
     }
 }

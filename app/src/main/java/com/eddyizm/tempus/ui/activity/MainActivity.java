@@ -393,6 +393,7 @@ public class MainActivity extends BaseActivity {
                 @Override
                 public void onStateChanged(@NonNull View view, int state) {
                     PlayerBottomSheetFragment playerBottomSheetFragment = (PlayerBottomSheetFragment) getSupportFragmentManager().findFragmentByTag("PlayerBottomSheet");
+                    if (playerBottomSheetFragment != null) playerBottomSheetFragment.onSheetStateChanged(state);  // Piterfy: Canvas
 
                     switch (state) {
                         case BottomSheetBehavior.STATE_HIDDEN:

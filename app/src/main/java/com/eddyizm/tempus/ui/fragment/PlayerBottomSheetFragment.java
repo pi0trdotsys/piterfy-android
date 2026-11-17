@@ -72,13 +72,15 @@ public class PlayerBottomSheetFragment extends Fragment {
         // Piterfy: kolor z okladki jak w Spotify - karta mini-odtwarzacza i gradient pelnego odtwarzacza
         com.eddyizm.tempus.util.PiterfyAmbient.observe(getViewLifecycleOwner(), color -> {
             ambient = color;
-            paintAmbient();
+            updateCanvas();
         });
         setHeaderBookmarksButton();
         com.eddyizm.tempus.lan.LanRemoteSession.state().observe(getViewLifecycleOwner(), this::renderRemote);
 
+        canvasTv = requireContext().getPackageManager().hasSystemFeature(android.content.pm.PackageManager.FEATURE_LEANBACK);
         if (getActivity() instanceof MainActivity) {
             MainActivity activity = (MainActivity) getActivity();
+            canvasSheetOpen = activity.isBottomSheetExpanded();
             if (activity.isBottomSheetExpanded()) {
                 bind.playerHeaderLayout.getRoot().setAlpha(0f);
                 bind.playerHeaderLayout.getRoot().setVisibility(View.GONE);
@@ -94,10 +96,14 @@ public class PlayerBottomSheetFragment extends Fragment {
 
         initializeMediaBrowser();
         bindMediaController();
+        requireContext().getSharedPreferences(com.eddyizm.tempus.ui.components.PiterfyPlaybackPreferences.FILE, 0).registerOnSharedPreferenceChangeListener(canvasPrefsListener);
+        updateCanvas();
     }
 
     @Override
     public void onStop() {
+        requireContext().getSharedPreferences(com.eddyizm.tempus.ui.components.PiterfyPlaybackPreferences.FILE, 0).unregisterOnSharedPreferenceChangeListener(canvasPrefsListener);
+        if (bind != null) bind.playerCanvasView.setRunning(false);
         releaseMediaBrowser();
         super.onStop();
     }
@@ -120,6 +126,43 @@ public class PlayerBottomSheetFragment extends Fragment {
 
     private int ambient = com.eddyizm.tempus.util.PiterfyAmbient.DEFAULT;
 
+    // ── Piterfy: Canvas — animowane tlo pelnego odtwarzacza ──
+    private boolean canvasActive;      // warstwa Canvas jest widoczna (zamiast gradientu)
+    private boolean canvasTv;          // telewizor ma wlasne tlo
+    private boolean canvasSheetOpen;   // panel rozwiniety lub w trakcie przeciagania
+    private boolean canvasPlaying;
+    private String canvasSongId;       // null dla radia i podcastow
+    private final android.content.SharedPreferences.OnSharedPreferenceChangeListener canvasPrefsListener =
+            (prefs, key) -> { if (com.eddyizm.tempus.ui.components.PiterfyPlaybackPreferences.CANVAS_KEY.equals(key)) updateCanvas(); };
+
+    /** Wywoływane z MainActivity przy zmianie stanu panelu: animacja idzie tylko przy rozwiniętym odtwarzaczu. */
+    public void onSheetStateChanged(int state) {
+        canvasSheetOpen = state != com.google.android.material.bottomsheet.BottomSheetBehavior.STATE_COLLAPSED
+                && state != com.google.android.material.bottomsheet.BottomSheetBehavior.STATE_HIDDEN;
+        updateCanvasRunning();
+    }
+
+    private void updateCanvasRunning() {
+        if (bind == null) return;
+        bind.playerCanvasView.setRunning(canvasActive && canvasSheetOpen && canvasPlaying);
+    }
+
+    /** Wlacza lub wylacza warstwe Canvas (ustawienie, TV, radio/podcast i odtwarzanie na innym urzadzeniu ja chowaja). */
+    private void updateCanvas() {
+        if (bind == null) return;
+        canvasActive = !canvasTv && canvasSongId != null && !com.eddyizm.tempus.lan.LanRemoteSession.isActive()
+                && com.eddyizm.tempus.ui.components.PiterfyPlaybackPreferences.isCanvasEnabled(requireContext());
+        int visibility = canvasActive ? View.VISIBLE : View.GONE;
+        bind.playerCanvasView.setVisibility(visibility);
+        bind.playerCanvasScrim.setVisibility(visibility);
+        if (canvasActive) {
+            bind.playerCanvasView.setScene(canvasSongId,
+                    com.eddyizm.tempus.util.PiterfyCanvasScene.INSTANCE.hexOf(ambient, com.eddyizm.tempus.util.PiterfyAmbient.DEFAULT));
+        }
+        updateCanvasRunning();
+        paintAmbient();
+    }
+
     private void customizeBottomSheetBackground() {
         paintAmbient();
     }
@@ -137,7 +180,9 @@ public class PlayerBottomSheetFragment extends Fragment {
                 new android.graphics.drawable.InsetDrawable(card, Math.round(8 * density), Math.round(4 * density), Math.round(8 * density), Math.round(4 * density))}));
 
         View body = bind.getRoot().findViewById(R.id.player_body_layout);  // id z <include> nadpisuje id korzenia
-        if (body != null) {
+        if (body != null && canvasActive) {
+            body.setBackgroundColor(android.graphics.Color.TRANSPARENT);  // tlo rysuje PiterfyCanvasView pod spodem
+        } else if (body != null) {
             body.setBackground(new android.graphics.drawable.GradientDrawable(
                     android.graphics.drawable.GradientDrawable.Orientation.TOP_BOTTOM,
                     new int[]{ambient, com.eddyizm.tempus.util.PiterfyAmbient.SURFACE, com.eddyizm.tempus.util.PiterfyAmbient.SURFACE}));
@@ -240,6 +285,10 @@ public class PlayerBottomSheetFragment extends Fragment {
             String type = mediaMetadata.extras.getString("type");
             com.eddyizm.tempus.util.PiterfyAmbient.update(requireContext(),
                     Objects.equals(type, Constants.MEDIA_TYPE_RADIO) ? null : mediaMetadata.extras.getString("coverArtId"));
+            boolean noCanvas = Objects.equals(type, Constants.MEDIA_TYPE_RADIO) || Objects.equals(type, Constants.MEDIA_TYPE_PODCAST)
+                    || com.eddyizm.tempus.util.PiterfyMedia.isPodcast(mediaMetadata.extras.getString("genre"));
+            canvasSongId = noCanvas ? null : mediaMetadata.extras.getString("id");
+            updateCanvas();
 
             if (Objects.equals(type, Constants.MEDIA_TYPE_RADIO)) {
                 // For radio: keep header consistent with full player
@@ -337,6 +386,8 @@ public class PlayerBottomSheetFragment extends Fragment {
     private void setPlayingState(boolean isPlaying) {
         if (com.eddyizm.tempus.lan.LanRemoteSession.isActive() || bind == null) return;
         bind.playerHeaderLayout.playerHeaderButton.setChecked(isPlaying);
+        canvasPlaying = isPlaying;
+        updateCanvasRunning();
         runProgressBarHandler(isPlaying);
     }
 
@@ -366,6 +417,7 @@ public class PlayerBottomSheetFragment extends Fragment {
 
     private void renderRemote(com.eddyizm.tempus.lan.LanRemoteState state) {
         if (bind == null) return;
+        updateCanvas();
         bind.playerHeaderLayout.playerHeaderRemoteButton.setSelected(state.getActive());
         bind.playerHeaderLayout.playerHeaderRemoteButton.setContentDescription(
                 state.getActive() ? getString(R.string.lan_controlling, state.getName()) : getString(R.string.lan_play_on));

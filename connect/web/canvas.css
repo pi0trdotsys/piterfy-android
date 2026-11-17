@@ -1,0 +1,33 @@
+/* Piterfy — „Teraz gra” z Canvasem (canvas.js). Nakładka to <dialog> pokazywany przez showModal(), więc leży ponad paskiem odtwarzacza. */
+#pf-canvas-button{position:fixed;left:20px;bottom:160px;z-index:1250;background:#181818;color:#fff;border:1px solid #383838;border-radius:24px;padding:12px 18px;min-height:44px;font:600 13px system-ui;cursor:pointer}
+#pf-canvas-button[hidden]{display:none}
+#pf-canvas-button:hover{border-color:#1db954}
+@media(max-width:600px){#pf-canvas-button{left:12px;bottom:260px}}
+
+#pf-canvas-dialog{box-sizing:border-box;padding:0;border:0;width:100vw;height:100dvh;max-width:none;max-height:none;background:#000;color:#fff;overflow:hidden;font-family:Figtree,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+#pf-canvas-dialog[open]{display:block;animation:pf-cv-in .35s ease-out}
+#pf-canvas-dialog::backdrop{background:#000}
+@keyframes pf-cv-in{from{opacity:0}}
+
+.pf-cv-bg{position:absolute;inset:0;width:100%;height:100%;display:block}
+.pf-cv-scrim{position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.3) 0,rgba(0,0,0,.05) 35%,rgba(0,0,0,.6) 100%)}
+.pf-cv-top{position:absolute;z-index:2;top:max(12px,env(safe-area-inset-top));right:max(16px,env(safe-area-inset-right));display:flex;gap:8px}
+.pf-cv-main{position:relative;z-index:1;box-sizing:border-box;height:100%;max-width:560px;margin:0 auto;padding:72px 24px max(28px,env(safe-area-inset-bottom));display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px}
+.pf-cv-art{width:min(74vw,44vh,420px);aspect-ratio:1;object-fit:cover;border-radius:14px;background:#222;box-shadow:0 26px 70px rgba(0,0,0,.6)}
+.pf-cv-meta{width:100%;text-align:center;margin-top:8px}
+.pf-cv-title{margin:0;font-size:clamp(20px,4.4vw,28px);font-weight:800;line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-shadow:0 2px 14px rgba(0,0,0,.5)}
+.pf-cv-artist{margin:4px 0 0;font-size:16px;font-weight:600;color:rgba(255,255,255,.78);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pf-cv-bar{--pf-cv-progress:0;position:relative;width:100%;height:18px;cursor:pointer;touch-action:none;border-radius:9px}
+.pf-cv-bar::before{content:"";position:absolute;left:0;right:0;top:7px;height:4px;border-radius:2px;background:rgba(255,255,255,.25)}
+.pf-cv-bar i{position:absolute;left:0;top:7px;height:4px;border-radius:2px;background:#fff;width:calc(var(--pf-cv-progress) * 100%)}
+.pf-cv-bar:focus-visible{outline:2px solid #1db954;outline-offset:2px}
+.pf-cv-times{width:100%;display:flex;justify-content:space-between;margin-top:-10px;font-size:12px;font-weight:600;color:rgba(255,255,255,.7);font-variant-numeric:tabular-nums}
+.pf-cv-controls{display:flex;align-items:center;gap:22px;margin-top:4px}
+.pf-cv-btn{display:grid;place-items:center;width:44px;height:44px;padding:0;border:0;border-radius:50%;background:rgba(255,255,255,.14);color:#fff;cursor:pointer;backdrop-filter:blur(8px)}
+.pf-cv-btn:hover{background:rgba(255,255,255,.24)}
+.pf-cv-btn:focus-visible{outline:2px solid #1db954;outline-offset:2px}
+.pf-cv-btn svg{width:22px;height:22px}
+.pf-cv-play{width:64px;height:64px;background:#fff;color:#000}
+.pf-cv-play:hover{background:#e8e8e8}
+.pf-cv-play svg{width:30px;height:30px}
+@media(prefers-reduced-motion:reduce){#pf-canvas-dialog[open]{animation:none}}

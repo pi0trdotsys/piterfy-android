@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_canvas_title">Canvas</string>
+    <string name="settings_canvas_summary">Animowane tło pod pełnoekranowym odtwarzaczem, rysowane w kolorach okładki. Zatrzymuje się, gdy odtwarzacz jest zwinięty albo muzyka stoi, i nie rusza się w trybie oszczędzania energii.</string>
+</resources>

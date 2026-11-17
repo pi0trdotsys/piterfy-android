@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_canvas_title">Canvas</string>
+    <string name="settings_canvas_summary">An animated backdrop behind the full-screen player, drawn from the cover colours. It pauses when the player is collapsed or the music is paused, and stays still in battery saver.</string>
+</resources>

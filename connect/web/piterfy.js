@@ -1694,6 +1694,17 @@
 })();
 // piterfy-stats-loader-end
 
+// piterfy-canvas-loader
+;(() => {
+  const m = document.currentScript && document.currentScript.src.match(/[?&]v=([^&]+)/);
+  const v = "?v=" + (m ? m[1] : "1");
+  const core = document.createElement('script');
+  core.src = '/piterfy-ui/canvas-core.js' + v;
+  core.onload = () => { const ui = document.createElement('script'); ui.src = '/piterfy-ui/canvas.js' + v; document.head.appendChild(ui); };
+  document.head.appendChild(core);
+})();
+// piterfy-canvas-loader-end
+
 // piterfy-library-loader
 ;(() => { const s = document.createElement('script'); s.src = '/piterfy-ui/library.js?v=20261104-204612'; document.head.appendChild(s); })();
 // piterfy-library-loader-end
