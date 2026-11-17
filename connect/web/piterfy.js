@@ -1535,7 +1535,7 @@
     if (PAGES[root.dataset.pfRoute] && !document.querySelector(".pf-home")) return;
     revealing = true;
     const fonts = document.fonts && document.fonts.ready
-      ? Promise.race([document.fonts.ready, new Promise((resolve) => setTimeout(resolve, 800))]) : Promise.resolve();
+      ? Promise.race([document.fonts.ready, new Promise((resolve) => setTimeout(resolve, 400))]) : Promise.resolve();
     fonts.then(() => window.__pfBootDone());
   }
 
