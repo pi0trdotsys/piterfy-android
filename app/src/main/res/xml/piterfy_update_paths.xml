@@ -2,6 +2,6 @@
 <paths xmlns:android="http://schemas.android.com/apk/res/android">
     <!-- pobrany APK aktualizacji (PiterfyUpdateManager) leży w cache/updates -->
     <cache-path name="piterfy_updates" path="updates/" />
-    <!-- karta Wrapped do udostępnienia (PiterfyStatsDialog) leży w cache/wrapped; ten sam provider co aktualizacje -->
+    <!-- karta Wrapped do udostępnienia (PiterfyWrappedDialog) leży w cache/wrapped; ten sam provider co aktualizacje -->
     <cache-path name="piterfy_wrapped" path="wrapped/" />
 </paths>

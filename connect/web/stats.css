@@ -169,6 +169,8 @@ html.pf-story-open { overflow: hidden; }
 @media (hover: none) { .pf-story-nav { display: none; } }
 .pf-story-end { position: absolute; left: 14px; right: 14px; bottom: calc(env(safe-area-inset-bottom, 0px) + 18px); display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
 .pf-story-end[hidden] { display: none; }
+.pf-story-now { position: absolute; left: 14px; top: calc(env(safe-area-inset-top, 0px) + 32px); max-width: calc(100% - 190px); margin: 0; padding: 7px 12px; border-radius: 16px; background: rgba(0, 0, 0, 0.45); color: #fff; font: 600 12px/1.2 system-ui, sans-serif; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; pointer-events: none; -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
+.pf-story-now[hidden] { display: none; }
 .pf-story-live { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; margin: 0; }
 @keyframes pf-story-in { from { opacity: 0; } to { opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .pf-story { animation: none; } .pf-story-nav { transition: none; } }

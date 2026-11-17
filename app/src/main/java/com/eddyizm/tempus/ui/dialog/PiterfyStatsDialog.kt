@@ -1,30 +1,15 @@
 package com.eddyizm.tempus.ui.dialog
 
-import android.app.Dialog
-import android.content.Intent
-import android.graphics.Bitmap
 import android.graphics.Color
 import android.graphics.Typeface
-import android.graphics.drawable.ColorDrawable
-import android.graphics.drawable.GradientDrawable
-import android.os.Bundle
-import android.text.format.DateFormat
 import android.view.Gravity
 import android.view.View
-import android.view.ViewGroup
 import android.widget.HorizontalScrollView
-import android.widget.ImageView
 import android.widget.LinearLayout
-import android.widget.ScrollView
 import android.widget.TextView
-import android.widget.Toast
-import androidx.core.content.FileProvider
 import androidx.core.graphics.ColorUtils
-import androidx.fragment.app.DialogFragment
 import com.eddyizm.tempus.R
-import com.eddyizm.tempus.ui.components.BarView
 import com.eddyizm.tempus.ui.components.ColumnsView
-import com.eddyizm.tempus.ui.components.PiterfyWrappedCard
 import com.eddyizm.tempus.ui.components.RingView
 import com.eddyizm.tempus.ui.components.StackView
 import com.eddyizm.tempus.util.PiterfyLibrary
@@ -33,37 +18,17 @@ import com.eddyizm.tempus.util.PiterfyStatsFormat as F
 import com.eddyizm.tempus.util.PiterfyStatsModel
 import com.eddyizm.tempus.util.PiterfyStatsModel.Tone
 import com.google.android.material.color.MaterialColors
-import com.google.android.material.dialog.MaterialAlertDialogBuilder
-import java.io.File
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
-import java.util.TimeZone
 
 /**
- * Piterfy: „Statystyki dla nerdów” na pełnym ekranie, trzy zakładki: Biblioteka (anatomia biblioteki i rachunek jakości),
- * Serwer (przyrost, dysk, skuteczność pobierania) i Wrapped (podsumowanie miesiąca albo roku z kartą do udostępnienia).
+ * Piterfy: „Statystyki dla nerdów” na pełnym ekranie, dwie zakładki: Biblioteka (anatomia biblioteki i rachunek jakości)
+ * i Serwer (przyrost, dysk, skuteczność pobierania). Wrapped ma własny ekran obok ([PiterfyWrappedDialog]).
  * Liczy je serwer (stats.py); ekran pokazuje ostatnią zapamiętaną odpowiedź od razu i odświeża ją w tle.
  */
-class PiterfyStatsDialog : DialogFragment() {
+class PiterfyStatsDialog : PiterfyPageDialog() {
     private var stats: PiterfyStatsModel.Stats? = null
     private var tab = 0
-    private var periodKey: String? = null
     private var message: String? = null
-
-    private lateinit var subtitle: TextView
     private lateinit var tabViews: List<TextView>
-    private lateinit var body: LinearLayout
-    private lateinit var scroll: ScrollView
-    private var ink = Color.WHITE
-    private var muted = Color.LTGRAY
-    private var accent = Color.GREEN
-    private var surface = Color.BLACK
-    private var track = 0x33888888
-    private var cardBackground = 0x22888888
-
-    private fun dp(v: Int) = Math.round(v * resources.displayMetrics.density)
-    private fun s(id: Int, vararg args: Any) = getString(id, *args)
 
     private fun toneColor(tone: Tone) = when (tone) {
         Tone.GOOD, Tone.ACCENT -> accent
@@ -73,31 +38,12 @@ class PiterfyStatsDialog : DialogFragment() {
         Tone.FREE -> track
     }
 
-    // ── cykl życia ──
-    override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
+    override fun pageTitle() = s(R.string.stats_title)
+
+    override fun addHeaderExtras(root: LinearLayout) {
         val ctx = requireContext()
-        val anchor = View(ctx)
-        ink = MaterialColors.getColor(anchor, com.google.android.material.R.attr.colorOnSurface, Color.WHITE)
-        muted = MaterialColors.getColor(anchor, com.google.android.material.R.attr.colorOnSurfaceVariant, Color.LTGRAY)
-        accent = MaterialColors.getColor(anchor, com.google.android.material.R.attr.colorPrimary, Color.GREEN)
-        surface = MaterialColors.getColor(anchor, com.google.android.material.R.attr.colorSurface, Color.BLACK)
-        track = ColorUtils.setAlphaComponent(ink, 40)
-        cardBackground = ColorUtils.setAlphaComponent(ink, 22)
-
-        val root = LinearLayout(ctx).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(16), dp(8), dp(16), 0) }
-        val header = LinearLayout(ctx).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
-        header.addView(text(s(R.string.stats_title), 22f, true).apply { setPadding(0, dp(6), 0, dp(2)) }, LinearLayout.LayoutParams(0, -2, 1f))
-        header.addView(TextView(ctx).apply {
-            text = "✕"; textSize = 20f; setTextColor(ink); gravity = Gravity.CENTER
-            contentDescription = s(R.string.appearance_close)
-            setOnClickListener { dismissAllowingStateLoss() }
-        }, LinearLayout.LayoutParams(dp(48), dp(48)))
-        root.addView(header)
-        subtitle = text("", 12.5f, false, muted).apply { setPadding(0, 0, 0, dp(10)) }
-        root.addView(subtitle)
-
         val tabRow = LinearLayout(ctx).apply { orientation = LinearLayout.HORIZONTAL }
-        val names = listOf(R.string.stats_tab_library, R.string.stats_tab_server, R.string.stats_tab_wrapped)
+        val names = listOf(R.string.stats_tab_library, R.string.stats_tab_server)
         tabViews = names.mapIndexed { i, id ->
             TextView(ctx).apply {
                 text = s(id); textSize = 14f; setTypeface(typeface, Typeface.BOLD); gravity = Gravity.CENTER
@@ -107,33 +53,16 @@ class PiterfyStatsDialog : DialogFragment() {
             }.also { tabRow.addView(it, LinearLayout.LayoutParams(-2, dp(44)).apply { rightMargin = dp(8) }) }
         }
         root.addView(HorizontalScrollView(ctx).apply { isHorizontalScrollBarEnabled = false; addView(tabRow) })
-
-        body = LinearLayout(ctx).apply { orientation = LinearLayout.VERTICAL; setPadding(0, dp(14), 0, dp(28)) }
-        scroll = ScrollView(ctx).apply { addView(body); isVerticalScrollBarEnabled = false }
-        root.addView(scroll, LinearLayout.LayoutParams(-1, 0, 1f))
-
-        load()
-        return MaterialAlertDialogBuilder(requireActivity()).setView(root).create()
     }
 
-    override fun onStart() {
-        super.onStart()
-        dialog?.window?.apply {
-            setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
-            setBackgroundDrawable(ColorDrawable(surface))
-        }
-    }
+    override fun startLoading() = load()
 
-    /** Przełącza zakładkę (0 biblioteka, 1 serwer, 2 Wrapped) i opcjonalnie okres Wrapped; używa tego test na urządzeniu. */
-    fun showTab(index: Int, period: String? = null) {
-        tab = index.coerceIn(0, 2)
-        if (period != null) periodKey = period
-        if (this::scroll.isInitialized) scroll.scrollTo(0, 0)
+    /** Przełącza zakładkę (0 biblioteka, 1 serwer); używa tego test na urządzeniu. */
+    fun showTab(index: Int) {
+        tab = index.coerceIn(0, 1)
+        if (viewsReady) scroll.scrollTo(0, 0)
         render()
     }
-
-    /** Przewija zawartość o [y] pikseli (test na urządzeniu robi zrzuty kolejnych ekranów). */
-    fun scrollContentTo(y: Int) { if (this::scroll.isInitialized) scroll.scrollTo(0, y) }
 
     // ── dane ──
     private fun load() {
@@ -150,70 +79,6 @@ class PiterfyStatsDialog : DialogFragment() {
         })
     }
 
-    // ── klocki ──
-    private fun text(value: CharSequence, size: Float, bold: Boolean = false, color: Int = ink) = TextView(requireContext()).apply {
-        text = value; textSize = size; setTextColor(color)
-        if (bold) setTypeface(typeface, Typeface.BOLD)
-    }
-
-    private fun rounded(color: Int, radius: Int) = GradientDrawable().apply { setColor(color); cornerRadius = dp(radius).toFloat() }
-
-    private fun add(view: View, top: Int = 0, height: Int = ViewGroup.LayoutParams.WRAP_CONTENT): View {
-        body.addView(view, LinearLayout.LayoutParams(-1, height).apply { topMargin = dp(top) })
-        return view
-    }
-
-    private fun section(title: String, note: String? = null) {
-        add(text(title, 19f, true).apply { setPadding(dp(2), 0, 0, dp(6)) }, 26)
-        if (note != null) add(text(note, 13f, false, muted).apply { setPadding(dp(2), 0, 0, dp(10)) })
-    }
-
-    private fun tiles(items: List<Triple<String, String, String>>) {
-        items.chunked(2).forEach { pair ->
-            val row = LinearLayout(requireContext()).apply { orientation = LinearLayout.HORIZONTAL }
-            pair.forEachIndexed { i, (label, value, sub) ->
-                val card = LinearLayout(requireContext()).apply {
-                    orientation = LinearLayout.VERTICAL; background = rounded(cardBackground, 14); setPadding(dp(14), dp(12), dp(14), dp(12))
-                }
-                card.addView(text(label.uppercase(), 10.5f, true, muted).apply { letterSpacing = 0.08f })
-                card.addView(text(value, 24f, true, accent).apply { setPadding(0, dp(4), 0, dp(2)) })
-                if (sub.isNotEmpty()) card.addView(text(sub, 12f, false, muted))
-                row.addView(card, LinearLayout.LayoutParams(0, -2, 1f).apply { if (i == 0) rightMargin = dp(4) else leftMargin = dp(4) })
-            }
-            if (pair.size == 1) row.addView(View(requireContext()), LinearLayout.LayoutParams(0, 0, 1f))
-            add(row, 8)
-            // kafelki w rzędzie mają tę samą wysokość (najwyższy wyznacza resztę); samotny kafelek zostaje na połowie szerokości
-            row.post {
-                val tallest = (0 until pair.size).maxOfOrNull { row.getChildAt(it).height } ?: return@post
-                for (k in 0 until pair.size) row.getChildAt(k).layoutParams = (row.getChildAt(k).layoutParams as LinearLayout.LayoutParams).apply { height = tallest }
-            }
-        }
-    }
-
-    /** Wiersze wykresu słupkowego: podpis, pasek, wartość. */
-    private fun barRows(rows: List<Triple<String, Double, String>>) {
-        val max = rows.maxOfOrNull { it.second } ?: 0.0
-        rows.forEachIndexed { i, (label, value, shown) ->
-            val row = LinearLayout(requireContext()).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
-            row.addView(text(label, 13f).apply { maxLines = 1; ellipsize = android.text.TextUtils.TruncateAt.END }, LinearLayout.LayoutParams(dp(96), -2))
-            row.addView(BarView(requireContext(), F.fraction(value, max), accent, track, i), LinearLayout.LayoutParams(0, dp(10), 1f).apply { leftMargin = dp(8); rightMargin = dp(8) })
-            row.addView(text(shown, 12.5f, true).apply { gravity = Gravity.END }, LinearLayout.LayoutParams(dp(92), -2))
-            add(row, 8)
-        }
-    }
-
-    private fun legend(items: List<Triple<Int, String, String>>) {
-        items.forEach { (color, label, value) ->
-            val row = LinearLayout(requireContext()).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
-            row.addView(View(requireContext()).apply { background = rounded(color, 4) }, LinearLayout.LayoutParams(dp(12), dp(12)).apply { rightMargin = dp(10) })
-            row.addView(text(label, 13f, false, muted), LinearLayout.LayoutParams(0, -2, 1f))
-            row.addView(text(value, 13f, true))
-            add(row, 7)
-        }
-    }
-
-    private fun fact(value: String) = add(text(value, 13.5f, false, muted).apply { setPadding(dp(2), 0, 0, 0) }, 10)
-
     // ── render ──
     private fun render() {
         if (!isAdded) return
@@ -227,29 +92,11 @@ class PiterfyStatsDialog : DialogFragment() {
         subtitle.text = if (data?.generated != null) s(R.string.stats_updated, stamp(data.generated)) else ""
         body.removeAllViews()
         if (data == null) {
-            add(text(message ?: "", 15f, false, muted).apply { setPadding(dp(2), dp(20), 0, dp(12)) })
-            if (message != null && message != s(R.string.stats_loading)) {
-                add(com.google.android.material.button.MaterialButton(requireContext()).apply {
-                    text = s(R.string.piterfy_retry); isAllCaps = false; cornerRadius = dp(24)
-                    setOnClickListener { load() }
-                })
-            }
+            showMessage(message ?: "", if (message != null && message != s(R.string.stats_loading)) ({ load() }) else null)
             return
         }
-        when (tab) { 0 -> library(data.library); 1 -> server(data); else -> wrapped(data) }
-        for (i in 0 until body.childCount) PiterfyMotion.enter(body.getChildAt(i), i)
-    }
-
-    private fun stamp(iso: String?): String {
-        if (iso.isNullOrBlank()) return "—"
-        val patterns = listOf("yyyy-MM-dd'T'HH:mm:ssXXX", "yyyy-MM-dd'T'HH:mmXXX", "yyyy-MM-dd'T'HH:mm:ss'Z'", "yyyy-MM-dd'T'HH:mm")
-        for (pattern in patterns) {
-            val format = SimpleDateFormat(pattern, Locale.ROOT)
-            if (pattern.endsWith("'Z'")) format.timeZone = TimeZone.getTimeZone("UTC")
-            val date: Date = runCatching { format.parse(iso.substringBefore('.').let { if (pattern.endsWith("'Z'") && !it.endsWith("Z")) it + "Z" else it }) }.getOrNull() ?: continue
-            return DateFormat.getMediumDateFormat(requireContext()).format(date) + " " + DateFormat.getTimeFormat(requireContext()).format(date)
-        }
-        return iso
+        if (tab == 0) library(data.library) else server(data)
+        animateBody()
     }
 
     // ── Biblioteka ──
@@ -390,115 +237,6 @@ class PiterfyStatsDialog : DialogFragment() {
                 row.addView(text(it, 13.5f).apply { gravity = Gravity.END }, LinearLayout.LayoutParams(0, -2, 1f))
             }
             add(row)
-        }
-    }
-
-    // ── Wrapped ──
-    private fun wrapped(data: PiterfyStatsModel.Stats) {
-        if (data.periods.isEmpty()) {
-            add(text(s(R.string.stats_wrapped_empty, data.historySince?.let { " (" + F.day(it) + ")" }.orEmpty()), 15f, false, muted).apply { setPadding(dp(2), dp(12), 0, 0) })
-            return
-        }
-        val period = data.periods.firstOrNull { it.key == periodKey } ?: data.periods.first()
-        val chips = LinearLayout(requireContext()).apply { orientation = LinearLayout.HORIZONTAL }
-        data.periods.forEach { p ->
-            val on = p.key == period.key
-            chips.addView(text(p.label, 13.5f, true, if (on) surface else ink).apply {
-                gravity = Gravity.CENTER; setPadding(dp(16), 0, dp(16), 0); background = rounded(if (on) ink else cardBackground, 20)
-                setOnClickListener { periodKey = p.key; render() }
-                contentDescription = p.label
-                PiterfyMotion.pressable(this)
-            }, LinearLayout.LayoutParams(-2, dp(40)).apply { rightMargin = dp(8) })
-        }
-        add(HorizontalScrollView(requireContext()).apply { isHorizontalScrollBarEnabled = false; addView(chips) })
-
-        add(com.google.android.material.button.MaterialButton(requireContext()).apply {
-            text = s(R.string.story_play); isAllCaps = false; cornerRadius = dp(24); minHeight = dp(52)
-            setOnClickListener { PiterfyStoryDialog.newInstance(period.key).show(parentFragmentManager, PiterfyStoryDialog.TAG) }
-        }, 14)
-
-        val image = ImageView(requireContext()).apply {
-            adjustViewBounds = true; scaleType = ImageView.ScaleType.FIT_CENTER
-            val width = minOf(resources.displayMetrics.widthPixels - dp(32), 720)
-            setImageBitmap(PiterfyWrappedCard.render(requireContext(), period, width))
-            contentDescription = period.label
-            clipToOutline = true; outlineProvider = android.view.ViewOutlineProvider.BACKGROUND
-            background = rounded(Color.TRANSPARENT, 20)
-        }
-        add(image, 12)
-        add(com.google.android.material.button.MaterialButton(requireContext()).apply {
-            text = s(R.string.stats_share); isAllCaps = false; cornerRadius = dp(24); minHeight = dp(48)
-            setOnClickListener { share(period) }
-        }, 12)
-
-        val cmp = period.compare
-        val listener = period.listener
-        val box = { LinearLayout(requireContext()).apply { orientation = LinearLayout.VERTICAL; background = rounded(cardBackground, 14); setPadding(dp(16), dp(14), dp(16), dp(14)) } }
-        box().also { card ->
-            card.addView(text(s(R.string.stats_listener).uppercase(), 10.5f, true, muted).apply { letterSpacing = 0.08f })
-            if (listener != null) {
-                card.addView(text(listener.name, 26f, true, accent).apply { setPadding(0, dp(4), 0, dp(2)) })
-                card.addView(text(listener.blurb, 14f, false, muted))
-                listener.why.forEach { card.addView(text("• $it", 13f).apply { setPadding(0, dp(4), 0, 0) }) }
-            } else {
-                card.addView(text(s(R.string.stats_listener_none), 14f, false, muted).apply { setPadding(0, dp(6), 0, 0) })
-            }
-            add(card, 16)
-        }
-        if (cmp != null) box().also { card ->
-            card.addView(text(s(if (period.kind == "month") R.string.stats_compare_month else R.string.stats_compare_year).uppercase(), 10.5f, true, muted).apply { letterSpacing = 0.08f })
-            fun line(label: String, pct: Int?) {
-                if (pct == null) return
-                val row = LinearLayout(requireContext()).apply { orientation = LinearLayout.HORIZONTAL; setPadding(0, dp(6), 0, 0) }
-                row.addView(text(label, 14f), LinearLayout.LayoutParams(0, -2, 1f))
-                row.addView(text(if (pct == 0) s(R.string.stats_delta_none) else F.delta(pct), 14f, true, if (pct > 0) 0xFF5FF0A3.toInt() else if (pct < 0) 0xFFFF9A9A.toInt() else ink))
-                card.addView(row)
-            }
-            line(s(R.string.stats_plays, F.num(cmp.prevPlays), F.num(period.plays)), cmp.plays)
-            line(s(R.string.stats_minutes), cmp.minutes)
-            line(s(R.string.stats_artists_distinct), cmp.artists)
-            add(card, 12)
-        }
-
-        section(s(R.string.stats_top))
-        barRows(period.topArtists.map { Triple(it.label, it.n.toDouble(), F.num(it.n)) })
-        period.topTracks.forEachIndexed { i, t ->
-            val row = LinearLayout(requireContext()).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
-            row.addView(text("${i + 1}", 16f, true, accent), LinearLayout.LayoutParams(dp(28), -2))
-            val names = LinearLayout(requireContext()).apply { orientation = LinearLayout.VERTICAL }
-            names.addView(text(t.title, 14f, true).apply { maxLines = 1; ellipsize = android.text.TextUtils.TruncateAt.END })
-            names.addView(text(t.artist, 12f, false, muted).apply { maxLines = 1; ellipsize = android.text.TextUtils.TruncateAt.END })
-            row.addView(names, LinearLayout.LayoutParams(0, -2, 1f))
-            row.addView(text("${t.plays}×", 13f, true, muted))
-            add(row, 12)
-        }
-        val facts = mutableListOf(s(R.string.stats_fact_tracks, F.num(period.tracks), F.num(period.artists)))
-        facts += s(R.string.stats_fact_days, F.num(period.activeDays)) + if (period.longestStreak > 1) s(R.string.stats_fact_streak, period.longestStreak) else ""
-        if ((period.newArtists ?: 0) > 0) facts += s(R.string.stats_fact_new, F.num(period.newArtists))
-        period.busiestDay?.let { facts += s(R.string.stats_fact_busiest, F.day(it), F.num(period.busiestPlays)) }
-        facts.forEach { fact(it) }
-        if (period.partial) fact(s(R.string.stats_running_note))
-    }
-
-    private fun share(period: PiterfyStatsModel.Period) {
-        val ctx = requireContext()
-        try {
-            val bitmap = PiterfyWrappedCard.render(ctx, period, 1080)
-            val folder = File(ctx.cacheDir, "wrapped").apply { mkdirs() }
-            folder.listFiles()?.forEach { it.delete() }
-            val file = File(folder, "piterfy-wrapped-${period.key}.png")
-            file.outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
-            bitmap.recycle()
-            val uri = FileProvider.getUriForFile(ctx, "${ctx.packageName}.update.fileprovider", file)
-            val send = Intent(Intent.ACTION_SEND).apply {
-                type = "image/png"
-                putExtra(Intent.EXTRA_STREAM, uri)
-                putExtra(Intent.EXTRA_TEXT, "Piterfy Wrapped · ${period.label}")
-                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-            }
-            startActivity(Intent.createChooser(send, s(R.string.stats_share)))
-        } catch (_: Exception) {
-            Toast.makeText(ctx, R.string.stats_share_failed, Toast.LENGTH_LONG).show()
         }
     }
 

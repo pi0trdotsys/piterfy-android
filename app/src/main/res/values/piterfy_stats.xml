@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="stats_title">Statistics for nerds</string>
-    <string name="stats_pref_summary">Library anatomy, server health and your Wrapped</string>
+    <string name="stats_pref_summary">Library anatomy and server health</string>
+    <string name="wrapped_pref_summary">Your month or year in music: story, card and listener type</string>
     <string name="stats_tab_library">Library</string>
     <string name="stats_tab_server">Server</string>
     <string name="stats_tab_wrapped">Wrapped</string>
@@ -136,7 +137,8 @@
     <string name="story_save">Save PNG</string>
     <string name="story_saved">Saved to Pictures/Piterfy</string>
     <string name="story_save_failed">Couldn\'t save the image.</string>
-    <string name="story_mute">Mute the song preview</string>
-    <string name="story_unmute">Play the song preview</string>
+    <string name="story_mute">Mute the music</string>
+    <string name="story_unmute">Play the music</string>
+    <string name="story_now_playing">♪ %1$s — %2$s</string>
     <string name="story_slide_desc">Slide %1$d of %2$d</string>
 </resources>

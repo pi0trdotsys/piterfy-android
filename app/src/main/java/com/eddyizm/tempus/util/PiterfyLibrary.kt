@@ -103,6 +103,41 @@ object PiterfyLibrary {
             } catch (_: Exception) { main.post { if (account() == identity) failed?.accept("network") } }
         }
     }
+    /** „Mój gust”: ostatnia odpowiedź (taste.json) i eksport Spotify (spotify-baseline.json) dla tego konta albo null. */
+    @JvmStatic fun cachedTaste(): String? = prefs().getString("taste|${account()}", null)
+    @JvmStatic fun cachedTasteBaseline(): String? = prefs().getString("taste-baseline|${account()}", null)
+
+    /**
+     * Panel gustu to publiczne, statyczne pliki serwera (/gust/data/taste.json i opcjonalnie spotify-baseline.json), więc
+     * bez logowania i bez wymogu HTTPS (nie wysyłamy żadnych danych uwierzytelniających). [done] dostaje taste.json
+     * i eksport Spotify (null, gdy go nie ma); oba zapisujemy lokalnie, żeby ekran miał co pokazać offline. [failed]:
+     * „no_server” (brak adresu), „not_ready” (404: panel jeszcze nie policzony), „network” (reszta).
+     */
+    @JvmStatic fun taste(done: java.util.function.BiConsumer<String, String?>?, failed: Consumer<String>?) {
+        val identity = account()
+        val origin = runCatching { (Preferences.getServer() ?: "").toHttpUrl().newBuilder().encodedPath("/").query(null).fragment(null).build().toString().trimEnd('/') }.getOrNull()
+        if (origin == null) { failed?.accept("no_server"); return }
+        io.execute {
+            try {
+                val (code, body) = http.newCall(Request.Builder().url("$origin/gust/data/taste.json").header("Cache-Control", "no-cache").get().build())
+                    .execute().use { it.code to (it.body?.string() ?: "") }
+                when {
+                    code == 404 -> main.post { if (account() == identity) failed?.accept("not_ready") }
+                    code in 200..299 -> {
+                        val baseline = runCatching {
+                            http.newCall(Request.Builder().url("$origin/gust/data/spotify-baseline.json").header("Cache-Control", "no-cache").get().build())
+                                .execute().use { r -> if (r.code in 200..299) r.body?.string() else null }
+                        }.getOrNull()
+                        prefs().edit().putString("taste|$identity", body).also { e ->
+                            if (baseline != null) e.putString("taste-baseline|$identity", baseline) else e.remove("taste-baseline|$identity")
+                        }.apply()
+                        main.post { if (account() == identity) done?.accept(body, baseline) }
+                    }
+                    else -> main.post { if (account() == identity) failed?.accept("network") }
+                }
+            } catch (_: Exception) { main.post { if (account() == identity) failed?.accept("network") } }
+        }
+    }
     @JvmStatic fun isPinned(id:String):Boolean = cached().optJSONArray("pins")?.let { pins -> (0 until pins.length()).any { pins.optString(it)==id } }?:false
     @JvmStatic fun pin(id:String,enabled:Boolean,done:Consumer<JSONObject>?,failed:Consumer<String>?) = request(JSONObject().put("action","pin").put("id",id).put("enabled",enabled),done,failed)
     @JvmStatic fun rankSongs(songs: List<Child>, done: Consumer<List<Child>>) {

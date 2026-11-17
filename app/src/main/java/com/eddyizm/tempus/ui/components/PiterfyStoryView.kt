@@ -33,7 +33,6 @@ class PiterfyStoryView(context: Context) : View(context) {
     var renderer: PiterfyStoryRenderer? = null
     var period: PiterfyStatsModel.Period? = null
     var kind: Kind = Kind.INTRO
-    var musicOn = false
     /** Czas w ms od początku slajdu; ustawia go dialog co klatkę. */
     var t = 0L
 
@@ -51,7 +50,7 @@ class PiterfyStoryView(context: Context) : View(context) {
         val scale = min(width / PiterfyStoryRenderer.W, height / PiterfyStoryRenderer.H)
         if (scale <= 0f) return
         canvas.scale(scale, scale)
-        r.draw(canvas, p, kind, if (animationsOn()) t else PiterfyStoryPlan.END_STATE_MS, width / scale, height / scale, musicOn)
+        r.draw(canvas, p, kind, if (animationsOn()) t else PiterfyStoryPlan.END_STATE_MS, width / scale, height / scale)
     }
 
     override fun onTouchEvent(e: MotionEvent): Boolean {

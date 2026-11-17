@@ -63,7 +63,7 @@ class PiterfyStoryDialogTest {
             scenario.onActivity { dialog.onTapBack(); assertEquals(count - 2, dialog.currentIndex); dialog.onTapForward(); assertEquals(count - 1, dialog.currentIndex) }
             scenario.onActivity { dialog.onSwipe(forward = false); assertEquals(count - 2, dialog.currentIndex) }
 
-            // podgląd muzyki niewyciszony, ale bez sieci/serwera: błąd ma zostać połknięty, historyjka dalej działa
+            // muzyka niewyciszona, ale bez sieci/serwera: błąd ma zostać połknięty, historyjka dalej działa
             context.getSharedPreferences("piterfy_story", 0).edit().putBoolean("muted", false).commit()
             scenario.onActivity { dialog.goTo(3) }
             Thread.sleep(2500)

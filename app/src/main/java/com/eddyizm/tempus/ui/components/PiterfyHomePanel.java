@@ -1,11 +1,8 @@
 package com.eddyizm.tempus.ui.components;
 
-import android.content.ActivityNotFoundException;
-import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
-import android.net.Uri;
 import android.os.Bundle;
 import android.view.Gravity;
 import android.view.View;
@@ -108,26 +105,33 @@ public final class PiterfyHomePanel extends LinearLayout implements DefaultLifec
         taste.setText(R.string.piterfy_taste); taste.setAllCaps(false); taste.setTypeface(bold);
         taste.setMinHeight(dp(48)); taste.setCornerRadius(dp(24)); taste.setTextColor(Color.WHITE);
         taste.setBackgroundTintList(android.content.res.ColorStateList.valueOf(TILE_COLOR));
-        taste.setOnClickListener(v -> {
-            String base = Preferences.getServer();
-            if (base == null) return;
-            Uri uri = Uri.parse(base);
-            if (!"https".equalsIgnoreCase(uri.getScheme()) && !"http".equalsIgnoreCase(uri.getScheme())) return;
-            Uri target = uri.buildUpon().encodedPath("/gust/").clearQuery().fragment(null).build();
-            try { host.startActivity(new Intent(Intent.ACTION_VIEW, target)); }
-            catch (ActivityNotFoundException ignored) { }
-        });
+        // Piterfy: "Moj gust" to ekran w aplikacji (dane z publicznych plikow serwera), nie strona w przegladarce
+        taste.setOnClickListener(v -> new com.eddyizm.tempus.ui.dialog.PiterfyTasteDialog()
+                .show(host.getParentFragmentManager(), com.eddyizm.tempus.ui.dialog.PiterfyTasteDialog.TAG));
         shortcuts.addView(taste, new LayoutParams(0, LayoutParams.WRAP_CONTENT, 1));
 
+        // Piterfy: statystyki i Wrapped to dwa osobne ekrany, obok siebie w jednym rzedzie (rowna szerokosc)
+        LinearLayout insights = new LinearLayout(getContext());
+        insights.setOrientation(HORIZONTAL);
         MaterialButton nerdStats = new MaterialButton(getContext());
         nerdStats.setText(R.string.stats_title); nerdStats.setAllCaps(false); nerdStats.setTypeface(bold);
         nerdStats.setMinHeight(dp(48)); nerdStats.setCornerRadius(dp(24)); nerdStats.setTextColor(Color.WHITE);
         nerdStats.setBackgroundTintList(android.content.res.ColorStateList.valueOf(TILE_COLOR));
         nerdStats.setOnClickListener(v -> new com.eddyizm.tempus.ui.dialog.PiterfyStatsDialog()
                 .show(host.getParentFragmentManager(), com.eddyizm.tempus.ui.dialog.PiterfyStatsDialog.TAG));
-        LayoutParams nerdParams = new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT);
-        nerdParams.topMargin = dp(8);
-        addView(nerdStats, nerdParams);
+        LayoutParams nerdParams = new LayoutParams(0, LayoutParams.WRAP_CONTENT, 1);
+        nerdParams.rightMargin = dp(8);
+        insights.addView(nerdStats, nerdParams);
+        MaterialButton wrapped = new MaterialButton(getContext());
+        wrapped.setText(R.string.stats_tab_wrapped); wrapped.setAllCaps(false); wrapped.setTypeface(bold);
+        wrapped.setMinHeight(dp(48)); wrapped.setCornerRadius(dp(24)); wrapped.setTextColor(Color.WHITE);
+        wrapped.setBackgroundTintList(android.content.res.ColorStateList.valueOf(TILE_COLOR));
+        wrapped.setOnClickListener(v -> new com.eddyizm.tempus.ui.dialog.PiterfyWrappedDialog()
+                .show(host.getParentFragmentManager(), com.eddyizm.tempus.ui.dialog.PiterfyWrappedDialog.TAG));
+        insights.addView(wrapped, new LayoutParams(0, LayoutParams.WRAP_CONTENT, 1));
+        LayoutParams insightsParams = new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT);
+        insightsParams.topMargin = dp(8);
+        addView(insights, insightsParams);
 
         tiles = new LinearLayout(getContext());
         tiles.setOrientation(VERTICAL);

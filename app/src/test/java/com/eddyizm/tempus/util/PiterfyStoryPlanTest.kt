@@ -55,32 +55,37 @@ class PiterfyStoryPlanTest {
         assertEquals(0L, slides.last().durationMs)          // finał zostaje
     }
 
-    // ── podgląd muzyki ──
-    @Test fun previewStartsAtThirtyFivePercentForNormalSongs() {
+    // ── ścieżka dźwiękowa ──
+    @Test fun windowStartsAtThirtyFivePercentForNormalSongs() {
         val p = PiterfyStoryPlan.preview(200)
         assertEquals(70_000L, p.startMs)
-        assertEquals(25_000L, p.lengthMs)
+        assertEquals(45_000L, p.lengthMs)
     }
 
     @Test fun shortSongsPlayFromTheStart() {
         val p = PiterfyStoryPlan.preview(45)
         assertEquals(0L, p.startMs)
-        assertEquals(25_000L, p.lengthMs)
+        assertEquals(45_000L, p.lengthMs)
         assertEquals(0L, PiterfyStoryPlan.preview(59).startMs)
         assertEquals(21_000L, PiterfyStoryPlan.preview(60).startMs)
     }
 
-    @Test fun previewNeverRunsPastTheEndOfTheSong() {
+    @Test fun windowNeverRunsPastTheEndOfTheSong() {
         val p = PiterfyStoryPlan.preview(10)
         assertEquals(10_000L, p.lengthMs)
-        val q = PiterfyStoryPlan.preview(70)             // start 24,5 s, do końca 45,5 s
+        val q = PiterfyStoryPlan.preview(70)             // start 24,5 s, do końca 45,5 s: mieści się w 45 s
         assertEquals(24_500L, q.startMs)
-        assertEquals(25_000L, q.lengthMs)
+        assertEquals(45_000L, q.lengthMs)
+        val r = PiterfyStoryPlan.preview(100)            // start 35 s, do końca 65 s: ucięte do 45 s
+        assertEquals(45_000L, r.lengthMs)
+        val short = PiterfyStoryPlan.preview(62)         // start 21,7 s, do końca 40,3 s
+        assertEquals(21_700L, short.startMs)
+        assertEquals(40_300L, short.lengthMs)
     }
 
     @Test fun unknownLengthPlaysFromTheStart() {
-        assertEquals(PiterfyStoryPlan.Preview(0, 25_000L), PiterfyStoryPlan.preview(0))
-        assertEquals(PiterfyStoryPlan.Preview(0, 25_000L), PiterfyStoryPlan.preview(-5))
+        assertEquals(PiterfyStoryPlan.Preview(0, 45_000L), PiterfyStoryPlan.preview(0))
+        assertEquals(PiterfyStoryPlan.Preview(0, 45_000L), PiterfyStoryPlan.preview(-5))
     }
 
     @Test fun volumeFadesInAndOut() {
@@ -88,10 +93,56 @@ class PiterfyStoryPlanTest {
         assertEquals(0f, PiterfyStoryPlan.volumeAt(0, p), 1e-6f)
         assertEquals(0.5f, PiterfyStoryPlan.volumeAt(400, p), 1e-6f)
         assertEquals(1f, PiterfyStoryPlan.volumeAt(800, p), 1e-6f)
-        assertEquals(1f, PiterfyStoryPlan.volumeAt(12_000, p), 1e-6f)
-        assertEquals(0.5f, PiterfyStoryPlan.volumeAt(25_000 - 300, p), 1e-6f)
-        assertEquals(0f, PiterfyStoryPlan.volumeAt(25_000, p), 1e-6f)
+        assertEquals(1f, PiterfyStoryPlan.volumeAt(20_000, p), 1e-6f)
+        assertEquals(0.5f, PiterfyStoryPlan.volumeAt(45_000 - 300, p), 1e-6f)
+        assertEquals(0f, PiterfyStoryPlan.volumeAt(45_000, p), 1e-6f)
         assertEquals(0f, PiterfyStoryPlan.volumeAt(-1, p), 1e-6f)
+    }
+
+    private fun track(id: String, seconds: Int, title: String = "T$id") = Track(title, "A$id", 10, id, "al-$id", seconds)
+
+    @Test fun soundtrackTakesTheFirstFiveTracksWithAnId() {
+        val tracks = listOf(track("1", 200), track("", 200), track("2", 30), track("3", 100), track("4", 100), track("5", 100), track("6", 100))
+        val s = PiterfyStoryPlan.soundtrack(tracks)
+        assertEquals(listOf("1", "2", "3", "4", "5"), s.map { it.id })
+        assertEquals("T1", s[0].title); assertEquals("A1", s[0].artist)
+        assertEquals(PiterfyStoryPlan.preview(200), s[0].preview)
+        assertEquals(PiterfyStoryPlan.preview(30), s[1].preview)
+    }
+
+    @Test fun soundtrackIsEmptyWithoutIds() {
+        assertTrue(PiterfyStoryPlan.soundtrack(emptyList()).isEmpty())
+        assertTrue(PiterfyStoryPlan.soundtrack(listOf(track("", 100))).isEmpty())
+        assertNull(PiterfyStoryPlan.positionAt(emptyList(), 0))
+    }
+
+    @Test fun positionWalksThroughSegmentsBackToBack() {
+        val s = PiterfyStoryPlan.soundtrack(listOf(track("1", 200), track("2", 30), track("3", 100)))   // 45 s, 30 s, 45 s
+        assertEquals(120_000L, PiterfyStoryPlan.soundtrackMs(s))
+        assertEquals(PiterfyStoryPlan.Position(0, 0), PiterfyStoryPlan.positionAt(s, 0))
+        assertEquals(PiterfyStoryPlan.Position(0, 44_999), PiterfyStoryPlan.positionAt(s, 44_999))
+        assertEquals(PiterfyStoryPlan.Position(1, 0), PiterfyStoryPlan.positionAt(s, 45_000))
+        assertEquals(PiterfyStoryPlan.Position(1, 29_999), PiterfyStoryPlan.positionAt(s, 74_999))
+        assertEquals(PiterfyStoryPlan.Position(2, 0), PiterfyStoryPlan.positionAt(s, 75_000))
+        assertEquals(PiterfyStoryPlan.Position(2, 44_999), PiterfyStoryPlan.positionAt(s, 119_999))
+        assertNull(PiterfyStoryPlan.positionAt(s, 120_000))        // po ostatnim fragmencie cisza
+        assertNull(PiterfyStoryPlan.positionAt(s, -1))
+    }
+
+    @Test fun nextSegmentIsPreparedFiveSecondsBeforeTheEnd() {
+        val s = PiterfyStoryPlan.soundtrack(listOf(track("1", 200), track("2", 200)))
+        assertFalse(PiterfyStoryPlan.prefetchDue(s, PiterfyStoryPlan.Position(0, 39_999)))
+        assertTrue(PiterfyStoryPlan.prefetchDue(s, PiterfyStoryPlan.Position(0, 40_000)))
+        assertTrue(PiterfyStoryPlan.prefetchDue(s, PiterfyStoryPlan.Position(0, 44_000)))
+        assertFalse(PiterfyStoryPlan.prefetchDue(s, PiterfyStoryPlan.Position(1, 44_000)))      // ostatni: nie ma następnego
+    }
+
+    @Test fun theWholeShowIsCoveredByMusic() {
+        // ok. 60 s pokazu: 6 slajdów × 7 s + utwory 12 s; jeden utwór 45 s plus drugi domykają całość
+        val s = PiterfyStoryPlan.soundtrack(listOf(track("1", 200), track("2", 200)))
+        val show = 6 * PiterfyStoryPlan.SLIDE_MS + PiterfyStoryPlan.TRACKS_MS
+        assertTrue(PiterfyStoryPlan.soundtrackMs(s) >= show)
+        assertNotNull(PiterfyStoryPlan.positionAt(s, show - 1))
     }
 
     @Test fun previewUrlForcesLightMp3AndKeepsTheTimeOffset() {

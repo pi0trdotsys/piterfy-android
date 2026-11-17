@@ -262,6 +262,12 @@ public class SettingsContainerFragment extends PreferenceFragmentCompat {
             return true;
         });
 
+        Preference wrapped = findPreference("piterfy_wrapped");
+        if (wrapped != null) wrapped.setOnPreferenceClickListener(p -> {
+            new com.eddyizm.tempus.ui.dialog.PiterfyWrappedDialog().show(getParentFragmentManager(), com.eddyizm.tempus.ui.dialog.PiterfyWrappedDialog.TAG);
+            return true;
+        });
+
         if (BuildConfig.FLAVOR.equals("degoogled")) {
             ClickablePreferenceCategory androidAutoCategory = findPreference("settings_androidauto_category_key");
             if (androidAutoCategory != null) {

@@ -250,10 +250,6 @@ const streamUrl = (id, offset) => "/rest/stream?" + params({ id, format: "mp3", 
             text(ellipsize(tr.artist || "", 32, 600, room2), P + 250, y + 112, { size: 32, weight: 600, color: theme.muted, a: ai, dy: (1 - ai) * 30 });
             text(tr.plays + "×", W - P, y + 62, { size: 38, weight: 700, color: theme.muted, align: "right", a: ai });
           });
-          // „gra teraz”: poruszające się słupki
-          const an = prog(t, 1500, 700);
-          mark(ctx, accent, t, P, 1690, 1.3, an);
-          text("♪ gra: " + ellipsize(first.title || "", 30, 600, W - P * 2 - 150), P + 130, 1740, { size: 30, weight: 600, color: theme.muted, a: an });
           break;
         }
         case "genres": {
@@ -377,7 +373,7 @@ const streamUrl = (id, offset) => "/rest/stream?" + params({ id, format: "mp3", 
       '<div class="pf-story-end" hidden><button type="button" class="pf-st-btn" data-sa="share">Udostępnij</button>' +
       '<button type="button" class="pf-st-btn pf-st-btn-ghost" data-sa="video">Pobierz wideo</button>' +
       '<button type="button" class="pf-st-btn pf-st-btn-ghost" data-sa="again">Jeszcze raz</button></div>' +
-      '<p class="pf-story-live" role="status" aria-live="polite"></p></div>';
+      '<p class="pf-story-now" hidden></p><p class="pf-story-live" role="status" aria-live="polite"></p></div>';
     document.body.appendChild(root);
     document.documentElement.classList.add("pf-story-open");
     const stage = root.querySelector(".pf-story-stage");
@@ -394,8 +390,10 @@ const streamUrl = (id, offset) => "/rest/stream?" + params({ id, format: "mp3", 
     const renderer = makeRenderer(period, covers);
     const slide = () => slides[index];
 
-    // ── muzyka ──
-    const music = { el: null, done: false, mode: "idle", t0: 0, leaveAt: 0, leaveVol: 0, window: null, pagePaused: null };
+    // ── muzyka: ścieżka dźwiękowa przez cały pokaz (kolejne utwory z top 5, po 45 s każdy) ──
+    const segments = core.soundtrack(period.top_tracks);
+    const music = { players: [null, null], seg: 0, pos: 0, last: 0, playing: false, pagePaused: null };
+    const nowChip = root.querySelector(".pf-story-now");
     const pageAudio = () => document.querySelector(PLAYER_AUDIO);
     function pausePage() {
       const a = pageAudio();
@@ -406,52 +404,58 @@ const streamUrl = (id, offset) => "/rest/stream?" + params({ id, format: "mp3", 
       music.pagePaused = null;
       if (a) { try { const p = a.play(); if (p && p.catch) p.catch(() => {}); } catch (e) { /* zostaje */ } }
     }
-    function startMusic() {
-      const track = (period.top_tracks || [])[0];
-      if (!track || !track.id || muted || music.done || music.mode === "playing" || music.mode === "loading") return;
-      if (!music.el) { music.el = new Audio(); music.el.preload = "auto"; music.el.addEventListener("error", () => { music.mode = "idle"; }); }
-      pausePage();
-      const el = music.el;
-      music.window = core.previewWindow(track.seconds);
-      if (!el.src || el.dataset.id !== String(track.id)) {
-        el.dataset.id = String(track.id);
-        el.src = streamUrl(track.id, music.window.start);
+    function playerFor(i) {
+      const k = i % 2;
+      if (!music.players[k]) {
+        const a = new Audio();
+        a.preload = "auto";
+        // błąd strumienia = segment kończy się od razu, gramy następny
+        a.addEventListener("error", () => { if (music.players[music.seg % 2] === a) music.pos = 1e9; });
+        music.players[k] = a;
       }
-      el.volume = 0;
-      const begin = () => {
-        if (closed || music.mode === "idle") return;
-        music.t0 = performance.now(); music.mode = "playing";
-        const p = el.play(); if (p && p.catch) p.catch(() => { music.mode = "idle"; });
-      };
-      music.mode = "loading";
-      if (el.readyState >= 1) begin(); else el.addEventListener("loadedmetadata", begin, { once: true });
-      try { el.load && el.readyState === 0 && el.load(); } catch (e) { /* bez wpływu */ }
+      return music.players[k];
     }
-    function leaveMusic(now) {
-      if (music.mode === "playing") { music.mode = "leaving"; music.leaveAt = now; music.leaveVol = music.el ? music.el.volume : 0; }
-      else if (music.mode === "loading") { music.mode = "idle"; if (music.el) music.el.pause(); }
+    function load(i) {
+      const seg = segments[i];
+      if (!seg) return null;
+      const el = playerFor(i);
+      if (el.dataset.seg !== String(i)) { el.dataset.seg = String(i); el.src = streamUrl(seg.id, seg.start); el.volume = 0; }
+      return el;
+    }
+    function paintNow() {
+      const seg = segments[music.seg];
+      const show = !!seg && !muted && !closed;
+      nowChip.hidden = !show;
+      if (show) nowChip.textContent = "♪ " + seg.title + (seg.artist ? " — " + seg.artist : "");
+    }
+    const musicWanted = () => segments.length > 0 && !muted && !holdPaused && !userPaused && !closed && !document.hidden;
+    function syncMusic() {
+      const el = music.seg < segments.length ? playerFor(music.seg) : null;
+      if (musicWanted() && el) {
+        if (!music.playing) {
+          pausePage();
+          load(music.seg);
+          music.playing = true; music.last = performance.now();
+          const p = el.play();
+          if (p && p.catch) p.catch(() => { music.playing = false; }); // przeglądarka zablokowała start: cisza, pokaz idzie dalej
+        }
+      } else if (el && music.playing) { music.playing = false; el.pause(); }
+      paintNow();
     }
     function stopMusicNow() {
-      music.mode = "idle";
-      if (music.el) { try { music.el.pause(); } catch (e) { /* bez wpływu */ } music.el.removeAttribute("src"); try { music.el.load(); } catch (e) { /* bez wpływu */ } }
+      music.playing = false;
+      music.players.forEach((el) => { if (el) { try { el.pause(); } catch (e) { /* bez wpływu */ } el.removeAttribute("src"); try { el.load(); } catch (e) { /* bez wpływu */ } } });
     }
     function tickMusic(now) {
-      const el = music.el;
-      if (!el) return;
-      if (music.mode === "playing") {
-        const elapsed = (now - music.t0) / 1000;
-        if (elapsed >= music.window.length || el.ended) { el.pause(); music.mode = "idle"; music.done = true; return; }
-        el.volume = clamp(core.previewGain(elapsed, music.window.length), 0, 1);
-      } else if (music.mode === "leaving") {
-        const k = 1 - (now - music.leaveAt) / 600;
-        if (k <= 0) { el.pause(); music.mode = "idle"; } else el.volume = clamp(music.leaveVol * k, 0, 1);
-      }
-    }
-    function syncMusic(now) {
-      const wants = !!slide().music && !muted && !holdPaused && !userPaused && !closed;
-      if (wants) startMusic();
-      else if (music.el && (music.mode === "playing" || music.mode === "loading")) {
-        if (holdPaused || userPaused) { music.el.pause(); music.mode = "idle"; } else leaveMusic(now);
+      if (!music.playing || music.seg >= segments.length) return;
+      music.pos += Math.min(0.25, (now - music.last) / 1000);
+      music.last = now;
+      const seg = segments[music.seg], el = playerFor(music.seg);
+      el.volume = clamp(core.previewGain(music.pos, seg.length), 0, 1);
+      if (seg.length - music.pos < 6 && music.seg + 1 < segments.length) load(music.seg + 1); // następny już się buforuje
+      if (music.pos >= seg.length || el.ended) {
+        el.pause(); music.playing = false; music.seg++; music.pos = 0;
+        if (music.seg < segments.length) syncMusic(); else paintNow();
       }
     }
 
@@ -459,11 +463,10 @@ const streamUrl = (id, offset) => "/rest/stream?" + params({ id, format: "mp3", 
     const elapsed = (now) => (pausedAt == null ? now : pausedAt) - t0;
     function setIndex(next, now) {
       next = clamp(next, 0, slides.length - 1);
-      index = next; t0 = now; music.done = false; if (pausedAt != null) pausedAt = now;
+      index = next; t0 = now; if (pausedAt != null) pausedAt = now;
       endBox.hidden = slide().id !== "finale";
       live.textContent = "Slajd " + (index + 1) + " z " + slides.length;
       segs.forEach((s, i) => { s.style.transform = "scaleX(" + (i < index ? 1 : 0) + ")"; });
-      syncMusic(now);
     }
     function frame(now) {
       if (closed) return;
@@ -490,8 +493,7 @@ const streamUrl = (id, offset) => "/rest/stream?" + params({ id, format: "mp3", 
       muted = !muted;
       try { localStorage.setItem("pf-story-muted", muted ? "1" : "0"); } catch (e) { /* bez zapamiętywania */ }
       paintMute();
-      const now = performance.now();
-      if (muted) { if (music.el) music.el.pause(); music.mode = "idle"; } else syncMusic(now);
+      syncMusic();
     }
 
     // ── eksport: PNG slajdu i wideo ──
@@ -535,7 +537,7 @@ const streamUrl = (id, offset) => "/rest/stream?" + params({ id, format: "mp3", 
       const rec = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 6000000 });
       const chunks = [];
       rec.ondataavailable = (e) => { if (e.data && e.data.size) chunks.push(e.data); };
-      const plan = slides.map((s) => ({ s, ms: s.id === "finale" ? VIDEO_FINALE_MS : s.music ? VIDEO_TRACK_MS : VIDEO_MS }));
+      const plan = slides.map((s) => ({ s, ms: s.id === "finale" ? VIDEO_FINALE_MS : s.id === "tracks" ? VIDEO_TRACK_MS : VIDEO_MS }));
       const total = plan.reduce((a, p) => a + p.ms, 0);
       let cancelled = false, begun = 0, timer = 0;
       const label0 = videoBtn.textContent;
@@ -561,12 +563,14 @@ const streamUrl = (id, offset) => "/rest/stream?" + params({ id, format: "mp3", 
 
     // ── sterowanie ──
     let press = null;
+    // gdyby przeglądarka zablokowała autostart dźwięku, pierwszy dotyk w pokazie go uruchomi
+    stage.addEventListener("pointerdown", () => { if (!music.playing) syncMusic(); }, true);
     stage.addEventListener("pointerdown", (e) => {
       if (e.target.closest("button")) return;
       press = { x: e.clientX, y: e.clientY, at: performance.now(), held: false, id: e.pointerId };
       press.timer = setTimeout(() => {
         if (!press) return;
-        press.held = true; holdPaused = true; pausedAt = performance.now(); syncMusic(pausedAt);
+        press.held = true; holdPaused = true; pausedAt = performance.now(); syncMusic();
       }, 240);
     });
     const release = (e, cancelled) => {
@@ -577,7 +581,7 @@ const streamUrl = (id, offset) => "/rest/stream?" + params({ id, format: "mp3", 
       if (p.held) {
         holdPaused = false;
         if (pausedAt != null) { t0 += now - pausedAt; pausedAt = userPaused ? now : null; }
-        syncMusic(now);
+        syncMusic();
         return;
       }
       if (cancelled) return;
@@ -614,11 +618,11 @@ const streamUrl = (id, offset) => "/rest/stream?" + params({ id, format: "mp3", 
         e.preventDefault();
         userPaused = !userPaused;
         if (userPaused) pausedAt = now; else { t0 += now - pausedAt; pausedAt = null; }
-        syncMusic(now);
+        syncMusic();
       } else if (e.key === "m" || e.key === "M") toggleMute();
     };
     document.addEventListener("keydown", onKey, true);
-    const onHide = () => { if (document.hidden && music.el) { music.el.pause(); music.mode = "idle"; } else if (!document.hidden) syncMusic(performance.now()); };
+    const onHide = () => syncMusic();
     document.addEventListener("visibilitychange", onHide);
 
     function close() {
@@ -637,6 +641,7 @@ const streamUrl = (id, offset) => "/rest/stream?" + params({ id, format: "mp3", 
 
     paintMute();
     setIndex(0, performance.now());
+    syncMusic();
     stage.focus({ preventScroll: true });
     raf = requestAnimationFrame(frame);
     return { close };

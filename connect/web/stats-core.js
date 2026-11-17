@@ -193,13 +193,14 @@
   // ── „story”: slajdy Wrapped w pionie (9:16) ──
   const SLIDE_MS = 7000, TRACK_SLIDE_MS = 12000;
   const PREVIEW_SECONDS = 25, PREVIEW_FADE_IN = 0.8, PREVIEW_FADE_OUT = 0.6;
+  const SOUNDTRACK_TRACKS = 5, SOUNDTRACK_SEGMENT = 45;
 
   /** Lista slajdów dla okresu; slajdy bez danych (gatunki, typ słuchacza, porównanie) są pomijane. */
   function storySlides(period) {
     if (!period) return [];
     const slides = [{ id: "intro", ms: SLIDE_MS }, { id: "time", ms: SLIDE_MS }];
     if ((period.top_artists || []).length) slides.push({ id: "artist", ms: SLIDE_MS });
-    if ((period.top_tracks || []).length) slides.push({ id: "tracks", ms: TRACK_SLIDE_MS, music: true });
+    if ((period.top_tracks || []).length) slides.push({ id: "tracks", ms: TRACK_SLIDE_MS });
     if ((period.top_genres || []).length) slides.push({ id: "genres", ms: SLIDE_MS });
     if (period.listener) slides.push({ id: "listener", ms: SLIDE_MS });
     if (period.compare && (period.compare.plays != null || period.compare.minutes != null || period.compare.artists != null)) {
@@ -209,12 +210,21 @@
     return slides;
   }
 
-  /** Okno podglądu utworu: od 35% długości (od początku przy krótkich), najwyżej 25 s i nie dalej niż koniec. */
-  function previewWindow(seconds) {
+  /** Okno podglądu utworu: od 35% długości (od początku przy krótkich), najwyżej maxLength s (domyślnie 25) i nie dalej niż koniec. */
+  function previewWindow(seconds, maxLength) {
     const total = Math.max(0, num(seconds));
+    const max = maxLength > 0 ? maxLength : PREVIEW_SECONDS;
     const start = total >= 60 ? Math.floor(total * 0.35) : 0;
-    const length = total > 0 ? Math.min(PREVIEW_SECONDS, total - start) : PREVIEW_SECONDS;
+    const length = total > 0 ? Math.min(max, total - start) : max;
     return { start, length: Math.max(1, length) };
+  }
+
+  /** Ścieżka dźwiękowa pokazu: do 5 utworów z top listy, każdy jako fragment (start, length ≤ 45 s) grany jeden po drugim. */
+  function soundtrack(tracks) {
+    return (tracks || []).filter((t) => t && t.id).slice(0, SOUNDTRACK_TRACKS).map((t) => {
+      const w = previewWindow(t.seconds, SOUNDTRACK_SEGMENT);
+      return { id: String(t.id), title: String(t.title || ""), artist: String(t.artist || ""), start: w.start, length: w.length };
+    });
   }
 
   /** Głośność podglądu (0–1) po t sekundach od startu: wejście 0,8 s, wyjście 0,6 s przed końcem okna. */
@@ -252,6 +262,6 @@
   return {
     fmtNum, fmtDec, fmtBytes, fmtDuration, fmtListening, fmtPercent, deltaText, fmtDay, fmtShortDay, fmtStamp,
     barPercent, bars, qualityBreakdown, growthSeries, diskBreakdown, outcomeRows, cardModel, wrapText,
-    storySlides, previewWindow, previewGain, dominantColor, readableAccent, SLIDE_MS, TRACK_SLIDE_MS,
+    storySlides, previewWindow, soundtrack, previewGain, dominantColor, readableAccent, SLIDE_MS, TRACK_SLIDE_MS,
   };
 });

@@ -12,8 +12,9 @@
   const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g,
     (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   const NBSP = " ";
-  const TABS = [["library", "Biblioteka"], ["server", "Serwer"], ["wrapped", "Wrapped"]];
-  const view = { tab: "library", period: null };
+  const TABS = [["library", "Biblioteka"], ["server", "Serwer"]];
+  // dwie strony z jednych danych: #/statystyki (biblioteka, serwer) i #/wrapped (podsumowania okresów)
+  const view = { tab: "library", period: null, page: "stats" };
   let current = null;
 
   function addStyles() {
@@ -408,8 +409,8 @@
   }
 
   function bodyHtml(d) {
+    if (view.page === "wrapped") return wrappedHtml(d.wrapped);
     if (view.tab === "server") return serverHtml(d.server || {}, d.library || {});
-    if (view.tab === "wrapped") return wrappedHtml(d.wrapped);
     return libraryHtml(d.library || {});
   }
 
@@ -417,10 +418,10 @@
     const body = box.querySelector(".pf-st-body");
     if (!body || !current) return;
     body.innerHTML = bodyHtml(current);
-    body.dataset.tab = view.tab;
+    body.dataset.tab = view.page === "wrapped" ? "wrapped" : view.tab;
     box.querySelectorAll("[data-st-tab]").forEach((b) => b.setAttribute("aria-selected", b.dataset.stTab === view.tab ? "true" : "false"));
     animateCounts(body);
-    if (view.tab === "wrapped") paintCard(box);
+    if (view.page === "wrapped") paintCard(box);
   }
 
   function bind(box) {
@@ -441,26 +442,31 @@
     });
   }
 
-  function skeleton() {
-    return '<header class="pf-home-head"><h1 class="pf-hello">Statystyki</h1><span class="pf-page-meta">Liczę…</span></header>' +
+  const titleOf = (page) => (page === "wrapped" ? "Wrapped" : "Statystyki");
+
+  function skeleton(page) {
+    return '<header class="pf-home-head"><h1 class="pf-hello">' + titleOf(page) + '</h1><span class="pf-page-meta">Liczę…</span></header>' +
       '<div class="pf-st-tiles">' + Array.from({ length: 6 }, () => '<div class="pf-st-tile pf-skeleton"></div>').join("") + "</div>";
   }
 
-  function render(box, data) {
+  function render(box, data, page) {
     addStyles();
     bind(box);
+    view.page = page === "wrapped" ? "wrapped" : "stats";
+    if (view.page === "stats" && view.tab === "wrapped") view.tab = "library";
     if (!data || data.error) {
       current = null;
-      box.innerHTML = '<header class="pf-home-head"><h1 class="pf-hello">Statystyki</h1></header>' +
+      box.innerHTML = '<header class="pf-home-head"><h1 class="pf-hello">' + titleOf(view.page) + '</h1></header>' +
         '<p class="pf-st-empty">' + esc((data && data.error) || "Nie udało się pobrać statystyk.") +
         '</p><button type="button" class="pf-st-btn" data-st-retry>Spróbuj ponownie</button>';
       return;
     }
     current = data;
-    box.innerHTML = '<header class="pf-home-head"><h1 class="pf-hello">Statystyki</h1>' +
-      '<span class="pf-page-meta">Dla nerdów · policzone ' + esc(core.fmtStamp(data.generated)) + "</span>" +
-      '<nav class="pf-st-tabs" aria-label="Rodzaj statystyk">' + TABS.map((t) =>
-        '<a role="tab" tabindex="0" data-st-tab="' + t[0] + '">' + t[1] + "</a>").join("") + "</nav></header>" +
+    const wrapped = view.page === "wrapped";
+    box.innerHTML = '<header class="pf-home-head"><h1 class="pf-hello">' + titleOf(view.page) + '</h1>' +
+      '<span class="pf-page-meta">' + (wrapped ? "Twoje podsumowania" : "Dla nerdów") + " · policzone " + esc(core.fmtStamp(data.generated)) + "</span>" +
+      (wrapped ? "" : '<nav class="pf-st-tabs" aria-label="Rodzaj statystyk">' + TABS.map((t) =>
+        '<a role="tab" tabindex="0" data-st-tab="' + t[0] + '">' + t[1] + "</a>").join("") + "</nav>") + "</header>" +
       '<div class="pf-st-body"></div>';
     paintBody(box);
   }

@@ -178,9 +178,9 @@ class PiterfyStoryRenderer(private val ctx: Context, private val covers: Piterfy
     // ── publiczne API ──
     /**
      * Rysuje slajd [kind] w prostokącie [lw] × [lh] (logiczne piksele; widok na telefonie jest wyższy niż 9:16, więc tło
-     * wypełnia całość, a treść 1080 × 1920 leży na środku). [musicOn] zapala animowany korektor przy utworze nr 1.
+     * wypełnia całość, a treść 1080 × 1920 leży na środku).
      */
-    fun draw(canvas: Canvas, p: PiterfyStatsModel.Period, kind: Kind, t: Long, lw: Float = W, lh: Float = H, musicOn: Boolean = false) {
+    fun draw(canvas: Canvas, p: PiterfyStatsModel.Period, kind: Kind, t: Long, lw: Float = W, lh: Float = H) {
         val accentId = when (kind) {
             Kind.ARTIST -> p.topArtists.firstOrNull()?.cover
             Kind.TRACKS -> p.topTracks.firstOrNull()?.cover
@@ -194,7 +194,7 @@ class PiterfyStoryRenderer(private val ctx: Context, private val covers: Piterfy
             Kind.INTRO -> intro(canvas, p, t, accent)
             Kind.TIME -> time(canvas, p, t, accent)
             Kind.ARTIST -> artist(canvas, p, t, accent)
-            Kind.TRACKS -> tracks(canvas, p, t, accent, musicOn)
+            Kind.TRACKS -> tracks(canvas, p, t, accent)
             Kind.GENRES -> genres(canvas, p, t, accent)
             Kind.LISTENER -> listener(canvas, p, t, accent)
             Kind.COMPARE -> compare(canvas, p, t, accent)
@@ -330,7 +330,7 @@ class PiterfyStoryRenderer(private val ctx: Context, private val covers: Piterfy
         }
     }
 
-    private fun tracks(canvas: Canvas, p: PiterfyStatsModel.Period, t: Long, accent: Int, musicOn: Boolean) {
+    private fun tracks(canvas: Canvas, p: PiterfyStatsModel.Period, t: Long, accent: Int) {
         val first = p.topTracks.first()
         enter(canvas, appear(t, 60), 40f, 0f, 160f, W, 280f) { kicker(canvas, s(R.string.story_tracks_kicker), P, 230f, accent) }
         val a = appear(t, 180, 900)
@@ -350,15 +350,6 @@ class PiterfyStoryRenderer(private val ctx: Context, private val covers: Piterfy
             text(800, 190f, accent); canvas.drawText("#1", rx - 6f, 290f + 170f, paint)
             text(800, 84f, base.text); canvas.drawText("${first.plays}×", rx, 290f + 290f, paint)
             text(600, 36f, base.muted); canvas.drawText(ellipsize(s(R.string.story_plays, "").trim().ifEmpty { "plays" }, room), rx, 290f + 340f, paint)
-        }
-        if (musicOn) {
-            val barsA = appear(t, 900)
-            enter(canvas, barsA, 20f, rx, 700f, W, 780f) {
-                for (i in 0..4) {
-                    val h = 18f + 40f * (0.5f + 0.5f * sin(t / 170.0 + i * 1.7)).toFloat()
-                    roundRect(canvas, rx + i * 26f, 770f - h, rx + i * 26f + 14f, 770f, 7f, accent)
-                }
-            }
         }
         val (size, lines) = fitWrap(first.title, 800, 84f, 52f, W - 2 * P, 2)
         val titleTop = 880f

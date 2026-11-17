@@ -29,7 +29,7 @@ import com.eddyizm.tempus.R
 import com.eddyizm.tempus.appearance.PiterfyAppearance
 import com.eddyizm.tempus.ui.activity.base.BaseActivity
 import com.eddyizm.tempus.ui.components.PiterfyStoryCovers
-import com.eddyizm.tempus.ui.components.PiterfyStoryPreview
+import com.eddyizm.tempus.ui.components.PiterfyStorySoundtrack
 import com.eddyizm.tempus.ui.components.PiterfyStoryProgressView
 import com.eddyizm.tempus.ui.components.PiterfyStoryRenderer
 import com.eddyizm.tempus.ui.components.PiterfyStoryView
@@ -41,10 +41,11 @@ import java.io.File
 
 /**
  * Piterfy: „Wrapped story” na pełnym ekranie, czyli podsumowanie okresu jako przesuwane slajdy 9:16 (wstęp, czas
- * słuchania, top wykonawca, top utwory z podglądem muzyki, gatunki, typ słuchacza, porównanie, finał). Slajd zmienia
- * się sam po 7 s (utwory 12 s, finał zostaje), dotknięcie lewej/prawej części albo przeciągnięcie przechodzi dalej
- * lub wstecz, przytrzymanie wstrzymuje, przeciągnięcie w dół zamyka. Przy otwarciu wstrzymuje główny odtwarzacz
- * i wznawia go po zamknięciu tylko wtedy, gdy to on go wstrzymał.
+ * słuchania, top wykonawca, top utwory, gatunki, typ słuchacza, porównanie, finał). Przez cały pokaz gra muzyka
+ * z najczęściej słuchanych utworów ([PiterfyStorySoundtrack]; obok głośnika widać, co akurat leci). Slajd zmienia się
+ * sam po 7 s (utwory 12 s, finał zostaje), dotknięcie lewej/prawej części albo przeciągnięcie przechodzi dalej lub
+ * wstecz, przytrzymanie wstrzymuje (też muzykę), przeciągnięcie w dół zamyka. Przy otwarciu wstrzymuje główny
+ * odtwarzacz i wznawia go po zamknięciu tylko wtedy, gdy to on go wstrzymał.
  */
 class PiterfyStoryDialog : DialogFragment(), PiterfyStoryView.Listener {
     private var period: PiterfyStatsModel.Period? = null
@@ -61,8 +62,9 @@ class PiterfyStoryDialog : DialogFragment(), PiterfyStoryView.Listener {
     private lateinit var progress: PiterfyStoryProgressView
     private lateinit var covers: PiterfyStoryCovers
     private lateinit var renderer: PiterfyStoryRenderer
-    private lateinit var preview: PiterfyStoryPreview
+    private lateinit var soundtrack: PiterfyStorySoundtrack
     private lateinit var mute: TextView
+    private lateinit var nowPlaying: TextView
     private lateinit var finaleBar: LinearLayout
     private lateinit var topBar: LinearLayout
 
@@ -89,7 +91,7 @@ class PiterfyStoryDialog : DialogFragment(), PiterfyStoryView.Listener {
         covers = PiterfyStoryCovers(ctx) { if (this::storyView.isInitialized) storyView.invalidate() }
         covers.preload(listOf(p.topArtists.firstOrNull()?.cover) + p.topArtists.take(5).map { it.cover } + p.topTracks.take(5).map { it.cover })
         renderer = PiterfyStoryRenderer(ctx, covers)
-        preview = PiterfyStoryPreview(ctx)
+        soundtrack = PiterfyStorySoundtrack(ctx) { segment -> showNowPlaying(segment) }
 
         storyView = PiterfyStoryView(ctx).apply { renderer = this@PiterfyStoryDialog.renderer; period = p; listener = this@PiterfyStoryDialog }
         root.addView(storyView, FrameLayout.LayoutParams(-1, -1))
@@ -101,7 +103,14 @@ class PiterfyStoryDialog : DialogFragment(), PiterfyStoryView.Listener {
         val row = LinearLayout(ctx).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
         mute = circleText("🔊").apply { setOnClickListener { toggleMute() } }
         row.addView(mute, LinearLayout.LayoutParams(dp(44), dp(44)))
-        row.addView(View(ctx), LinearLayout.LayoutParams(0, 1, 1f))
+        // co teraz gra: mały napis obok przycisku głośnika (poza obrazem slajdu, więc nie trafia do eksportu PNG)
+        nowPlaying = TextView(ctx).apply {
+            textSize = 12.5f; setTextColor(Color.WHITE); maxLines = 1; ellipsize = android.text.TextUtils.TruncateAt.END
+            setPadding(dp(12), dp(6), dp(12), dp(6)); background = GradientDrawable().apply { setColor(0x55000000); cornerRadius = dp(16).toFloat() }
+            visibility = View.GONE
+        }
+        val nowHolder = FrameLayout(ctx).apply { addView(nowPlaying, FrameLayout.LayoutParams(-2, -2, Gravity.CENTER_VERTICAL or Gravity.START)) }
+        row.addView(nowHolder, LinearLayout.LayoutParams(0, -2, 1f).apply { leftMargin = dp(8); rightMargin = dp(8) })
         row.addView(circleIcon(R.drawable.ic_share, getString(R.string.story_share_slide)).apply { setOnClickListener { exportSlide(save = false) } },
             LinearLayout.LayoutParams(dp(44), dp(44)).apply { rightMargin = dp(8) })
         row.addView(circleIcon(R.drawable.ic_close, getString(R.string.appearance_close)).apply { setOnClickListener { dismissAllowingStateLoss() } },
@@ -154,12 +163,15 @@ class PiterfyStoryDialog : DialogFragment(), PiterfyStoryView.Listener {
             addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         }
         if (period == null) return
-        if (!started) { started = true; slideStart = now(); enterSlide(0, first = true); storyView.postOnAnimation(frame) }
+        if (!started) {
+            started = true; slideStart = now(); enterSlide(0, first = true); storyView.postOnAnimation(frame)
+            period?.let { soundtrack.start(it.topTracks) }
+            updateMuteIcon()
+        }
         else if (inBackground) {
             // wracamy z tła: czas slajdu płynie dalej od miejsca, w którym stanął
             inBackground = false
-            if (!holding) resumeClock()
-            if (currentKind() == Kind.TRACKS) startPreview()
+            if (!holding) { resumeClock(); soundtrack.resume() }
         }
     }
 
@@ -167,7 +179,7 @@ class PiterfyStoryDialog : DialogFragment(), PiterfyStoryView.Listener {
         super.onStop()
         if (period == null) return
         inBackground = true
-        preview.fadeOutAndStop()
+        soundtrack.pause()
         if (heldAt == 0L) heldAt = now()
     }
 
@@ -186,7 +198,7 @@ class PiterfyStoryDialog : DialogFragment(), PiterfyStoryView.Listener {
         if (tornDown || period == null) return
         tornDown = true
         if (this::storyView.isInitialized) storyView.removeCallbacks(frame)
-        if (this::preview.isInitialized) preview.release()
+        if (this::soundtrack.isInitialized) soundtrack.release()
         if (this::covers.isInitialized) covers.release()
         resumeMainPlayer()
     }
@@ -213,14 +225,13 @@ class PiterfyStoryDialog : DialogFragment(), PiterfyStoryView.Listener {
         storyView.t = t
         progress.fraction = if (slide.durationMs > 0) t.toFloat() / slide.durationMs else 1f
         if (slide.durationMs > 0 && t >= slide.durationMs && index < slides.lastIndex && heldAt == 0L) { goTo(index + 1); return }
-        val animating = storyView.animationsOn() && (t < ANIMATION_MS || (slide.kind == Kind.TRACKS && storyView.musicOn))
+        val animating = storyView.animationsOn() && t < ANIMATION_MS
         if (animating) storyView.invalidate()
     }
 
     /** Przechodzi do slajdu [target] (poza zakresem: ignoruje); używa tego też test na urządzeniu. */
     fun goTo(target: Int) {
         if (period == null || slides.isEmpty() || target !in slides.indices) return
-        if (currentKind() == Kind.TRACKS && slides[target].kind != Kind.TRACKS) preview.leave()
         enterSlide(target, first = false)
     }
 
@@ -233,31 +244,28 @@ class PiterfyStoryDialog : DialogFragment(), PiterfyStoryView.Listener {
         storyView.t = 0L
         progress.index = index
         progress.fraction = 0f
-        storyView.musicOn = false
-        mute.visibility = if (kind == Kind.TRACKS) View.VISIBLE else View.INVISIBLE
         finaleBar.visibility = if (kind == Kind.FINALE) View.VISIBLE else View.GONE
         storyView.contentDescription = getString(R.string.story_slide_desc, index + 1, slides.size)
-        if (kind == Kind.TRACKS) startPreview()
         storyView.invalidate()
     }
 
-    private fun startPreview() {
-        val track = period?.topTracks?.firstOrNull() ?: return
-        updateMuteIcon()
-        if (track.id.isBlank()) return
-        storyView.musicOn = !preview.muted
-        preview.start(track.id, track.seconds)
-    }
-
     private fun toggleMute() {
-        preview.muted = !preview.muted
-        storyView.musicOn = !preview.muted && currentKind() == Kind.TRACKS
+        soundtrack.muted = !soundtrack.muted
         updateMuteIcon()
     }
 
     private fun updateMuteIcon() {
-        mute.text = if (preview.muted) "🔇" else "🔊"
-        mute.contentDescription = getString(if (preview.muted) R.string.story_unmute else R.string.story_mute)
+        mute.text = if (soundtrack.muted) "🔇" else "🔊"
+        mute.contentDescription = getString(if (soundtrack.muted) R.string.story_unmute else R.string.story_mute)
+        mute.visibility = if (soundtrack.hasTracks || !started) View.VISIBLE else View.INVISIBLE
+        if (soundtrack.muted) nowPlaying.visibility = View.GONE
+    }
+
+    private fun showNowPlaying(segment: PiterfyStoryPlan.Segment?) {
+        if (!this::nowPlaying.isInitialized) return
+        if (segment == null || soundtrack.muted) { nowPlaying.visibility = View.GONE; return }
+        nowPlaying.text = getString(R.string.story_now_playing, segment.title, segment.artist)
+        nowPlaying.visibility = View.VISIBLE
     }
 
     // ── dotyk ──
@@ -268,8 +276,8 @@ class PiterfyStoryDialog : DialogFragment(), PiterfyStoryView.Listener {
 
     override fun onHold(holding: Boolean) {
         this.holding = holding
-        if (holding) { if (heldAt == 0L) heldAt = now(); preview.pause() }
-        else { if (!inBackground) resumeClock(); preview.resume() }
+        if (holding) { if (heldAt == 0L) heldAt = now(); soundtrack.pause() }
+        else if (!inBackground) { resumeClock(); soundtrack.resume() }
     }
 
     // ── główny odtwarzacz ──

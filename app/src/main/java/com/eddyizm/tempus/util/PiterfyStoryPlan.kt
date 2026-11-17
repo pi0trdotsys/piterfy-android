@@ -8,7 +8,7 @@ import kotlin.math.roundToInt
 
 /**
  * Piterfy: czysta logika „Wrapped story” (przesuwane slajdy 9:16): które slajdy powstają z danych okresu, jak długo
- * trwają, krzywe animacji, okno podglądu muzyki i kolor akcentu z okładki. Nic tu nie dotyka Androida, więc cały
+ * trwają, krzywe animacji, ścieżkę dźwiękową całej historyjki i kolor akcentu z okładki. Nic tu nie dotyka Androida, więc cały
  * plan da się sprawdzić testami na JVM; rysuje go PiterfyStoryRenderer, a prowadzi PiterfyStoryDialog.
  */
 object PiterfyStoryPlan {
@@ -20,9 +20,13 @@ object PiterfyStoryPlan {
     private const val NB = "\u00A0"   // twarda spacja, jak w PiterfyStatsFormat
     const val SLIDE_MS = 7000L
     const val TRACKS_MS = 12000L
-    const val PREVIEW_MAX_MS = 25000L
+    /** Najdłuższy fragment jednego utworu w ścieżce dźwiękowej historyjki. */
+    const val SEGMENT_MAX_MS = 45000L
+    const val SOUNDTRACK_MAX_TRACKS = 5
     const val PREVIEW_FADE_IN_MS = 800L
     const val PREVIEW_FADE_OUT_MS = 600L
+    /** Ile przed końcem fragmentu przygotowujemy następny, żeby między utworami nie było przerwy. */
+    const val PREFETCH_MS = 5000L
     /** Czas, po którym każda animacja slajdu jest skończona (eksport PNG rysuje właśnie ten stan). */
     const val END_STATE_MS = 60_000L
 
@@ -75,23 +79,52 @@ object PiterfyStoryPlan {
         return (if (pct > 0) "▲ " else "▼ ") + shown + "%"
     }
 
-    // ── podgląd muzyki na slajdzie z utworami ──
+    // ── ścieżka dźwiękowa całej historyjki ──
     /** Okno odtwarzania: skąd ([startMs]), jak długo ([lengthMs]) i jak długie są zanikanie i wygaszanie. */
     data class Preview(val startMs: Long, val lengthMs: Long, val fadeInMs: Long = PREVIEW_FADE_IN_MS, val fadeOutMs: Long = PREVIEW_FADE_OUT_MS)
 
+    /** Jeden fragment ścieżki: utwór i okno, które z niego gramy. */
+    data class Segment(val id: String, val title: String, val artist: String, val preview: Preview)
+
+    /** Gdzie w ścieżce jesteśmy: numer fragmentu i ile ms minęło od jego początku. */
+    data class Position(val index: Int, val intoMs: Long)
+
     /**
-     * Podgląd zaczyna się w 35% utworu (refren zwykle nie jest na samym początku), a przy krótkich (< 60 s) od zera;
-     * trwa najwyżej 25 s i nie wychodzi poza koniec utworu. Nieznana długość ([seconds] <= 0) → od początku, 25 s.
+     * Okno utworu zaczyna się w 35% (refren zwykle nie jest na samym początku), a przy krótkich (< 60 s) od zera;
+     * trwa najwyżej [maxMs] i nie wychodzi poza koniec utworu (co najmniej 1 s). Nieznana długość ([seconds] <= 0) →
+     * od początku, [maxMs].
      */
-    @JvmStatic fun preview(seconds: Int): Preview {
-        if (seconds <= 0) return Preview(0, PREVIEW_MAX_MS)
+    @JvmStatic @JvmOverloads fun preview(seconds: Int, maxMs: Long = SEGMENT_MAX_MS): Preview {
+        if (seconds <= 0) return Preview(0, maxMs)
         val total = seconds * 1000L
         val start = if (seconds < 60) 0L else (total * 0.35).toLong()
-        val length = min(PREVIEW_MAX_MS, max(total - start, 1000L))
+        val length = min(maxMs, max(total - start, 1000L))
         return Preview(start, length)
     }
 
-    /** Głośność (0..1) po [elapsedMs] od startu podglądu: narastanie na początku i wyciszenie pod koniec okna. */
+    /** Ścieżka dźwiękowa: pierwsze 5 najczęściej słuchanych utworów z id, każdy jako fragment, grane jeden po drugim. */
+    @JvmStatic fun soundtrack(tracks: List<PiterfyStatsModel.Track>): List<Segment> =
+        tracks.filter { it.id.isNotBlank() }.take(SOUNDTRACK_MAX_TRACKS).map { Segment(it.id, it.title, it.artist, preview(it.seconds)) }
+
+    @JvmStatic fun soundtrackMs(segments: List<Segment>): Long = segments.sumOf { it.preview.lengthMs }
+
+    /** Fragment grany po [elapsedMs] od otwarcia historyjki; null, gdy ścieżka już się skończyła (albo jest pusta). */
+    @JvmStatic fun positionAt(segments: List<Segment>, elapsedMs: Long): Position? {
+        if (elapsedMs < 0) return null
+        var from = 0L
+        segments.forEachIndexed { i, segment ->
+            val end = from + segment.preview.lengthMs
+            if (elapsedMs < end) return Position(i, elapsedMs - from)
+            from = end
+        }
+        return null
+    }
+
+    /** Czy pora przygotować następny fragment (zostało najwyżej [PREFETCH_MS], a jest jeszcze jakiś następny). */
+    @JvmStatic fun prefetchDue(segments: List<Segment>, position: Position): Boolean =
+        position.index < segments.lastIndex && segments[position.index].preview.lengthMs - position.intoMs <= PREFETCH_MS
+
+    /** Głośność (0..1) po [elapsedMs] od startu fragmentu: narastanie na początku i wyciszenie pod koniec okna. */
     @JvmStatic fun volumeAt(elapsedMs: Long, p: Preview): Float {
         if (elapsedMs < 0 || elapsedMs >= p.lengthMs) return 0f
         val up = if (p.fadeInMs > 0) elapsedMs.toFloat() / p.fadeInMs else 1f

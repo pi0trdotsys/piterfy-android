@@ -139,7 +139,6 @@ test("story slides skip empty ones and keep the finale last", () => {
   assert.equal(core.storySlides(null).length, 0);
   const slides = core.storySlides(full);
   assert.equal(slides.find((s) => s.id === "tracks").ms, 12000);
-  assert.equal(slides.find((s) => s.id === "tracks").music, true);
   assert.equal(slides[slides.length - 1].ms, 0);
 });
 
@@ -171,4 +170,19 @@ test("readable accent lightens dark colours only", () => {
   const lum = (h) => 0.299 * parseInt(h.slice(1, 3), 16) + 0.587 * parseInt(h.slice(3, 5), 16) + 0.114 * parseInt(h.slice(5, 7), 16);
   assert.ok(lum(lifted) >= 115 || lifted === "#ffffff");
   assert.ok(lum(lifted) > lum("#101040"));
+});
+
+test("soundtrack chains up to five tracks as 45 s segments", () => {
+  const tracks = [{ id: "a", title: "A", artist: "X", seconds: 300 }, { id: "", title: "no id", seconds: 200 },
+    { id: "b", title: "B", seconds: 50 }, { id: "c", seconds: 70 }, { id: "d", seconds: 10 }, { id: "e", seconds: 200 }, { id: "f", seconds: 200 }];
+  const s = core.soundtrack(tracks);
+  assert.deepEqual(s.map((x) => x.id), ["a", "b", "c", "d", "e"]);
+  assert.deepEqual(s[0], { id: "a", title: "A", artist: "X", start: 105, length: 45 });
+  assert.deepEqual([s[1].start, s[1].length], [0, 45]);       // krótki utwór od początku
+  assert.deepEqual([s[2].start, s[2].length], [24, 45]);      // 70 s: start 24, zostaje 46 s
+  assert.deepEqual([s[3].start, s[3].length], [0, 10]);       // utwór krótszy niż segment
+  assert.deepEqual(core.soundtrack(null), []);
+  assert.deepEqual(core.soundtrack([{ title: "bez id" }]), []);
+  assert.equal(core.previewWindow(300, 45).length, 45);
+  assert.equal(core.previewWindow(300).length, 25);
 });

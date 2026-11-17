@@ -1,0 +1,11 @@
+{"version":2,"generated":"2026-11-16T00:00:12+01:00","period_days":30,"estimated":false,"history_since":"2026-10-20",
+ "totals":{"plays":412,"minutes":1260,"tracks":118,"artists":37,"library":2600,"starred":14},
+ "daily":[["2026-11-13",12],["2026-11-14",0],["2026-11-15",25],["2026-11-16",8]],
+ "top_artists":[{"name":"Artysta Jeden","plays":88,"img":"https://img.example/one.jpg"},{"name":"Artysta Dwa","plays":61,"img":""},{"name":"Artysta Trzy","plays":40,"img":null},{"name":"Czwarty","plays":22},{"name":"Piąty","plays":19},{"name":"Szósty","plays":11},{"name":"Siódmy","plays":9}],
+ "top_tracks":[{"title":"Piosenka A","artist":"Artysta Jeden","album":"Płyta","plays":14},{"title":"Piosenka B","artist":"Artysta Dwa","album":"","plays":9}],
+ "top_genres":[["Rock",120],["Jazz",60],["Ambient",12]],
+ "decades":[[1980,30],[1990,44],[2010,90],[2020,150]],
+ "mood":{"coverage":0.82,"averages":{"energy":0.64,"dance":0.55,"valence":0.48,"tempo":121.4},
+  "tracks":[{"n":"Utwór 1","a":"Artysta Jeden","e":0.9,"v":0.8,"t":128,"p":10},{"n":"Utwór 2","a":"Artysta Dwa","e":0.8,"v":0.2,"t":150,"p":5},{"n":"Utwór 3","a":"Artysta Trzy","e":0.2,"v":0.7,"t":90,"p":3},{"n":"Utwór 4","a":"Czwarty","e":0.1,"v":0.1,"t":70,"p":2}]},
+ "clock":{"days":["Pn","Wt","Śr","Cz","Pt","So","Nd"],"grid":[[0,0,0,0,0,0,0,0,1,2,0,0,0,0,0,0,0,0,3,4,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,9],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]],"total":19},
+ "discover":{"downloaded":20,"liked":8,"trashed":5,"hit_rate":0.615,"recent_liked":[{"title":"Odkrycie","artist":"Ktoś","via":"Artysta Jeden"},{"title":"Drugie","artist":"Ktoś Inny","via":""}]}}

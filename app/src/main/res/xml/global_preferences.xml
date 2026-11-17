@@ -52,6 +52,11 @@
             android:title="@string/stats_title"
             android:summary="@string/stats_pref_summary" />
 
+        <Preference
+            android:key="piterfy_wrapped"
+            android:title="@string/stats_tab_wrapped"
+            android:summary="@string/wrapped_pref_summary" />
+
         <SwitchPreference
             android:title="@string/settings_always_on_display"
             android:defaultValue="false"
