@@ -10,19 +10,21 @@ import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
 import com.eddyizm.tempus.util.MusicUtil
-import com.eddyizm.tempus.util.PiterfyStatsModel
 import com.eddyizm.tempus.util.PiterfyStoryPlan
+import com.eddyizm.tempus.util.PiterfyStoryPlan.Kind
 import com.eddyizm.tempus.util.Preferences
 
 /**
- * Piterfy: muzyka przez cały czas trwania historyjki. Ścieżkę układa [PiterfyStoryPlan.soundtrack]: pierwsze pięć
- * najczęściej słuchanych utworów, każdy jako fragment (do 45 s od 35% utworu), jeden po drugim od chwili otwarcia aż
- * do zamknięcia (potem cisza). Osobny MediaPlayer (nie kolejka Media3), strumień z Navidrome w lekkim MP3 128 kb/s;
- * początek fragmentu ustawia timeOffset w adresie (transkodowany MP3 nie obsługuje Range, więc seekTo nie działałoby).
- * Następny fragment przygotowuje się na [PiterfyStoryPlan.PREFETCH_MS] przed końcem poprzedniego, żeby nie było przerwy.
- * Czas ścieżki to jeden zegar (jak czas pokazu): płynie niezależnie od wyciszenia i staje razem z pauzą, więc po
- * odciszeniu muzyka wraca w miejsce, w którym „byłaby”. Każdy błąd (sieć, brak sesji, oszczędzanie danych, utrata
- * fokusu audio) kończy się ciszą bez komunikatów: muzyka jest dodatkiem.
+ * Piterfy: muzyka dopasowana do aktualnego slajdu. Plan układa [PiterfyStoryPlan.soundtrackPlan]: każdy slajd ma swój
+ * utwór (hit okresu, utwór top wykonawcy, kolejne utwory z listy), a sąsiednie slajdy z tym samym utworem grają jeden
+ * fragment bez restartu. Fragment to okno utworu (do 45 s od 35%). Zmiana slajdu ([onSlide], także wstecz) przełącza
+ * fragment: poprzedni cichnie przez ok. 0,6 s, nowy wchodzi od początku okna przez 0,8 s; fragment, który skończy się
+ * przed końcem slajdu, zostawia ciszę do następnej zmiany. Fragment następnego slajdu jest przygotowywany z
+ * wyprzedzeniem. Osobny MediaPlayer (nie kolejka Media3), strumień z Navidrome w lekkim MP3 128 kb/s; początek okna
+ * ustawia timeOffset w adresie (transkodowany MP3 nie obsługuje Range, więc seekTo nie działałoby). Czas fragmentu to
+ * jeden zegar: płynie niezależnie od wyciszenia i staje razem z pauzą, więc po odciszeniu muzyka wraca w miejsce,
+ * w którym „byłaby”. Każdy błąd (sieć, brak sesji, oszczędzanie danych, utrata fokusu audio) kończy się ciszą bez
+ * komunikatów: muzyka jest dodatkiem.
  */
 class PiterfyStorySoundtrack(context: Context, private val onNowPlaying: (PiterfyStoryPlan.Segment?) -> Unit) {
     private val app = context.applicationContext
@@ -33,15 +35,23 @@ class PiterfyStorySoundtrack(context: Context, private val onNowPlaying: (Piterf
         var prepared = false
         var started = false
         var dead = false
+        var volume = 0f
+        var fadeFrom = 0L      // dla cichnącego: uptimeMillis początku wyciszania i głośność w tym momencie
+        var fadeVolume = 0f
     }
 
-    private var segments: List<PiterfyStoryPlan.Segment> = emptyList()
+    private var plan = PiterfyStoryPlan.Soundtrack(emptyList(), emptyMap())
+    private val segments: List<PiterfyStoryPlan.Segment> get() = plan.segments
     private var running = false
     private var silenced = false          // fokus audio przejął ktoś inny: do końca historyjki cisza
-    private var clockBase = 0L            // uptimeMillis, przy którym czas ścieżki wynosił 0 (przesuwany w pauzie)
+    private var segIndex = -1             // fragment, który teraz „należy” do slajdu
+    private var nextIndex: Int? = null    // fragment następnego slajdu (do przygotowania z wyprzedzeniem)
+    private var failedIndex = -1          // fragment, którego nie udało się nawet zacząć: bez ponownych prób do zmiany slajdu
+    private var clockBase = 0L            // uptimeMillis, przy którym czas fragmentu wynosił 0 (przesuwany w pauzie)
     private var pausedAt = 0L             // != 0, gdy zegar stoi (przytrzymanie palcem, ekran w tle)
     private var current: Voice? = null
     private var next: Voice? = null
+    private val fading = ArrayList<Voice>()
     private var focus: AudioFocusRequest? = null
     private var hasFocus = false
 
@@ -67,13 +77,30 @@ class PiterfyStorySoundtrack(context: Context, private val onNowPlaying: (Piterf
         }
     }
 
-    /** Zaczyna ścieżkę od zera; nic nie gra bez utworów z id. */
-    fun start(tracks: List<PiterfyStatsModel.Track>) {
+    /** Przygotowuje ścieżkę; gra dopiero po pierwszym [onSlide]. Nic nie gra bez utworów z id. */
+    fun start(soundtrack: PiterfyStoryPlan.Soundtrack) {
         release()
-        segments = PiterfyStoryPlan.soundtrack(tracks)
-        if (segments.isEmpty()) return
-        silenced = false; pausedAt = 0L; clockBase = now(); running = true
+        plan = soundtrack
+        if (plan.isEmpty) return
+        silenced = false; pausedAt = 0L; segIndex = -1; nextIndex = null; failedIndex = -1; clockBase = now(); running = true
         handler.post(tick)
+    }
+
+    /** Pokaz wszedł na slajd [kind] (następny w kolejności: [nextKind]): jeśli ma inny utwór, przełączamy fragment. */
+    fun onSlide(kind: Kind, nextKind: Kind?) {
+        if (!running) return
+        nextIndex = plan.segmentOf(nextKind)
+        val wanted = plan.segmentOf(kind) ?: return
+        if (wanted == segIndex) return
+        // poprzedni cichnie (w pauzie od razu cisza), przygotowany wcześniej fragment staje się bieżącym
+        current?.let { old -> if (pausedAt != 0L || !old.started) releaseVoice(old) else fadeOut(old) }
+        current = null
+        segIndex = wanted; failedIndex = -1
+        clockBase = if (pausedAt != 0L) pausedAt else now()
+        val prepared = next?.takeIf { it.index == wanted }
+        if (prepared != null) { next = null; current = prepared }
+        onNowPlaying(null)
+        if (pausedAt == 0L) step()
     }
 
     /** Pauza razem z historyjką (przytrzymanie palcem, ekran w tle): zegar staje, a po wznowieniu nic nie ucina. */
@@ -81,6 +108,7 @@ class PiterfyStorySoundtrack(context: Context, private val onNowPlaying: (Piterf
         if (!running || pausedAt != 0L) return
         pausedAt = now()
         current?.let { if (it.started) runCatching { it.player.pause() } }
+        releaseFading()
     }
 
     fun resume() {
@@ -97,29 +125,59 @@ class PiterfyStorySoundtrack(context: Context, private val onNowPlaying: (Piterf
         stopVoices()
         abandonFocus()
         onNowPlaying(null)
-        segments = emptyList()
+        plan = PiterfyStoryPlan.Soundtrack(emptyList(), emptyMap())
+        segIndex = -1; nextIndex = null
     }
 
-    // ── jedna klatka zegara: który fragment, jaka głośność, czy przygotować następny ──
+    // ── jedna klatka zegara: głośność bieżącego fragmentu, wyciszanie poprzednich, przygotowanie następnego ──
     private fun step() {
-        val position = PiterfyStoryPlan.positionAt(segments, elapsed())
-        if (position == null) { stopVoices(); onNowPlaying(null); running = false; return }
-        if (muted || silenced || Preferences.isDataSavingMode()) { if (current != null) { stopVoices(); onNowPlaying(null) }; return }
+        if (segIndex !in segments.indices) return
+        if (muted || silenced || Preferences.isDataSavingMode()) {
+            if (current != null || next != null || fading.isNotEmpty()) { stopVoices(); onNowPlaying(null) }
+            return
+        }
+        val segment = segments[segIndex]
+        val pos = elapsed()
+        if (pos >= segment.preview.lengthMs) {
+            // okno utworu się skończyło przed końcem slajdu: cisza do następnej zmiany
+            current?.let { releaseVoice(it); current = null; onNowPlaying(null) }
+        } else {
+            if (current == null && failedIndex != segIndex) {
+                current = begin(segIndex, pos.coerceAtLeast(0L))
+                if (current == null) failedIndex = segIndex
+            }
+            current?.let { voice ->
+                if (voice.prepared && !voice.started) startVoice(voice)
+                if (voice.started && !voice.dead) {
+                    voice.volume = PiterfyStoryPlan.volumeAt(pos, segment.preview)
+                    runCatching { voice.player.setVolume(voice.volume, voice.volume) }
+                }
+            }
+        }
+        stepFading()
+        val want = nextIndex?.takeIf { it != segIndex }
+        if (next != null && next?.index != want) { releaseVoice(next); next = null }
+        if (next == null && want != null) next = begin(want, 0L)
+    }
 
-        var voice = current
-        if (voice == null || voice.index != position.index) {
-            releaseVoice(voice)
-            val prepared = next?.takeIf { it.index == position.index }
-            if (prepared != null) { next = null; voice = prepared } else { releaseVoice(next); next = null; voice = begin(position.index, position.intoMs) }
-            current = voice
-            if (voice != null) startVoice(voice) else onNowPlaying(null)
+    private fun fadeOut(voice: Voice) {
+        voice.fadeFrom = now(); voice.fadeVolume = voice.volume
+        fading += voice
+    }
+
+    private fun stepFading() {
+        val iterator = fading.iterator()
+        while (iterator.hasNext()) {
+            val voice = iterator.next()
+            val left = 1f - (now() - voice.fadeFrom).toFloat() / PiterfyStoryPlan.PREVIEW_FADE_OUT_MS
+            if (left <= 0f || voice.dead) { iterator.remove(); releaseVoice(voice) }
+            else runCatching { voice.player.setVolume(voice.fadeVolume * left, voice.fadeVolume * left) }
         }
-        voice = current ?: return
-        if (voice.started && !voice.dead) {
-            val v = PiterfyStoryPlan.volumeAt(position.intoMs, segments[position.index].preview)
-            runCatching { voice.player.setVolume(v, v) }
-        }
-        if (next == null && PiterfyStoryPlan.prefetchDue(segments, position)) next = begin(position.index + 1, 0L)
+    }
+
+    private fun releaseFading() {
+        fading.forEach { releaseVoice(it) }
+        fading.clear()
     }
 
     /** Tworzy odtwarzacz fragmentu [index] od chwili [intoMs] jego okna i zaczyna go przygotowywać. */
@@ -145,7 +203,7 @@ class PiterfyStorySoundtrack(context: Context, private val onNowPlaying: (Piterf
     }
 
     private fun startVoice(voice: Voice) {
-        if (!voice.prepared || voice.started || voice.dead || pausedAt != 0L || !running) return
+        if (!voice.prepared || voice.started || voice.dead || pausedAt != 0L || !running || voice !== current) return
         if (!requestFocus()) { kill(voice); silenced = true; return }
         voice.started = true
         runCatching { voice.player.setVolume(0f, 0f); voice.player.start() }.onFailure { kill(voice); return }
@@ -167,7 +225,7 @@ class PiterfyStorySoundtrack(context: Context, private val onNowPlaying: (Piterf
     }
 
     private fun stopVoices() {
-        releaseVoice(current); releaseVoice(next)
+        releaseVoice(current); releaseVoice(next); releaseFading()
         current = null; next = null
     }
 

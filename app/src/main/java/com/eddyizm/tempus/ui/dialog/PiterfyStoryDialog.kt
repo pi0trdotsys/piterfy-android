@@ -41,8 +41,9 @@ import java.io.File
 
 /**
  * Piterfy: „Wrapped story” na pełnym ekranie, czyli podsumowanie okresu jako przesuwane slajdy 9:16 (wstęp, czas
- * słuchania, top wykonawca, top utwory, gatunki, typ słuchacza, porównanie, finał). Przez cały pokaz gra muzyka
- * z najczęściej słuchanych utworów ([PiterfyStorySoundtrack]; obok głośnika widać, co akurat leci). Slajd zmienia się
+ * słuchania, top wykonawca, top utwory, gatunki, typ słuchacza, porównanie, finał). Muzyka dopasowuje się do
+ * slajdu: każdy ma utwór o swoim temacie (hit okresu, utwór top wykonawcy, kolejne z listy; [PiterfyStorySoundtrack],
+ * obok głośnika widać, co akurat leci). Slajd zmienia się
  * sam po 7 s (utwory 12 s, finał zostaje), dotknięcie lewej/prawej części albo przeciągnięcie przechodzi dalej lub
  * wstecz, przytrzymanie wstrzymuje (też muzykę), przeciągnięcie w dół zamyka. Przy otwarciu wstrzymuje główny
  * odtwarzacz i wznawia go po zamknięciu tylko wtedy, gdy to on go wstrzymał.
@@ -164,8 +165,9 @@ class PiterfyStoryDialog : DialogFragment(), PiterfyStoryView.Listener {
         }
         if (period == null) return
         if (!started) {
-            started = true; slideStart = now(); enterSlide(0, first = true); storyView.postOnAnimation(frame)
-            period?.let { soundtrack.start(it.topTracks) }
+            started = true; slideStart = now()
+            period?.let { soundtrack.start(PiterfyStoryPlan.soundtrackPlan(it)) }
+            enterSlide(0, first = true); storyView.postOnAnimation(frame)
             updateMuteIcon()
         }
         else if (inBackground) {
@@ -247,6 +249,8 @@ class PiterfyStoryDialog : DialogFragment(), PiterfyStoryView.Listener {
         finaleBar.visibility = if (kind == Kind.FINALE) View.VISIBLE else View.GONE
         storyView.contentDescription = getString(R.string.story_slide_desc, index + 1, slides.size)
         storyView.invalidate()
+        // muzyka idzie za slajdem: każdy ma swój utwór, a następny jest już przygotowywany
+        if (this::soundtrack.isInitialized) soundtrack.onSlide(kind, slides.getOrNull(index + 1)?.kind)
     }
 
     private fun toggleMute() {

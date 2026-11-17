@@ -219,12 +219,39 @@
     return { start, length: Math.max(1, length) };
   }
 
-  /** Ścieżka dźwiękowa pokazu: do 5 utworów z top listy, każdy jako fragment (start, length ≤ 45 s) grany jeden po drugim. */
-  function soundtrack(tracks) {
-    return (tracks || []).filter((t) => t && t.id).slice(0, SOUNDTRACK_TRACKS).map((t) => {
-      const w = previewWindow(t.seconds, SOUNDTRACK_SEGMENT);
-      return { id: String(t.id), title: String(t.title || ""), artist: String(t.artist || ""), start: w.start, length: w.length };
+  /**
+   * Ścieżka dźwiękowa dopasowana do slajdów: każdy slajd dostaje utwór o swoim temacie (z top 5 utworów okresu):
+   * intro, czas i lista utworów – hit okresu; slajd wykonawcy – najczęściej słuchany utwór top wykonawcy (jeśli jest
+   * w top 5, inaczej hit); gatunki, typ słuchacza i porównanie – kolejne pozostałe utwory z listy; finał – znów hit.
+   * Kolejne slajdy z tym samym utworem tworzą jeden segment (muzyka nie restartuje się przy zmianie slajdu).
+   * Zwraca { segments: [{id,title,artist,start,length}], bySlide: { id slajdu: indeks segmentu } }.
+   */
+  function soundtrackPlan(period) {
+    const tracks = ((period && period.top_tracks) || []).filter((t) => t && t.id).slice(0, SOUNDTRACK_TRACKS);
+    const plan = { segments: [], bySlide: {} };
+    if (!tracks.length) return plan;
+    const anthem = tracks[0];
+    const topArtist = String((((period.top_artists || [])[0]) || {}).name || "").trim().toLowerCase();
+    const artistTrack = (topArtist && tracks.find((t) => String(t.artist || "").trim().toLowerCase() === topArtist)) || anthem;
+    const rest = tracks.filter((t) => t !== anthem && t !== artistTrack);
+    const spare = rest.length ? rest : tracks.filter((t) => t !== anthem);
+    let k = 0;
+    const nextSpare = () => (spare.length ? spare[k++ % spare.length] : anthem);
+    const chosen = storySlides(period).map((sl) => {
+      if (sl.id === "artist") return [sl.id, artistTrack];
+      if (sl.id === "genres" || sl.id === "listener" || sl.id === "compare") return [sl.id, nextSpare()];
+      return [sl.id, anthem];
     });
+    let last = null;
+    chosen.forEach(([slideId, t]) => {
+      if (!last || last.id !== String(t.id)) {
+        const w = previewWindow(t.seconds, SOUNDTRACK_SEGMENT);
+        last = { id: String(t.id), title: String(t.title || ""), artist: String(t.artist || ""), start: w.start, length: w.length };
+        plan.segments.push(last);
+      }
+      plan.bySlide[slideId] = plan.segments.length - 1;
+    });
+    return plan;
   }
 
   /** Głośność podglądu (0–1) po t sekundach od startu: wejście 0,8 s, wyjście 0,6 s przed końcem okna. */
@@ -262,6 +289,6 @@
   return {
     fmtNum, fmtDec, fmtBytes, fmtDuration, fmtListening, fmtPercent, deltaText, fmtDay, fmtShortDay, fmtStamp,
     barPercent, bars, qualityBreakdown, growthSeries, diskBreakdown, outcomeRows, cardModel, wrapText,
-    storySlides, previewWindow, soundtrack, previewGain, dominantColor, readableAccent, SLIDE_MS, TRACK_SLIDE_MS,
+    storySlides, previewWindow, soundtrackPlan, previewGain, dominantColor, readableAccent, SLIDE_MS, TRACK_SLIDE_MS,
   };
 });

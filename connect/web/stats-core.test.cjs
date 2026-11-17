@@ -172,17 +172,27 @@ test("readable accent lightens dark colours only", () => {
   assert.ok(lum(lifted) > lum("#101040"));
 });
 
-test("soundtrack chains up to five tracks as 45 s segments", () => {
-  const tracks = [{ id: "a", title: "A", artist: "X", seconds: 300 }, { id: "", title: "no id", seconds: 200 },
-    { id: "b", title: "B", seconds: 50 }, { id: "c", seconds: 70 }, { id: "d", seconds: 10 }, { id: "e", seconds: 200 }, { id: "f", seconds: 200 }];
-  const s = core.soundtrack(tracks);
-  assert.deepEqual(s.map((x) => x.id), ["a", "b", "c", "d", "e"]);
-  assert.deepEqual(s[0], { id: "a", title: "A", artist: "X", start: 105, length: 45 });
-  assert.deepEqual([s[1].start, s[1].length], [0, 45]);       // krótki utwór od początku
-  assert.deepEqual([s[2].start, s[2].length], [24, 45]);      // 70 s: start 24, zostaje 46 s
-  assert.deepEqual([s[3].start, s[3].length], [0, 10]);       // utwór krótszy niż segment
-  assert.deepEqual(core.soundtrack(null), []);
-  assert.deepEqual(core.soundtrack([{ title: "bez id" }]), []);
+test("soundtrack plan gives every slide a track of its own subject and merges neighbours", () => {
+  const period = {
+    plays: 100, top_genres: [["rock", 10]], listener: { name: "x", blurb: "y" }, compare: { plays: 3 },
+    top_artists: [{ name: "Beta" }],
+    top_tracks: [{ id: "a", title: "A", artist: "Alfa", seconds: 300 }, { id: "", title: "no id", seconds: 200 },
+      { id: "b", title: "B", artist: "beta", seconds: 50 }, { id: "c", artist: "Gamma", seconds: 70 }, { id: "d", seconds: 10 }],
+  };
+  const p = core.soundtrackPlan(period);
+  assert.deepEqual(p.segments.map((x) => x.id), ["a", "b", "a", "c", "d", "c", "a"]);
+  assert.deepEqual(p.bySlide, { intro: 0, time: 0, artist: 1, tracks: 2, genres: 3, listener: 4, compare: 5, finale: 6 });
+  assert.deepEqual(p.segments[0], { id: "a", title: "A", artist: "Alfa", start: 105, length: 45 });
+  assert.deepEqual([p.segments[1].start, p.segments[1].length], [0, 45]);  // krótki utwór od początku
+  assert.deepEqual([p.segments[4].start, p.segments[4].length], [0, 10]);  // utwór krótszy niż segment
+  // top wykonawca poza top 5 utworów: slajd wykonawcy gra hit, więc intro…lista to jeden segment
+  const noMatch = core.soundtrackPlan({ top_artists: [{ name: "Nikt" }], listener: { name: "x", blurb: "y" }, top_tracks: [{ id: "a", seconds: 200 }, { id: "b", seconds: 200 }] });
+  assert.deepEqual(noMatch.segments.map((x) => x.id), ["a", "b", "a"]);
+  assert.deepEqual([noMatch.bySlide.intro, noMatch.bySlide.artist, noMatch.bySlide.tracks, noMatch.bySlide.listener, noMatch.bySlide.finale], [0, 0, 0, 1, 2]);
+  // jeden utwór: wszystko gra jeden segment
+  assert.equal(core.soundtrackPlan({ top_tracks: [{ id: "a", seconds: 200 }] }).segments.length, 1);
+  assert.deepEqual(core.soundtrackPlan(null), { segments: [], bySlide: {} });
+  assert.deepEqual(core.soundtrackPlan({ top_tracks: [{ title: "bez id" }] }).segments, []);
   assert.equal(core.previewWindow(300, 45).length, 45);
   assert.equal(core.previewWindow(300).length, 25);
 });

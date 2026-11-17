@@ -390,10 +390,12 @@ const streamUrl = (id, offset) => "/rest/stream?" + params({ id, format: "mp3", 
     const renderer = makeRenderer(period, covers);
     const slide = () => slides[index];
 
-    // ── muzyka: ścieżka dźwiękowa przez cały pokaz (kolejne utwory z top 5, po 45 s każdy) ──
-    const segments = core.soundtrack(period.top_tracks);
-    const music = { players: [null, null], seg: 0, pos: 0, last: 0, playing: false, pagePaused: null };
+    // ── muzyka: każdy slajd gra utwór o swoim temacie (core.soundtrackPlan); zmiana slajdu = płynne przejście ──
+    const plan = core.soundtrackPlan(period);
+    const segments = plan.segments;
+    const music = { cur: -1, pos: 0, last: 0, playing: false, finished: -1, pagePaused: null, players: new Map(), fading: [] };
     const nowChip = root.querySelector(".pf-story-now");
+    const segmentOf = (i) => { const sl = slides[i]; return sl && plan.bySlide[sl.id] != null ? plan.bySlide[sl.id] : -1; };
     const pageAudio = () => document.querySelector(PLAYER_AUDIO);
     function pausePage() {
       const a = pageAudio();
@@ -404,66 +406,107 @@ const streamUrl = (id, offset) => "/rest/stream?" + params({ id, format: "mp3", 
       music.pagePaused = null;
       if (a) { try { const p = a.play(); if (p && p.catch) p.catch(() => {}); } catch (e) { /* zostaje */ } }
     }
+    function dispose(el) {
+      try { el.pause(); } catch (e) { /* bez wpływu */ }
+      el.removeAttribute("src");
+      try { el.load(); } catch (e) { /* bez wpływu */ }
+    }
     function playerFor(i) {
-      const k = i % 2;
-      if (!music.players[k]) {
-        const a = new Audio();
-        a.preload = "auto";
-        // błąd strumienia = segment kończy się od razu, gramy następny
-        a.addEventListener("error", () => { if (music.players[music.seg % 2] === a) music.pos = 1e9; });
-        music.players[k] = a;
+      let entry = music.players.get(i);
+      if (!entry) {
+        const el = new Audio();
+        el.preload = "auto";
+        // błąd strumienia = segment kończy się od razu (cisza do zmiany slajdu)
+        el.addEventListener("error", () => { if (music.cur === i) music.pos = 1e9; });
+        entry = { el, used: false };
+        music.players.set(i, entry);
       }
-      return music.players[k];
+      return entry;
     }
     function load(i) {
       const seg = segments[i];
       if (!seg) return null;
-      const el = playerFor(i);
-      if (el.dataset.seg !== String(i)) { el.dataset.seg = String(i); el.src = streamUrl(seg.id, seg.start); el.volume = 0; }
-      return el;
+      const entry = playerFor(i);
+      if (!entry.el.getAttribute("src")) { entry.el.src = streamUrl(seg.id, seg.start); entry.el.volume = 0; }
+      return entry;
     }
     function paintNow() {
-      const seg = segments[music.seg];
+      const seg = segments[music.cur];
       const show = !!seg && !muted && !closed;
       nowChip.hidden = !show;
       if (show) nowChip.textContent = "♪ " + seg.title + (seg.artist ? " — " + seg.artist : "");
     }
-    const musicWanted = () => segments.length > 0 && !muted && !holdPaused && !userPaused && !closed && !document.hidden;
+    const musicWanted = () => segments.length > 0 && music.cur >= 0 && !muted && !holdPaused && !userPaused && !closed && !document.hidden;
+    /** Slajd się zmienił: jeśli ma inny utwór, poprzedni cichnie, nowy startuje od początku swojego okna. */
+    function selectSegment(i) {
+      if (i !== music.cur) {
+        const old = music.players.get(music.cur);
+        if (old && music.playing) music.fading.push({ el: old.el, entry: old }); // wycisza się w tickMusic
+        music.cur = i; music.pos = 0; music.playing = false; music.finished = -1;
+        const entry = music.players.get(i);
+        if (entry && entry.used) { dispose(entry.el); music.players.delete(i); } // ponowne wejście: utwór od początku
+        if (i >= 0) load(i);
+      }
+      const ahead = segmentOf(index + 1);
+      if (ahead >= 0 && ahead !== music.cur) load(ahead); // następny utwór buforuje się z wyprzedzeniem
+      for (const [k, entry] of [...music.players]) {
+        if (k !== music.cur && k !== ahead && !music.fading.some((f) => f.entry === entry)) { dispose(entry.el); music.players.delete(k); }
+      }
+    }
     function syncMusic() {
-      const el = music.seg < segments.length ? playerFor(music.seg) : null;
-      if (musicWanted() && el) {
+      const entry = music.cur >= 0 && music.finished !== music.cur ? load(music.cur) : null;
+      if (musicWanted() && entry) {
         if (!music.playing) {
           pausePage();
-          load(music.seg);
-          music.playing = true; music.last = performance.now();
-          const p = el.play();
+          music.playing = true; music.last = performance.now(); entry.used = true;
+          const p = entry.el.play();
           if (p && p.catch) p.catch(() => { music.playing = false; }); // przeglądarka zablokowała start: cisza, pokaz idzie dalej
         }
-      } else if (el && music.playing) { music.playing = false; el.pause(); }
+      } else if (music.playing) {
+        music.playing = false;
+        const cur = music.players.get(music.cur);
+        if (cur) cur.el.pause();
+      }
+      if (!musicWanted()) endFades();
       paintNow();
     }
+    function endFades() {
+      music.fading.forEach((f) => { try { f.el.pause(); } catch (e) { /* bez wpływu */ } });
+      music.fading = [];
+    }
     function stopMusicNow() {
-      music.playing = false;
-      music.players.forEach((el) => { if (el) { try { el.pause(); } catch (e) { /* bez wpływu */ } el.removeAttribute("src"); try { el.load(); } catch (e) { /* bez wpływu */ } } });
+      music.playing = false; music.fading = [];
+      music.players.forEach((entry) => dispose(entry.el));
+      music.players.clear();
     }
     function tickMusic(now) {
-      if (!music.playing || music.seg >= segments.length) return;
-      music.pos += Math.min(0.25, (now - music.last) / 1000);
-      music.last = now;
-      const seg = segments[music.seg], el = playerFor(music.seg);
-      el.volume = clamp(core.previewGain(music.pos, seg.length), 0, 1);
-      if (seg.length - music.pos < 6 && music.seg + 1 < segments.length) load(music.seg + 1); // następny już się buforuje
-      if (music.pos >= seg.length || el.ended) {
-        el.pause(); music.playing = false; music.seg++; music.pos = 0;
-        if (music.seg < segments.length) syncMusic(); else paintNow();
+      const dt = Math.min(0.25, Math.max(0, (now - music.last) / 1000));
+      if (music.fading.length) {
+        music.fading = music.fading.filter((f) => {
+          const v = f.el.volume - dt / 0.6;
+          if (v > 0.01) { f.el.volume = clamp(v, 0, 1); return true; }
+          try { f.el.pause(); } catch (e) { /* bez wpływu */ }
+          return false;
+        });
       }
+      if (music.playing && music.cur >= 0) {
+        music.pos += dt;
+        const seg = segments[music.cur], entry = music.players.get(music.cur);
+        if (entry) {
+          entry.el.volume = clamp(core.previewGain(music.pos, seg.length), 0, 1);
+          if (music.pos >= seg.length || entry.el.ended) { entry.el.pause(); music.playing = false; music.finished = music.cur; paintNow(); }
+        }
+      }
+      music.last = now;
     }
 
     // ── czas, rysowanie, przejścia ──
     const elapsed = (now) => (pausedAt == null ? now : pausedAt) - t0;
     function setIndex(next, now) {
       next = clamp(next, 0, slides.length - 1);
+      const before = index;
       index = next; t0 = now; if (pausedAt != null) pausedAt = now;
+      if (segments.length) { selectSegment(segmentOf(index)); if (index !== before) syncMusic(); }
       endBox.hidden = slide().id !== "finale";
       live.textContent = "Slajd " + (index + 1) + " z " + slides.length;
       segs.forEach((s, i) => { s.style.transform = "scaleX(" + (i < index ? 1 : 0) + ")"; });
