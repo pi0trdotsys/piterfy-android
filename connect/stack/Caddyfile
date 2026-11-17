@@ -54,6 +54,7 @@ http://{$PITERFY_HOST:localhost} {
 
 	handle {
 		# Do strony Navidrome (tylko HTML) dopisujemy w <head> skrypt, który:
+		#  - najpierw (synchronicznie) ładuje boot.js — zasłonę ładowania z logo, którą zdejmuje piterfy.js, gdy interfejs jest gotowy,
 		#  - bez adresu w aplikacji (#/…) otwiera stronę startową #/start,
 		#  - ładuje piterfy.js (a ten piterfy.css) z wersją zmieniającą się co 10 minut — Cloudflare każe
 		#    przeglądarce trzymać .js/.css 4 godziny, a tak poprawki docierają najpóźniej po 10 minutach.
@@ -63,7 +64,7 @@ http://{$PITERFY_HOST:localhost} {
 			match {
 				header Content-Type text/html*
 			}
-			<title>Navidrome</title> `<title>Piterfy</title><script>location.hash.length>2||history.replaceState(null,"","#/start");var pfJs=document.createElement("script");pfJs.src="/piterfy-ui/piterfy.js?v="+Math.floor(Date.now()/6e5)+"-login-gestures-6";document.head.appendChild(pfJs)</script>`
+			<title>Navidrome</title> `<title>Piterfy</title><script>document.write('<script src="/piterfy-ui/boot.js?v='+Math.floor(Date.now()/6e5)+'-boot-1"><\/script>')</script><script>location.hash.length>2||history.replaceState(null,"","#/start");var pfJs=document.createElement("script");pfJs.src="/piterfy-ui/piterfy.js?v="+Math.floor(Date.now()/6e5)+"-login-gestures-6";document.head.appendChild(pfJs)</script>`
 		}
 		reverse_proxy piterfy-navidrome:4533 {
 			# replace działa tylko na nieskompresowanej treści; kompresuje potem Caddy (encode)

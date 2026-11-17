@@ -52,6 +52,7 @@
     link.id = "pf-css";
     link.rel = "stylesheet";
     link.href = UI + "piterfy.css" + (VERSION ? "?v=" + VERSION : "");
+    link.addEventListener("load", () => update()); // zasłona ładowania czeka na arkusz
     document.body.appendChild(link);
   }
 
@@ -1522,6 +1523,22 @@
     }
   }
 
+  // Zasłona ładowania (boot.js): zdejmujemy ją dopiero, gdy interfejs jest już przebrany w Piterfy (arkusz, panel boczny,
+  // szkielet strony), żeby przy odświeżeniu nie było widać „gołego” Navidrome. Czekamy też chwilę na krój pisma.
+  let revealing = false;
+  function bootReveal() {
+    if (revealing || !window.__pfBootDone) return;
+    const css = document.getElementById("pf-css");
+    if (!css || !css.sheet) return;
+    if (!document.querySelector("#root .layout, #root form")) return;
+    if (document.querySelector(".MuiDrawer-paper") && !document.querySelector(".pf-brand")) return;
+    if (PAGES[root.dataset.pfRoute] && !document.querySelector(".pf-home")) return;
+    revealing = true;
+    const fonts = document.fonts && document.fonts.ready
+      ? Promise.race([document.fonts.ready, new Promise((resolve) => setTimeout(resolve, 800))]) : Promise.resolve();
+    fonts.then(() => window.__pfBootDone());
+  }
+
   // Zbiera serię zmian strony w jedno odświeżenie (setTimeout, bo requestAnimationFrame stoi w kartach w tle).
   // Napisy „Navidrome” poprawiamy tylko w tym, co doszło od ostatniego razu — odtwarzacz zmienia stronę
   // kilka razy na sekundę i przeglądanie za każdym razem całej strony obciążało przeglądarkę.
@@ -1553,6 +1570,7 @@
       customPage();
       hidePodcasts();
       autoplay();
+      bootReveal();
     }, 50);
   }
 
