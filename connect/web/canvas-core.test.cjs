@@ -55,3 +55,55 @@ test("scene moves: layout differs between two moments", () => {
   const sc = core.scene("s86", "#1db954");
   assert.notDeepEqual(core.layout(sc, 0), core.layout(sc, 10));
 });
+
+test("montage is deterministic, starts with the base scene and never repeats a style back to back", () => {
+  const a = core.montage("s86", "#1db954"), b = core.montage("s86", "#1db954");
+  core.montageFrame(a, 200); core.montageFrame(b, 200);
+  assert.deepEqual(a.shots, b.shots);
+  assert.equal(a.shots[0].style, core.scene("s86").style);
+  assert.equal(a.shots[0].kind, "none");
+  assert.equal(a.shots[0].start, 0);
+  for (let i = 1; i < a.shots.length; i++) {
+    assert.notEqual(a.shots[i].style, a.shots[i - 1].style);
+    assert.ok(Math.abs(a.shots[i].start - (a.shots[i - 1].start + a.shots[i - 1].len)) < 1e-9);
+    assert.ok(a.shots[i].len >= core.SHOT_MIN && a.shots[i].len <= core.SHOT_MIN + core.SHOT_SPAN);
+    assert.ok(core.KINDS.includes(a.shots[i].kind));
+  }
+  assert.ok(a.shots.length >= 200 / (core.SHOT_MIN + core.SHOT_SPAN));
+});
+
+test("montage frames: one layer inside a shot, two during a transition, camera always covers the frame", () => {
+  const m = core.montage("al-0f3a", "#3b6fd6");
+  assert.equal(core.montageFrame(m, 1).layers.length, 1);
+  core.montageFrame(m, 30);
+  const second = m.shots[1].start;
+  const kinds = new Set();
+  for (let id = 0; id < 60 && kinds.size < core.KINDS.length; id++) {
+    const mm = core.montage("k" + id, null); core.montageFrame(mm, 30);
+    const sh = mm.shots[1];
+    const mid = core.montageFrame(mm, sh.start + core.TRANS * 0.5);
+    assert.equal(mid.layers.length, 2);
+    const cur = mid.layers[1];
+    if (sh.kind === "iris") assert.ok(cur.clip && cur.clip.r > 0 && cur.clip.r < 1.2);
+    if (sh.kind === "slide") assert.ok(Math.abs(cur.dx) > 0 && Math.abs(cur.dx) < 1 && mid.layers[0].dx * cur.dx < 0);
+    if (sh.kind === "zoom") assert.ok(cur.alpha > 0 && cur.alpha < 1);
+    if (sh.kind === "flash") assert.ok(mid.flash >= 0 && mid.flash <= 0.85);
+    kinds.add(sh.kind);
+    assert.equal(core.montageFrame(mm, sh.start + core.TRANS + 0.01).layers.length, 1);
+  }
+  assert.equal(kinds.size, core.KINDS.length);
+  for (let t = 0; t < 120; t += 0.7) {
+    for (const l of core.montageFrame(m, t).layers) {
+      assert.ok(l.cam.s >= 1.1 && l.cam.s <= 1.4 * 1.5 + 1e-9, "scale " + l.cam.s);
+      assert.ok(Math.abs(l.cam.rot) <= 0.04 + 1e-9 && Math.abs(l.cam.tx) <= 0.04 + 1e-9);
+    }
+  }
+  assert.ok(second > 5);
+});
+
+test("montage palette shifts hue between shots but keeps a dark base", () => {
+  const m = core.montage("s86", "#cd1916"); core.montageFrame(m, 90);
+  const pals = new Set(m.shots.map((s) => s.scene.palette.a));
+  assert.ok(pals.size > 1);
+  for (const s of m.shots) assert.match(s.scene.palette.base, /^#[0-9a-f]{6}$/);
+});

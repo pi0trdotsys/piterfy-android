@@ -13,7 +13,7 @@
   const VIDEO_MS = 5000, VIDEO_TRACK_MS = 6500, VIDEO_FINALE_MS = 4000;
   const NAME = "piterfy-wrapped";
   const PLAYER_AUDIO = "audio.music-player-audio, .react-jinke-music-player-main audio";
-  const reduced = () => !!(window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches);
+  const reduced = () => (() => { try { return localStorage.getItem("pf-calm") === "1"; } catch (e) { return false; } })();
   const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
   const ease = (x) => 1 - Math.pow(1 - clamp(x, 0, 1), 3);
   const prog = (t, delay, dur) => ease((t - delay) / dur);

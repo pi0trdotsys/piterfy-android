@@ -1,8 +1,8 @@
 /* Piterfy — „Teraz gra” z animowanym Canvasem. Przycisk przy przycisku tekstów otwiera pełnoekranową nakładkę:
- * generowana animacja w tle (scena z ID utworu i koloru okładki: canvas-core.js), okładka, tytuł, pasek postępu
+ * generowana animacja w tle jak w teledysku (montaż ujęć z ID utworu i koloru okładki: canvas-core.js — cięcia, przejścia, kamera), okładka, tytuł, pasek postępu
  * i przyciski. Utwór czytamy z window.PiterfyPlayback (obsługuje też odtwarzanie na innym urządzeniu), a gdy go nie ma —
  * z adresu elementu audio. Animacja idzie tylko, gdy nakładka jest otwarta, karta widoczna i muzyka gra;
- * przy „ogranicz ruch” albo po wyłączeniu w nakładce rysujemy jedną nieruchomą klatkę. */
+ * po wyłączeniu animacji przyciskiem w nakładce rysujemy jedną nieruchomą klatkę (systemowe „ogranicz ruch” ignorujemy). */
 (() => {
   'use strict';
   if (window.piterfyCanvasLoaded) return;
@@ -14,7 +14,6 @@
   const VERSION = ((document.currentScript && document.currentScript.src.match(/[?&]v=([^&]+)/)) || [])[1];
   const SCALE = 0.55;          // rysujemy w niższej rozdzielczości — gradienty i tak są miękkie
   const FADE_MS = 700;         // płynne przejście między scenami przy zmianie utworu
-  const reduced = matchMedia('(prefers-reduced-motion: reduce)');
   const audio = () => document.querySelector('audio.music-player-audio, .react-jinke-music-player-main audio');
   const stored = (key, fallback) => { try { const v = localStorage.getItem(key); return v == null ? fallback : v; } catch (e) { return fallback; } };
 
@@ -30,7 +29,7 @@
 
   let dialog, canvas, ctx, button;
   const el = {};
-  let key = '', song = null, scenes = { cur: null, prev: null, since: 0 }, accentFor = {};
+  let key = '', song = null, scenes = { cur: null, prev: null, prevT: 0, since: 0 }, accentFor = {};
   let animate = stored('pf-canvas', '1') !== '0', t = 0, last = 0, raf = 0, isOpen = false, timer = 0;
 
   function current() {
@@ -56,8 +55,7 @@
 
   // ── scena ──
   function setScene(id, accent) {
-    const next = core.scene(id, accent);
-    scenes = { cur: next, prev: scenes.cur, since: performance.now() };
+    scenes = { cur: core.montage(id, accent), prev: scenes.cur, prevT: t, since: performance.now() };
   }
 
   /** Kolor dominujący okładki (stats-core.js, gdy jest załadowany) — z miniatury 16×16 tej samej origin. */
@@ -83,11 +81,7 @@
     return 'rgba(' + parseInt(hex.slice(1, 3), 16) + ',' + parseInt(hex.slice(3, 5), 16) + ',' + parseInt(hex.slice(5, 7), 16) + ',' + a + ')';
   }
 
-  function paintScene(sc, time, alpha) {
-    const w = canvas.width, h = canvas.height, m = Math.min(w, h);
-    ctx.globalAlpha = alpha;
-    ctx.fillStyle = sc.palette.base;
-    ctx.fillRect(0, 0, w, h);
+  function paintOps(sc, time, w, h, m) {
     for (const op of core.layout(sc, time)) {
       if (op.k === 'blob' || op.k === 'dot') {
         const cx = op.x * w, cy = op.y * h, r = op.r * m;
@@ -112,14 +106,38 @@
         ctx.stroke();
       }
     }
-    ctx.globalAlpha = 1;
+  }
+
+  /** Jedna warstwa montażu: przycięcie kołem (iris), przesunięcie (slide), kamera (zoom, ruch, obrót), tło i prymitywy sceny. */
+  function paintLayer(layer, time, alpha) {
+    const w = canvas.width, h = canvas.height, m = Math.min(w, h);
+    ctx.save();
+    if (layer.clip) {
+      ctx.beginPath(); ctx.arc(layer.clip.x * w, layer.clip.y * h, layer.clip.r * Math.max(w, h), 0, Math.PI * 2); ctx.clip();
+    }
+    ctx.translate(layer.dx * w, layer.dy * h);
+    const c = layer.cam;
+    ctx.translate(w / 2 + c.tx * w, h / 2 + c.ty * h); ctx.rotate(c.rot); ctx.scale(c.s, c.s); ctx.translate(-w / 2, -h / 2);
+    ctx.globalAlpha = alpha * layer.alpha;
+    ctx.fillStyle = layer.scene.palette.base;
+    ctx.fillRect(-w, -h, w * 3, h * 3);
+    paintOps(layer.scene, time, w, h, m);
+    ctx.restore();
+  }
+
+  function paintMontage(mt, time, alpha) {
+    const f = core.montageFrame(mt, time);
+    for (const layer of f.layers) paintLayer(layer, time, alpha);
+    if (f.flash > 0) {
+      ctx.globalAlpha = alpha * f.flash; ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, canvas.width, canvas.height); ctx.globalAlpha = 1;
+    }
   }
 
   function paint() {
     if (!scenes.cur) { ctx.fillStyle = '#000'; ctx.fillRect(0, 0, canvas.width, canvas.height); return; }
     const p = scenes.prev ? Math.min(1, (performance.now() - scenes.since) / FADE_MS) : 1;
-    if (p < 1) paintScene(scenes.prev, t, 1);
-    paintScene(scenes.cur, t, p);
+    if (p < 1) paintMontage(scenes.prev, scenes.prevT, 1);
+    paintMontage(scenes.cur, t, p);
     if (p >= 1) scenes.prev = null;
   }
 
@@ -130,7 +148,7 @@
   }
 
   const playing = () => !!(song && song.playing);
-  const wantsMotion = () => animate && !reduced.matches;
+  const wantsMotion = () => animate; // celowo bez systemowego „ogranicz ruch” (np. wyłączone animacje w Windowsie): wyłączasz przyciskiem w rogu
 
   function frame(now) {
     raf = 0;
@@ -158,9 +176,11 @@
       const img = coverUrl(song.cover || song.id, 600);
       el.art.src = img; el.art.alt = song.title ? 'Okładka: ' + song.title : '';
       const id = song.id;
-      accentOf(id, coverUrl(song.cover || song.id, 64)).then((hex) => { if (key === id) { setScene(id, hex); t = 0; kick(); } });
+      t = (song.position || 0) / 1000;
+      accentOf(id, coverUrl(song.cover || song.id, 64)).then((hex) => { if (key === id) { setScene(id, hex); kick(); } });
     }
     const dur = (song.duration || 0) * 1000, pos = song.position || 0;
+    if (Math.abs(t - pos / 1000) > 1.5) { t = pos / 1000; kick(); } // przewinięcie: montaż wraca do właściwego miejsca w utworze
     el.bar.style.setProperty('--pf-cv-progress', dur ? Math.min(1, pos / dur) : 0);
     el.bar.setAttribute('aria-valuenow', String(Math.round(dur ? Math.min(100, pos / dur * 100) : 0)));
     el.pos.textContent = clock(pos); el.dur.textContent = dur ? clock(dur) : '';
@@ -229,7 +249,7 @@
   function open() {
     if (!dialog) build();
     if (dialog.open) return;
-    isOpen = true; key = ''; t = 0;
+    isOpen = true; key = '';
     dialog.showModal();
     resize();
     refresh();
@@ -246,7 +266,6 @@
     document.body.appendChild(button);
     setInterval(() => { button.hidden = !current(); }, 1500);
     document.addEventListener('visibilitychange', () => { if (!document.hidden) kick(); });
-    reduced.addEventListener && reduced.addEventListener('change', kick);
   }
 
   if (document.body) mountButton(); else document.addEventListener('DOMContentLoaded', mountButton);

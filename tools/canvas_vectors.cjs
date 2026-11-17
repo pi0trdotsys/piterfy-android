@@ -20,3 +20,18 @@ const out = cases.map(([id, accent]) => {
 });
 fs.writeFileSync(path.join(__dirname, "../app/src/test/resources/piterfy_canvas_vectors.json"), JSON.stringify(out));
 console.log("zapisano", out.length, "scen");
+
+// montaż: harmonogram ujęć i metadane klatek (bez pełnych list prymitywów — te sprawdzają wzorce powyżej)
+const frameTimes = [0, 3.5, 6.2, 6.8, 7.3, 14.1, 19.9, 47.2, 130, 301.7];
+const montages = cases.map(([id, accent]) => {
+  const m = core.montage(id, accent);
+  const frames = frameTimes.map((t) => {
+    const f = core.montageFrame(m, t);
+    return { t, shot: f.shot, flash: f.flash, layers: f.layers.map((l) => ({ shot: l.shot, style: l.scene.style, alpha: l.alpha, dx: l.dx, dy: l.dy, clip: l.clip, cam: l.cam })) };
+  });
+  const shots = m.shots.slice(0, 14).map((sh) => ({ i: sh.i, start: sh.start, len: sh.len, style: sh.style, shift: sh.shift, kind: sh.kind, dir: sh.dir, cx: sh.cx, cy: sh.cy,
+    cam: sh.cam, sceneHash: sh.scene.hash, sceneSpeed: sh.scene.speed, palette: sh.scene.palette }));
+  return { id, accent, shots, frames };
+});
+fs.writeFileSync(path.join(__dirname, "../app/src/test/resources/piterfy_canvas_montage_vectors.json"), JSON.stringify(montages));
+console.log("zapisano", montages.length, "montaży");

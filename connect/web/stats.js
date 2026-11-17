@@ -8,7 +8,7 @@
   if (!core || window.PiterfyStats) return;
   const UI = "/piterfy-ui/";
   const VERSION = ((document.currentScript && document.currentScript.src.match(/[?&]v=([^&]+)/)) || [])[1];
-  const reduced = () => window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const reduced = () => (() => { try { return localStorage.getItem("pf-calm") === "1"; } catch (e) { return false; } })();
   const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g,
     (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   const NBSP = " ";

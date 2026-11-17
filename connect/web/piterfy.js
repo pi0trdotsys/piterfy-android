@@ -972,7 +972,7 @@
   // Zmiana widoku: treść wjeżdża łagodnie (animacja w piterfy.css), o ile użytkownik nie wyłączył ruchu.
   function routeFade() {
     const main = document.getElementById("main-content");
-    if (!main || (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches)) return;
+    if (!main || (() => { try { return localStorage.getItem("pf-calm") === "1"; } catch (e) { return false; } })()) return;
     main.classList.remove("pf-route-in");
     void main.offsetWidth;  // restart animacji
     main.classList.add("pf-route-in");
@@ -1410,7 +1410,7 @@
   let revealer = null;
   let revealAlive = false;
   function revealSections(box) {
-    if (!("IntersectionObserver" in window) || (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches)) return;
+    if (!("IntersectionObserver" in window) || (() => { try { return localStorage.getItem("pf-calm") === "1"; } catch (e) { return false; } })()) return;
     if (!revealer) {
       revealer = new IntersectionObserver((entries) => {
         revealAlive = true;

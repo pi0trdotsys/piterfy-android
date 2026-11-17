@@ -72,4 +72,31 @@ class PiterfyCanvasViewTest {
             }
         }
     }
+
+    /** Montaż: ujęcia i przejścia (irys, przesunięcie, zoom, błysk…) rysują niejednolity obraz; zrzuty w "canvas-shots/montage-*.png". */
+    @Test fun montageShotsAndTransitionsDraw() {
+        val instrumentation = InstrumentationRegistry.getInstrumentation()
+        val out = File(instrumentation.targetContext.getExternalFilesDir(null), "canvas-shots").apply { mkdirs() }
+        val montage = PiterfyCanvasScene.montage("s86", "#3b6fd6")
+        PiterfyCanvasScene.montageFrame(montage, 80.0)
+        ActivityScenario.launch(MainActivity::class.java).use { scenario ->
+            lateinit var view: PiterfyCanvasView
+            scenario.onActivity {
+                view = PiterfyCanvasView(it)
+                it.addContentView(view, ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
+                view.setScene("s86", "#3b6fd6"); view.setRunning(false)
+            }
+            instrumentation.waitForIdleSync()
+            Thread.sleep(800)
+            // środek przejścia każdego z kilku pierwszych ujęć + chwila spokojnie w środku ujęcia
+            for (shot in montage.shots.drop(1).take(5)) {
+                for ((label, t) in listOf("cut" to shot.start + PiterfyCanvasScene.TRANS * 0.5, "mid" to shot.start + shot.len * 0.5)) {
+                    var bitmap: Bitmap? = null
+                    scenario.onActivity { view.setTimeOffset(t); bitmap = bitmapOf(view) }
+                    File(out, "montage-${shot.i}-${shot.kind}-$label.png").outputStream().use { bitmap!!.compress(Bitmap.CompressFormat.PNG, 90, it) }
+                    assertTrue("ujęcie ${shot.i} ($label) jest jednolite", distinctColors(bitmap!!) > 20)
+                }
+            }
+        }
+    }
 }

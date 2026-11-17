@@ -25,6 +25,23 @@ class CanvasOp(
     val color: String, val alpha: Double, val pts: DoubleArray? = null,
 )
 
+/** Parametry kamery ujęcia (od s0 do s1 itd.) i jej stan w danej chwili. */
+data class ShotCam(val s0: Double, val s1: Double, val px0: Double, val py0: Double, val px1: Double, val py1: Double, val r0: Double, val r1: Double)
+data class CanvasCamera(val s: Double, val tx: Double, val ty: Double, val rot: Double)
+data class CanvasClip(val x: Double, val y: Double, val r: Double)
+class CanvasShot(
+    val i: Int, val start: Double, val len: Double, val style: String, val shift: Double, val kind: String, val dir: Int,
+    val cx: Double, val cy: Double, val cam: ShotCam, val scene: CanvasScene,
+)
+class CanvasMontage(val songId: String, val accent: String?) {
+    val hash: Long = PiterfyCanvasScene.hash32(songId)
+    internal var next: (() -> Double)? = null
+    internal var styleIdx = 0
+    val shots = ArrayList<CanvasShot>()
+}
+class CanvasLayer(val shot: Int, val scene: CanvasScene, var cam: CanvasCamera, var alpha: Double = 1.0, var dx: Double = 0.0, var dy: Double = 0.0, var clip: CanvasClip? = null)
+class CanvasFrame(val shot: Int, val layers: List<CanvasLayer>, val flash: Double)
+
 object PiterfyCanvasScene {
     val STYLES = listOf("aurora", "waves", "fireflies", "pulses", "mesh", "vinyl")
     const val FPS = 30
@@ -90,9 +107,10 @@ object PiterfyCanvasScene {
     }
 
     /** Paleta z koloru okładki („#rrggbb”): ciemne tło i trzy kolory akcentów; bez koloru — zieleń Piterfy. */
-    fun palette(accentHex: String?): CanvasPalette {
+    fun palette(accentHex: String?, shift: Double = 0.0): CanvasPalette {
         val rgb = parseHex(accentHex) ?: parseHex(FALLBACK_ACCENT)!!
-        val (h, s, l) = rgbToHsl(rgb[0], rgb[1], rgb[2]).toList()
+        val (h0, s, l) = rgbToHsl(rgb[0], rgb[1], rgb[2]).toList()
+        val h = h0 + shift
         val sat = clamp(s, 0.45, 0.9)
         val light = clamp(l, 0.45, 0.62)
         return CanvasPalette(
@@ -103,10 +121,8 @@ object PiterfyCanvasScene {
         )
     }
 
-    /** Scena utworu: styl, tempo i parametry elementów — wszystko z ID, więc ten sam utwór wygląda zawsze tak samo. */
-    fun scene(songId: String?, accentHex: String?): CanvasScene {
-        val hash = hash32(songId)
-        val style = STYLES[(hash % STYLES.size).toInt()]
+    /** Scena z podanego stylu i ziarna (elementy, tempo) w podanej palecie. */
+    fun buildScene(style: String, hash: Long, pal: CanvasPalette): CanvasScene {
         val next = rng(hash.toInt() xor 0x9e3779b9.toInt())
         val speed = 0.7 + next() * 0.6
         val count = when (style) { "aurora" -> 5; "waves" -> 4; "fireflies" -> 22; "pulses" -> 5; "mesh" -> 6; else -> 8 }
@@ -118,10 +134,16 @@ object PiterfyCanvasScene {
             val r = next()
             val o = next()
             val p = next() * TAU
-            val s = next()
-            elements.add(CanvasElement(x, y, r, o, p, s))
+            val sp = next()
+            elements.add(CanvasElement(x, y, r, o, p, sp))
         }
-        return CanvasScene(style, hash, speed, elements, palette(accentHex))
+        return CanvasScene(style, hash, speed, elements, pal)
+    }
+
+    /** Scena utworu: styl, tempo i parametry elementów — wszystko z ID, więc ten sam utwór wygląda zawsze tak samo. */
+    fun scene(songId: String?, accentHex: String?): CanvasScene {
+        val hash = hash32(songId)
+        return buildScene(STYLES[(hash % STYLES.size).toInt()], hash, palette(accentHex))
     }
 
     /** Prymitywy do narysowania w chwili t (sekundy od startu), w kolejności rysowania. */
@@ -178,6 +200,89 @@ object PiterfyCanvasScene {
             }
         }
         return out
+    }
+
+    // ── montaż: utwór to ciąg ujęć (inny styl, kamera i przejście), jak w teledysku (port montage/addShot/camera/montageFrame) ──
+    const val SHOT_MIN = 6.0
+    const val SHOT_SPAN = 5.0
+    const val TRANS = 0.8
+    val KINDS = listOf("fade", "iris", "slide", "zoom", "flash")
+
+    private fun smooth(u0: Double): Double { val u = clamp(u0, 0.0, 1.0); return u * u * (3 - 2 * u) }
+
+    /** Ujęcia powstają leniwie, zawsze w tej samej kolejności losowań, więc ten sam utwór ma ten sam montaż. */
+    fun montage(songId: String?, accentHex: String?): CanvasMontage = CanvasMontage(songId.orEmpty(), accentHex)
+
+    private fun addShot(m: CanvasMontage) {
+        val r = m.next ?: rng(m.hash.toInt() xor 0x85ebca6b.toInt()).also { m.next = it }
+        val i = m.shots.size
+        val len = SHOT_MIN + r() * SHOT_SPAN
+        val step = floor(r() * 5).toInt()
+        val shiftRaw = (floor(r() * 5).toInt() - 2) * 0.035
+        val kindIdx = floor(r() * KINDS.size).toInt()
+        val dir = if (r() < 0.5) -1 else 1
+        val cx = 0.25 + r() * 0.5
+        val cy = 0.25 + r() * 0.5
+        val zoomIn = r() < 0.5
+        val sa = 1.1 + r() * 0.08
+        val sb = sa + 0.06 + r() * 0.08
+        val px0 = (r() - 0.5) * 0.08
+        val py0 = (r() - 0.5) * 0.08
+        val px1 = (r() - 0.5) * 0.08
+        val py1 = (r() - 0.5) * 0.08
+        val r0 = (r() - 0.5) * 0.08
+        val r1 = (r() - 0.5) * 0.08
+        val styleIdx = if (i == 0) (m.hash % STYLES.size).toInt() else (m.styleIdx + 1 + step) % STYLES.size
+        m.styleIdx = styleIdx
+        val start = if (i == 0) 0.0 else m.shots[i - 1].start + m.shots[i - 1].len
+        val shift = if (i == 0) 0.0 else shiftRaw
+        val pal = palette(m.accent, shift)
+        m.shots.add(CanvasShot(
+            i = i, start = start, len = len, style = STYLES[styleIdx], shift = shift, kind = if (i == 0) "none" else KINDS[kindIdx],
+            dir = dir, cx = cx, cy = cy,
+            cam = ShotCam(if (zoomIn) sa else sb, if (zoomIn) sb else sa, px0, py0, px1, py1, r0, r1),
+            scene = buildScene(STYLES[styleIdx], if (i == 0) m.hash else hash32(m.songId + "#" + i), pal),
+        ))
+    }
+
+    /** Kamera ujęcia po tl sekundach od jego początku: skala, przesunięcie (ułamek szerokości/wysokości) i obrót (rad). */
+    fun camera(shot: CanvasShot, tl: Double): CanvasCamera {
+        val u = smooth(tl / shot.len)
+        val c = shot.cam
+        return CanvasCamera(c.s0 + (c.s1 - c.s0) * u, c.px0 + (c.px1 - c.px0) * u, c.py0 + (c.py1 - c.py0) * u, c.r0 + (c.r1 - c.r0) * u)
+    }
+
+    /**
+     * Co narysować w chwili t: warstwy od spodu (scena, kamera, alpha, przesunięcie dx/dy w ułamkach ekranu, opcjonalne
+     * przycięcie kołem, którego promień jest ułamkiem dłuższego boku) i błysk flash (alpha białej nakładki).
+     */
+    fun montageFrame(m: CanvasMontage, t0: Double): CanvasFrame {
+        val t = if (t0.isNaN()) 0.0 else max(0.0, t0)
+        if (m.shots.isEmpty()) addShot(m)
+        for (guard in 0 until 5000) {
+            val last = m.shots[m.shots.size - 1]
+            if (last.start + last.len > t) break
+            addShot(m)
+        }
+        var i = m.shots.size - 1
+        while (i > 0 && m.shots[i].start > t) i--
+        val shot = m.shots[i]
+        val tl = t - shot.start
+        fun layer(sh: CanvasShot, cam: CanvasCamera) = CanvasLayer(sh.i, sh.scene, cam)
+        val current = layer(shot, camera(shot, tl))
+        if (i == 0 || tl >= TRANS) return CanvasFrame(i, listOf(current), 0.0)
+        val prevShot = m.shots[i - 1]
+        val before = layer(prevShot, camera(prevShot, prevShot.len + tl))
+        val p = smooth(tl / TRANS)
+        var flash = 0.0
+        when (shot.kind) {
+            "iris" -> current.clip = CanvasClip(shot.cx, shot.cy, p * 1.2)
+            "slide" -> { current.dx = shot.dir * (1 - p); before.dx = -shot.dir * p * 0.3 }
+            "zoom" -> { current.cam = current.cam.copy(s = current.cam.s * (1 + 0.5 * (1 - p))); current.alpha = p }
+            "flash" -> { current.alpha = if (p < 0.35) 0.0 else 1.0; flash = max(0.0, 1 - Math.abs(p - 0.35) / 0.35) * 0.85 }
+            else -> current.alpha = p // fade
+        }
+        return CanvasFrame(i, listOf(before, current), flash)
     }
 
     /** „#rrggbb” → ARGB z pełną alfą; zły napis → czarny. */

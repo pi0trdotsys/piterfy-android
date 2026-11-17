@@ -13,21 +13,26 @@ import android.os.SystemClock
 import android.util.AttributeSet
 import android.view.Choreographer
 import android.view.View
+import com.eddyizm.tempus.util.CanvasLayer
+import com.eddyizm.tempus.util.CanvasMontage
 import com.eddyizm.tempus.util.CanvasOp
-import com.eddyizm.tempus.util.CanvasScene
 import com.eddyizm.tempus.util.PiterfyCanvasScene
+import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
 
 /**
- * Piterfy: „Canvas” — generowana animacja pod zawartością pełnoekranowego odtwarzacza. Rysuje prymitywy z
- * PiterfyCanvasScene.layout (te same co na stronie): plamy, pierścienie, kropki i fale w kolorach okładki.
+ * Piterfy: „Canvas” — generowana animacja pod zawartością pełnoekranowego odtwarzacza. Utwór to „teledysk”: ciąg
+ * ujęć (PiterfyCanvasScene.montageFrame — te same co na stronie), każde z własnym stylem, ruchem kamery i przejściem
+ * (zanikanie, irys, przesunięcie, zoom, błysk). Ujęcie rysuje prymitywy z PiterfyCanvasScene.layout: plamy,
+ * pierścienie, kropki i fale w kolorach okładki.
  * Oszczędność baterii: najwyżej 30 klatek/s, pętla stoi, gdy widok jest niewidoczny, odłączony albo wstrzymany
  * (setRunning(false)), a przy trybie oszczędzania energii i wyłączonych animacjach systemu zostaje jedna nieruchoma klatka.
  */
 class PiterfyCanvasView @JvmOverloads constructor(context: Context, attrs: AttributeSet? = null) : View(context, attrs) {
-    private var scene: CanvasScene? = null
-    private var previous: CanvasScene? = null
+    private var scene: CanvasMontage? = null
+    private var previous: CanvasMontage? = null
+    private var previousClock = 0.0   // chwila poprzedniego utworu, w której zamarł (znika pod nowym)
     private var songId: String? = null
     private var accent: String? = null
     private var fadeStartMs = 0L
@@ -44,17 +49,29 @@ class PiterfyCanvasView @JvmOverloads constructor(context: Context, attrs: Attri
     private val colors = HashMap<String, Int>()
     private val glows = HashMap<Int, RadialGradient>()   // kolor → plama o promieniu 1 (rysowana przez skalowanie płótna)
 
-    /** Ustawia scenę utworu; ten sam utwór i kolor nic nie zmieniają, nowy płynnie przechodzi w poprzedni. */
+    /** Ustawia montaż utworu; ten sam utwór i kolor nic nie zmieniają, nowy płynnie przechodzi w poprzedni. */
     fun setScene(songId: String?, accentHex: String?) {
         if (songId == this.songId && accentHex == accent && scene != null) return
         val sameSong = songId == this.songId
         previous = if (scene != null && width > 0) scene else null
+        previousClock = clock
         fadeStartMs = SystemClock.uptimeMillis()
         this.songId = songId
         accent = accentHex
-        scene = if (songId == null) null else PiterfyCanvasScene.scene(songId, accentHex)
+        scene = if (songId == null) null else PiterfyCanvasScene.montage(songId, accentHex)
         if (!sameSong) clock = 0.0
         updateLoop()
+    }
+
+    /** Ustawia miejsce w utworze (sekundy), żeby ujęcia zgadzały się z odtwarzaniem; bez tego liczymy od początku. */
+    fun setTimeOffset(seconds: Double) {
+        clock = max(0.0, seconds)
+        invalidate()
+    }
+
+    /** Wywoływane okresowo z pozycją odtwarzania: dopiero przewinięcie o więcej niż 1,5 s względem zegara widoku synchronizuje go. */
+    fun syncPosition(seconds: Double) {
+        if (abs(clock - seconds) > RESYNC_SECONDS) setTimeOffset(seconds)
     }
 
     /** Animuj tylko wtedy, gdy panel jest rozwinięty i muzyka gra. */
@@ -106,8 +123,8 @@ class PiterfyCanvasView @JvmOverloads constructor(context: Context, attrs: Attri
         val current = scene ?: return
         val fade = if (previous == null) 1f else min(1f, (SystemClock.uptimeMillis() - fadeStartMs) / FADE_MS.toFloat())
         if (fade >= 1f) previous = null
-        previous?.let { drawScene(canvas, it, 1f) }
-        drawScene(canvas, current, fade)
+        previous?.let { drawMontage(canvas, it, previousClock, 1f) }
+        drawMontage(canvas, current, clock, fade)
         if (previous != null && !looping) invalidate()   // przejście bez pętli: dokończ je kolejnymi klatkami
     }
 
@@ -117,15 +134,44 @@ class PiterfyCanvasView @JvmOverloads constructor(context: Context, attrs: Attri
         RadialGradient(0f, 0f, 1f, color or (0xFF shl 24), color and 0x00FFFFFF, Shader.TileMode.CLAMP)
     }
 
-    private fun drawScene(canvas: Canvas, sc: CanvasScene, mix: Float) {
+    /** Montaż w chwili t: warstwy ujęcia (jedna, a w trakcie przejścia dwie) i ewentualny biały błysk. */
+    private fun drawMontage(canvas: Canvas, m: CanvasMontage, t: Double, mix: Float) {
+        val frame = PiterfyCanvasScene.montageFrame(m, t)
+        for (layer in frame.layers) drawLayer(canvas, layer, t, mix)
+        if (frame.flash > 0.0) {
+            fill.shader = null
+            fill.color = 0xFFFFFFFF.toInt()
+            fill.alpha = (max(0.0, min(1.0, frame.flash)) * mix * 255).toInt()
+            canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), fill)
+        }
+    }
+
+    /** Jedna warstwa: przycięcie kołem (irys), przesunięcie (slide), kamera (przesunięcie, obrót, skala), tło i prymitywy sceny. */
+    private fun drawLayer(canvas: Canvas, layer: CanvasLayer, t: Double, mix: Float) {
         val w = width.toFloat()
         val h = height.toFloat()
         val unit = min(w, h)
+        val m = (mix * layer.alpha).toFloat()
+        if (m <= 0f) return
+        val sc = layer.scene
+        canvas.save()
+        layer.clip?.let { c ->
+            path.rewind()
+            path.addCircle((c.x * w).toFloat(), (c.y * h).toFloat(), (c.r * max(w, h)).toFloat(), Path.Direction.CW)
+            canvas.clipPath(path)
+        }
+        canvas.translate((layer.dx * w).toFloat(), (layer.dy * h).toFloat())
+        val cam = layer.cam
+        canvas.translate((w / 2 + cam.tx * w).toFloat(), (h / 2 + cam.ty * h).toFloat())
+        canvas.rotate((cam.rot * 180.0 / Math.PI).toFloat())
+        canvas.scale(cam.s.toFloat(), cam.s.toFloat())
+        canvas.translate(-w / 2, -h / 2)
         fill.shader = null
         fill.color = colorOf(sc.palette.base)
-        fill.alpha = (mix * 255).toInt()
-        canvas.drawRect(0f, 0f, w, h, fill)
-        for (op in PiterfyCanvasScene.layout(sc, clock)) drawOp(canvas, op, w, h, unit, mix)
+        fill.alpha = (m * 255).toInt()
+        canvas.drawRect(-w, -h, 2 * w, 2 * h, fill)   // tło poza ekranem, żeby kamera nigdy nie odsłaniała brzegów
+        for (op in PiterfyCanvasScene.layout(sc, t)) drawOp(canvas, op, w, h, unit, m)
+        canvas.restore()
     }
 
     private fun drawOp(canvas: Canvas, op: CanvasOp, w: Float, h: Float, unit: Float, mix: Float) {
@@ -164,5 +210,5 @@ class PiterfyCanvasView @JvmOverloads constructor(context: Context, attrs: Attri
         }
     }
 
-    private companion object { const val FADE_MS = 600L }
+    private companion object { const val FADE_MS = 600L; const val RESYNC_SECONDS = 1.5 }
 }

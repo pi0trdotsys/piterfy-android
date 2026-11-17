@@ -66,8 +66,7 @@
     '.pf-bt.skip .pf-bt-glow.b i{animation:none}.pf-bt.skip .pf-bt-ring{display:none}.pf-bt.skip .pf-bt-bar{animation:none}' +
     '.pf-bt.skip .pf-bt-word b{animation:none;opacity:1;transform:none}.pf-bt.skip .pf-bt-track i{animation:none}' +
     '.pf-bt.skip:not(.out) .pf-bt-core,.pf-bt.skip:not(.out) .pf-bt-track{animation:none}' +
-    '@media (prefers-reduced-motion:reduce){.pf-bt *,.pf-bt{animation:none!important}.pf-bt-glow,.pf-bt-word b{opacity:1;transform:none}' +
-    '.pf-bt.out{transition:opacity .25s ease;opacity:0;clip-path:none}.pf-bt-ring{display:none}.pf-bt-track i{transform:none}}';
+    '';
 
   var style = document.createElement("style");
   style.id = "pf-boot-css";

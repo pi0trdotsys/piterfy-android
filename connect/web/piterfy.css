@@ -6,6 +6,9 @@
  * Przy jasnym motywie piterfy.js ustawia data-pf-light i cały blok poniżej przestaje działać. */
 @import url("https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap");
 
+/* Ruch: Piterfy celowo NIE słucha systemowego „ogranicz ruch” (np. wyłączone animacje w Windowsie) — animacje mają działać
+ * zawsze. Dawne bloki @media (prefers-reduced-motion) zostały wyłączone jako „@media not all”; wyłączenie ruchu jest
+ * wyborem w samym Piterfy (np. przełącznik animacji w „Teraz gra”, localStorage pf-calm=1 dla pozostałych miejsc). */
 html:not([data-pf-light]) {
   --pf-bg: #000000;
   --pf-panel: #121212;
@@ -191,7 +194,7 @@ html:not([data-pf-light]) {
     background: linear-gradient(180deg, var(--pf-tint-2, #1f4a33) 0, var(--pf-tint, #15291e) 180px, var(--pf-panel) 420px) !important;
   }
 
-  @media (prefers-reduced-motion: reduce) {
+  @media not all {
     & *, & *::before, & *::after { transition: none !important; animation: none !important; }
   }
 }
@@ -425,7 +428,7 @@ html[data-pf-route="login"] :is(#pf-lyrics-button, #pf-connect-button) { display
   .pf-login-copy br { display: none; }
   #root .pf-login-card.MuiCard-root { border-radius: 22px !important; }
 }
-@media (prefers-reduced-motion: reduce) {
+@media not all {
   .pf-login-scene[data-state="idle"] [data-gesture="wink"] .pf-login-eye-right { transform: scaleY(.12); }
   .pf-login-scene[data-state="idle"] :is([data-gesture="hop"], [data-gesture="sway"], [data-gesture="nod"]) .pf-login-cheer {
     display: initial;
@@ -785,7 +788,7 @@ html[data-pf-light] .pf-chips a[aria-current="page"] { color: #ffffff; }
   .pf-banner { gap: 16px; padding: 18px; }
   .pf-banner-img { width: 72px; height: 72px; }
 }
-@media (prefers-reduced-motion: reduce) {
+@media not all {
   .pf-home *, .pf-brand, .pf-start { transition: none !important; }
 }
 
@@ -962,7 +965,7 @@ html[data-pf-light] .pf-chips a[aria-current="page"] { color: #ffffff; }
 }
 
 /* ───── ruch i efekty: wejście kafelków i kart, unoszenie, „oddychająca” okładka, animowane przyciski ─────
-   Wszystko wyłącza się przy prefers-reduced-motion (blok na końcu). */
+   Systemowe „ogranicz ruch” celowo ignorujemy (patrz nagłówek pliku). */
 @keyframes pf-rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
 @keyframes pf-fade { from { opacity: 0; } to { opacity: 1; } }
 @keyframes pf-pop { 0% { transform: scale(1); } 40% { transform: scale(1.35) rotate(-8deg); } 100% { transform: scale(1); } }
@@ -1027,7 +1030,7 @@ html[data-pf-light] .pf-skeleton {
   background-size: 200% 100%;
 }
 
-@media (prefers-reduced-motion: reduce) {
+@media not all {
   .pf-tile, .pf-card, .pf-rec, .pf-toast, .pf-skeleton, #main-content.pf-route-in,
   html[data-pf-playing="1"]:not([data-pf-light]) .react-jinke-music-player-main .img-content,
   .react-jinke-music-player-main .pf-smart svg, .react-jinke-music-player-main .pf-smart::after { animation: none !important; }
@@ -1133,7 +1136,7 @@ html:not([data-pf-light]) body .react-jinke-music-player-main .music-player-pane
   box-shadow: 0 -14px 40px rgba(0, 0, 0, 0.55) !important;
 }
 
-@media (prefers-reduced-motion: reduce) {
+@media not all {
   .pf-home-head::before, .pf-home-head::after, .pf-card-art::after, .pf-sec-head h2::after { animation: none !important; }
   .pf-reveal { opacity: 1 !important; transform: none !important; }
   .pf-sec-head h2::after { width: 40px; }
@@ -1167,7 +1170,7 @@ html:not([data-pf-light]) body .react-jinke-music-player-main .music-player-pane
 .pf-ap-icon img { width: 64px; height: 64px; }
 .pf-ap-icon b { font-size: 12px; font-weight: 600; }
 .pf-ap-dialog .pf-library-button { margin-top: 18px; }
-@media (prefers-reduced-motion: reduce) { .pf-ap-card, .pf-ap-icon { transition: none !important; transform: none !important; } }
+@media not all { .pf-ap-card, .pf-ap-icon { transition: none !important; transform: none !important; } }
 
 /* piterfy-themes:begin (wygenerowane przez tools/appearance/generate.py; nie edytuj ręcznie) */
 html[data-pf-theme="noir_neon"] { --pf-bg: #07070D; --pf-panel: #12121C; --pf-card: #12121C; --pf-card-hover: #1D1D2C; --pf-text: #F5F5FA; --pf-muted: #A6A6BD; --pf-accent: #FF4FA3; --pf-accent-2: #00E5FF; --pf-tint: #461F3A; --pf-tint-2: #63274A; --pf-deep: #772750; --pf-accent-hover: #FF6FB4; }

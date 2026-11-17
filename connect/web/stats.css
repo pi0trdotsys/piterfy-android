@@ -1,5 +1,5 @@
 /* Piterfy — „Statystyki dla nerdów” (#/statystyki). Kolory z motywu (--pf-accent …) i z .pf-home (--pf-h-*),
- * więc ekran zmienia się razem z motywami okolicznościowymi. Animacje wyłącza prefers-reduced-motion. */
+ * więc ekran zmienia się razem z motywami okolicznościowymi. Systemowe „ogranicz ruch” celowo ignorujemy (patrz piterfy.css). */
 /* zakładki: własna klasa (nie .pf-chips), bo library.js zarządza aria-current we wszystkich .pf-chips z linkami */
 #main-content .pf-home .pf-st-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }
 #main-content .pf-home .pf-st-tabs > a {
@@ -144,7 +144,7 @@ html[data-pf-light] .pf-st-periods button[aria-selected="true"] { color: #fff; }
   .pf-st-tile { min-height: 0; padding: 12px 14px; }
   .pf-st-value { font-size: 22px; overflow-wrap: anywhere; }
 }
-@media (prefers-reduced-motion: reduce) {
+@media not all {
   .pf-st-bar > i, .pf-st-stack > i, .pf-st-colbar > i, .pf-st-ring, .pf-st-card { animation: none !important; }
   .pf-st-tile, .pf-st-btn { transition: none; }
 }
@@ -173,4 +173,4 @@ html.pf-story-open { overflow: hidden; }
 .pf-story-now[hidden] { display: none; }
 .pf-story-live { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; margin: 0; }
 @keyframes pf-story-in { from { opacity: 0; } to { opacity: 1; } }
-@media (prefers-reduced-motion: reduce) { .pf-story { animation: none; } .pf-story-nav { transition: none; } }
+@media not all { .pf-story { animation: none; } .pf-story-nav { transition: none; } }

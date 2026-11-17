@@ -144,7 +144,18 @@ public class PlayerBottomSheetFragment extends Fragment {
 
     private void updateCanvasRunning() {
         if (bind == null) return;
+        if (canvasActive) syncCanvasPosition();
         bind.playerCanvasView.setRunning(canvasActive && canvasSheetOpen && canvasPlaying);
+    }
+
+    /** Ujecia Canvasa maja zgadzac sie z miejscem w utworze: przy starcie i zmianie utworu ustawiamy pozycje, potem (setProgress) korygujemy tylko po przewinieciu. */
+    private void syncCanvasPosition() {
+        if (bind == null || mediaBrowserListenableFuture == null || !mediaBrowserListenableFuture.isDone()) return;
+        try {
+            bind.playerCanvasView.setTimeOffset(mediaBrowserListenableFuture.get().getCurrentPosition() / 1000.0);
+        } catch (Exception ignored) {
+            // bez pozycji ujecia licza sie od poczatku
+        }
     }
 
     /** Wlacza lub wylacza warstwe Canvas (ustawienie, TV, radio/podcast i odtwarzanie na innym urzadzeniu ja chowaja). */
@@ -379,8 +390,10 @@ public class PlayerBottomSheetFragment extends Fragment {
                     (com.eddyizm.tempus.lan.LanRemoteSession.current().positionAt(android.os.SystemClock.elapsedRealtime()) / 1000), true);
             return;
         }
-        if (bind != null)
+        if (bind != null) {
             bind.playerHeaderLayout.playerHeaderSeekBar.setProgress((int) (mediaBrowser.getCurrentPosition() / 1000), true);
+            if (canvasActive) bind.playerCanvasView.syncPosition(mediaBrowser.getCurrentPosition() / 1000.0);
+        }
     }
 
     private void setPlayingState(boolean isPlaying) {

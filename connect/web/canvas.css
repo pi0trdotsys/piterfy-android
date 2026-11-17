@@ -30,4 +30,4 @@
 .pf-cv-play{width:64px;height:64px;background:#fff;color:#000}
 .pf-cv-play:hover{background:#e8e8e8}
 .pf-cv-play svg{width:30px;height:30px}
-@media(prefers-reduced-motion:reduce){#pf-canvas-dialog[open]{animation:none}}
+@media not all{#pf-canvas-dialog[open]{animation:none}}

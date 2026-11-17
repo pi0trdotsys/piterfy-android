@@ -6,7 +6,7 @@
   if (!timing) return;
   let dialog, title, status, content, followButton, correctionButton, retryButton;
   let key = '', track = null, data = null, abort, generation = 0, active = -2, follow = true, correction = 0, timer;
-  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const reduced = (() => { try { return localStorage.getItem("pf-calm") === "1"; } catch (e) { return false; } })();
   const audio = () => document.querySelector('audio.music-player-audio, .react-jinke-music-player-main audio');
   const account = () => localStorage.getItem('username') || '';
   function current() {

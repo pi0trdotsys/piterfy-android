@@ -68,9 +68,10 @@
   }
 
   /** Paleta sceny z koloru okładki (np. dominantColor): ciemne tło i trzy kolory akcentów. Bez koloru — zieleń Piterfy. */
-  function palette(accentHex) {
+  function palette(accentHex, shift) {
     const rgb = parseHex(accentHex) || parseHex(FALLBACK_ACCENT);
-    const [h, s, l] = rgbToHsl(rgb[0], rgb[1], rgb[2]);
+    const [h0, s, l] = rgbToHsl(rgb[0], rgb[1], rgb[2]);
+    const h = h0 + (shift || 0);
     const sat = clamp(s, 0.45, 0.9), light = clamp(l, 0.45, 0.62);
     return {
       base: hslToHex(h, clamp(sat * 0.6, 0.25, 0.6), 0.07),
@@ -80,10 +81,8 @@
     };
   }
 
-  /** Scena utworu: styl, tempo i parametry elementów (wszystko z ID — ten sam utwór wygląda zawsze tak samo). */
-  function scene(songId, accentHex) {
-    const hash = hash32(songId);
-    const style = STYLES[hash % STYLES.length];
+  /** Scena z podanego stylu i ziarna (elementy, tempo) w podanej palecie. */
+  function buildScene(style, hash, pal) {
     const next = rng((hash ^ 0x9e3779b9) >>> 0);
     const speed = 0.7 + next() * 0.6;
     const count = { aurora: 5, waves: 4, fireflies: 22, pulses: 5, mesh: 6, vinyl: 8 }[style];
@@ -91,7 +90,13 @@
     for (let i = 0; i < count; i++) {
       elements.push({ x: 0.1 + next() * 0.8, y: 0.1 + next() * 0.8, r: next(), o: next(), p: next() * TAU, s: next() });
     }
-    return { style, hash, speed, elements, palette: palette(accentHex) };
+    return { style, hash, speed, elements, palette: pal };
+  }
+
+  /** Scena utworu: styl, tempo i parametry elementów (wszystko z ID — ten sam utwór wygląda zawsze tak samo). */
+  function scene(songId, accentHex) {
+    const hash = hash32(songId);
+    return buildScene(STYLES[hash % STYLES.length], hash, palette(accentHex));
   }
 
   /**
@@ -151,5 +156,78 @@
     return out;
   }
 
-  return { STYLES, FPS, FALLBACK_ACCENT, hash32, rng, palette, scene, layout };
+
+  // ── montaż: utwór to ciąg ujęć (inny styl, kamera i przejście), jak w teledysku ──
+  const SHOT_MIN = 6, SHOT_SPAN = 5, TRANS = 0.8;
+  const KINDS = ["fade", "iris", "slide", "zoom", "flash"];
+  const smooth = (u) => { u = clamp(u, 0, 1); return u * u * (3 - 2 * u); };
+
+  /** Ujęcia powstają leniwie, zawsze w tej samej kolejności losowań, więc ten sam utwór ma ten sam montaż. */
+  function montage(songId, accentHex) {
+    return { songId: String(songId == null ? "" : songId), accent: accentHex, hash: hash32(songId), next: null, shots: [], styleIdx: 0 };
+  }
+
+  function addShot(m) {
+    if (!m.next) m.next = rng((m.hash ^ 0x85ebca6b) >>> 0);
+    const r = m.next, i = m.shots.length;
+    const len = SHOT_MIN + r() * SHOT_SPAN;
+    const step = Math.floor(r() * 5);
+    const shift = (Math.floor(r() * 5) - 2) * 0.035;
+    const kindIdx = Math.floor(r() * KINDS.length);
+    const dir = r() < 0.5 ? -1 : 1;
+    const cx = 0.25 + r() * 0.5, cy = 0.25 + r() * 0.5;
+    const zoomIn = r() < 0.5;
+    const sa = 1.1 + r() * 0.08, sb = sa + 0.06 + r() * 0.08;
+    const px0 = (r() - 0.5) * 0.08, py0 = (r() - 0.5) * 0.08, px1 = (r() - 0.5) * 0.08, py1 = (r() - 0.5) * 0.08;
+    const r0 = (r() - 0.5) * 0.08, r1 = (r() - 0.5) * 0.08;
+    const styleIdx = i === 0 ? m.hash % STYLES.length : (m.styleIdx + 1 + step) % STYLES.length;
+    m.styleIdx = styleIdx;
+    const start = i === 0 ? 0 : m.shots[i - 1].start + m.shots[i - 1].len;
+    const pal = palette(m.accent, i === 0 ? 0 : shift);
+    m.shots.push({
+      i, start, len, style: STYLES[styleIdx], shift: i === 0 ? 0 : shift, kind: i === 0 ? "none" : KINDS[kindIdx], dir, cx, cy,
+      cam: { s0: zoomIn ? sa : sb, s1: zoomIn ? sb : sa, px0, py0, px1, py1, r0, r1 },
+      scene: buildScene(STYLES[styleIdx], i === 0 ? m.hash : hash32(m.songId + "#" + i), pal),
+    });
+  }
+
+  /** Kamera ujęcia po tl sekundach od jego początku: skala, przesunięcie (ułamek szerokości/wysokości) i obrót (rad). */
+  function camera(shot, tl) {
+    const u = smooth(tl / shot.len), c = shot.cam;
+    return { s: c.s0 + (c.s1 - c.s0) * u, tx: c.px0 + (c.px1 - c.px0) * u, ty: c.py0 + (c.py1 - c.py0) * u, rot: c.r0 + (c.r1 - c.r0) * u };
+  }
+
+  /**
+   * Co narysować w chwili t: warstwy od spodu (każda: scena, kamera, alpha, przesunięcie dx/dy w ułamkach ekranu, opcjonalne
+   * przycięcie kołem clip {x, y, r} gdzie r jest ułamkiem dłuższego boku) i błysk flash (alpha białej nakładki).
+   */
+  function montageFrame(m, t) {
+    t = Math.max(0, Number(t) || 0);
+    if (!m.shots.length) addShot(m);
+    for (let guard = 0; guard < 5000; guard++) {
+      const last = m.shots[m.shots.length - 1];
+      if (last.start + last.len > t) break;
+      addShot(m);
+    }
+    let i = m.shots.length - 1;
+    while (i > 0 && m.shots[i].start > t) i--;
+    const shot = m.shots[i], tl = t - shot.start;
+    const layer = (sh, cam) => ({ shot: sh.i, scene: sh.scene, cam, alpha: 1, dx: 0, dy: 0, clip: null });
+    const current = layer(shot, camera(shot, tl));
+    let flash = 0;
+    if (i === 0 || tl >= TRANS) return { shot: i, layers: [current], flash };
+    const prevShot = m.shots[i - 1];
+    const before = layer(prevShot, camera(prevShot, prevShot.len + tl));
+    const p = smooth(tl / TRANS);
+    switch (shot.kind) {
+      case "iris": current.clip = { x: shot.cx, y: shot.cy, r: p * 1.2 }; break;
+      case "slide": current.dx = shot.dir * (1 - p); before.dx = -shot.dir * p * 0.3; break;
+      case "zoom": current.cam = Object.assign({}, current.cam, { s: current.cam.s * (1 + 0.5 * (1 - p)) }); current.alpha = p; break;
+      case "flash": current.alpha = p < 0.35 ? 0 : 1; flash = Math.max(0, 1 - Math.abs(p - 0.35) / 0.35) * 0.85; break;
+      default: current.alpha = p; break; // fade
+    }
+    return { shot: i, layers: [before, current], flash };
+  }
+
+  return { STYLES, KINDS, FPS, SHOT_MIN, SHOT_SPAN, TRANS, FALLBACK_ACCENT, hash32, rng, palette, scene, layout, montage, camera, montageFrame };
 });
