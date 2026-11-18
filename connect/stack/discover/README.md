@@ -115,7 +115,15 @@ Navidrome + Last.fm ──► discover ──► slskd ──► incoming/ ─�
     - Lista odświeża się co 12 godzin i zaraz po pobraniu nowych utworów. Poniżej 3 pasujących utworów playlista nie
       powstaje, usunięta ręcznie nie wraca, a cudza playlista o tej samej nazwie nie jest nadpisywana.
     - Aplikacja i strona pokazują listy w półce „Listy przebojów” (rozpoznają je po początku komentarza „Piterfy Chart”).
-    - Odświeżenie od ręki: `docker compose run --rm --no-deps piterfy-discover --charts`.
+    - **Dociąganie brakujących** (domyślnie wyłączone: `DISCOVER_CHART_FILL=1`): z `DISCOVER_CHART_FILL_TOP` (30) pierwszych
+      miejsc listy brakujące utwory są szukane w Soulseek tym samym mechanizmem co odkrycia (te same reguły formatu, bitrate,
+      kontroli fałszywej jakości, wolnego miejsca i listy zablokowanych wykonawców), najwyżej `DISCOVER_CHART_FILL_PER_RUN` (5)
+      na jedno odświeżenie i najwyżej 2 od jednego wykonawcy. Po pobraniu lista powstaje od nowa z nowymi utworami. Pobrane
+      utwory nie trafiają do playlisty „Odkrywaj”; jeśli ich nie odsłuchasz, po `DISCOVER_CLEANUP_DAYS` dniach idą do kosza jak
+      inne odkrycia (ocena 1★ wyrzuca od razu, ★ zostawia). Pobieranie komercyjnej muzyki z Soulseek bywa nielegalne zależnie
+      od kraju — włączasz to świadomie.
+    - Podgląd bez zmian: `docker compose run --rm --no-deps piterfy-discover --charts --dry-run` pokazuje, ile utworów jest
+      w bibliotece i co by się dociągnęło.
 
 - **Statystyki dla nerdów** (`stats.py`): co `DISCOVER_STATS_EVERY_HOURS` (domyślnie 6) godzin discover liczy trzy zestawienia
   i zapisuje je w `discover/state/stats.json`; aplikacja i strona WWW pobierają plik z `GET /piterfy-api/stats`
@@ -193,6 +201,9 @@ Po zmianie uruchom `docker compose up -d piterfy-discover`.
 | `DISCOVER_CHARTS` | `all` | które listy przebojów tworzyć: `all`, lista nazw po `;` (np. `Top 100 Polska`) albo pusta = bez list |
 | `DISCOVER_CHART_EVERY_HOURS` | `12` | co ile godzin listy przebojów odświeżają się |
 | `DISCOVER_CHART_MIN` | `3` | ile utworów z listy musi być w bibliotece, żeby powstała playlista |
+| `DISCOVER_CHART_FILL` | `0` | `1` = dociągaj przez slskd brakujące utwory z czołówki list przebojów (patrz wyżej) |
+| `DISCOVER_CHART_FILL_TOP` / `DISCOVER_CHART_FILL_PER_RUN` | `30` / `5` | z ilu pierwszych miejsc listy i ile utworów na jedno odświeżenie |
+| `DISCOVER_CHART_FILL_TIMEOUT_MIN` | `20` | ile minut czekać na pobrania przy odświeżeniu listy (reszta dociągnie się później) |
 | `DISCOVER_STATS_EVERY_HOURS` | `6` | co ile godzin liczą się statystyki dla nerdów (`0` = wyłączone) |
 | `DISCOVER_BLOCK` | | wykonawcy do pomijania, rozdzieleni `;` |
 | `DISCOVER_DOWNLOAD_TIMEOUT_MIN` | `90` | ile minut czekać na pobrania (reszta dociągnie się później) |

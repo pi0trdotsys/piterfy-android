@@ -149,5 +149,11 @@ def match(entries, songs):
     return result
 
 
+def missing(entries, hits, top):
+    """Wpisy z `top` pierwszych miejsc listy, których nie ma w bibliotece (według wyniku `match`), od najwyższego miejsca."""
+    have = {entry["id"] for entry, _, _ in hits}
+    return [e for e in sorted(entries, key=lambda e: e.get("rank", 0)) if e.get("rank", 0) <= top and e["id"] not in have]
+
+
 def comment(chart, matched, total, now):
     return f"{COMMENT_PREFIX}: {chart.title} · w bibliotece {matched}/{total} · aktualizacja {now:%Y-%m-%d}. Odświeżana automatycznie."

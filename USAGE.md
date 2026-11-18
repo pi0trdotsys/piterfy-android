@@ -250,7 +250,7 @@ Downloaded tracks show the format on disk. When Tempus transcodes a download, th
 
 **Listy przebojów (Top 100 Polska)**
 
-On the home screen (app and web) the **Listy przebojów** shelf shows chart playlists the server builds from the public Deezer chart "Top Poland". Because a playlist can only contain tracks from your library, a chart playlist holds the chart tracks you already have, in chart order, and the card says how many ("W bibliotece 9 z 100"). The playlist refreshes every 12 hours and right after new downloads; nothing is downloaded for it. Delete the playlist in Navidrome and it stays deleted; a playlist of yours with the same name is never overwritten.
+On the home screen (app and web) the **Listy przebojów** shelf shows chart playlists the server builds from the public Deezer chart "Top Poland". Because a playlist can only contain tracks from your library, a chart playlist holds the chart tracks you already have, in chart order, and the card says how many ("W bibliotece 9 z 100"). The playlist refreshes every 12 hours and right after new downloads; nothing is downloaded for it unless the server owner switches on `DISCOVER_CHART_FILL=1`, which fetches up to 5 missing tracks from the top 30 per refresh through the usual Soulseek discovery pipeline and rebuilds the playlist once they arrive. Delete the playlist in Navidrome and it stays deleted; a playlist of yours with the same name is never overwritten.
 
 **Canvas (Android)**
 

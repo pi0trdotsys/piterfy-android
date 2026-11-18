@@ -90,6 +90,10 @@ MIX_SIZE_MAX     = env_int("DISCOVER_MIX_SIZE_MAX", 100)        # największa li
 CHARTS           = os.environ.get("DISCOVER_CHARTS", "all")     # „all”, lista nazw po średniku albo pusta = bez list przebojów (charts.py)
 CHART_EVERY_HOURS = env_float("DISCOVER_CHART_EVERY_HOURS", 12)  # co ile godzin listy przebojów dobierają utwory od nowa
 CHART_MIN_MATCHES = env_int("DISCOVER_CHART_MIN", 3)             # tyle utworów z listy musi być w bibliotece, żeby powstała playlista
+CHART_FILL       = env_int("DISCOVER_CHART_FILL", 0)             # 1 = dociągaj przez slskd brakujące utwory z czołówki list przebojów (domyślnie wyłączone)
+CHART_FILL_TOP   = env_int("DISCOVER_CHART_FILL_TOP", 30)        # tylko z tylu pierwszych miejsc listy
+CHART_FILL_PER_RUN = env_int("DISCOVER_CHART_FILL_PER_RUN", 5)   # najwyżej tyle utworów na jedno odświeżenie listy
+CHART_FILL_TIMEOUT = env_int("DISCOVER_CHART_FILL_TIMEOUT_MIN", 20) * 60  # tyle czekamy na pobrania przy odświeżeniu listy
 STATS_EVERY_HOURS = env_float("DISCOVER_STATS_EVERY_HOURS", 6)  # co ile godzin liczymy „Statystyki dla nerdów” (stats.py); 0 = wyłączone
 MIX_MAX_PER_ARTIST = env_int("DISCOVER_MIX_MAX_PER_ARTIST", 3)  # tylu utworów jednego wykonawcy najwyżej w miksie
 
@@ -660,8 +664,8 @@ def search_and_queue(sl, cand):
     return job
 
 
-def wait_for_downloads(sl, jobs):
-    deadline = time.time() + DOWNLOAD_TIMEOUT
+def wait_for_downloads(sl, jobs, timeout=None):
+    deadline = time.time() + (DOWNLOAD_TIMEOUT if timeout is None else timeout)
     while time.time() < deadline:
         active = [j for j in jobs if j["status"] == "pending"]
         if not active:
@@ -965,6 +969,8 @@ def remember(history, jobs):
         history[job["key"]] = {"artist": job["artist"], "title": job["title"], "status": job["status"],
                                "date": today, "via": job["via"], "user": job.get("user"), "file": job.get("file"),
                                "pool": job.get("pool"), "engine": "Last.fm" if LASTFM_API_KEY else "Deezer"}
+        if job.get("chart"):  # pobrane dla listy przebojów: nie trafia do zbiorczej playlisty „Odkrywaj”
+            history[job["key"]]["chart"] = job["chart"]
         for field in ("bad_users", "fake_count", "fake_info"):  # pamięć o fałszywych kopiach tego utworu
             if field in old:
                 history[job["key"]][field] = old[field]
@@ -973,7 +979,7 @@ def remember(history, jobs):
 def update_playlist(nd, history):
     if not PLAYLIST_NAME:
         return
-    recent = sorted((h for h in history.values() if h["status"] in ("done", "pending")),
+    recent = sorted((h for h in history.values() if h["status"] in ("done", "pending") and not h.get("chart")),
                     key=lambda h: h["date"], reverse=True)
     song_ids = []
     for entry in recent:
@@ -1423,10 +1429,86 @@ def fetch_chart(chart, isrc_cache):
     return entries
 
 
-def refresh_charts(state, force=False):
+def write_chart_playlist(nd, chart, existing_id, hits, total):
+    """Zapisuje playlistę listy przebojów (w kolejności listy) i jej komentarz; zwraca id playlisty albo None."""
+    ids = [song["id"] for _, song, _ in hits]
+    if existing_id:
+        nd.call("createPlaylist", playlistId=existing_id, songId=ids)
+        playlist_id = existing_id
+    else:
+        playlist_id = nd.call("createPlaylist", name=chart.name, songId=ids).get("playlist", {}).get("id")
+    if playlist_id:
+        try:
+            nd.call("updatePlaylist", playlistId=playlist_id, comment=charts.comment(chart, len(ids), total, datetime.now()))
+        except RuntimeError:
+            pass
+    return playlist_id
+
+
+def fill_chart(nd, chart, entries, hits, history, dry_run=False):
+    """Dociąga przez slskd brakujące utwory z czołówki listy (tylko CHART_FILL_TOP pierwszych miejsc, najwyżej
+    CHART_FILL_PER_RUN naraz). Zwraca zlecenia; pobrane pliki beets przenosi do biblioteki, a `review_discoveries`
+    sprząta te, których nie odsłuchasz, jak każde inne odkrycie."""
+    free = free_gb()
+    if free is not None and free < MIN_FREE_GB:
+        log(f"Lista „{chart.name}”: za mało miejsca na dysku ({free:.0f} GB, limit {MIN_FREE_GB:.0f} GB) — niczego nie dociągam.")
+        return []
+    blocked = {norm(a) for a in BLOCKED_ARTISTS}
+    candidates = []
+    for entry in charts.missing(entries, hits, CHART_FILL_TOP):
+        key = track_key(entry["artist"], entry["title"])
+        if norm(primary_artist(entry["artist"])) in blocked or skip_from_history(history.get(key)):
+            continue
+        candidates.append({"key": key, "artist": entry["artist"], "title": entry["title"], "score": 1.0, "best": 1.0,
+                           "via": f"{chart.name} #{entry['rank']}", "duration": entry.get("duration"),
+                           "pool": "chart", "chart": chart.name})
+    if dry_run:
+        log(f"Lista „{chart.name}” — do dociągnięcia (do {CHART_FILL_PER_RUN}, z {len(candidates)} brakujących w czołówce):")
+        for cand in candidates[:CHART_FILL_PER_RUN * 3]:
+            log(f"   {cand['via']}: {cand['artist']} — {cand['title']}")
+        return []
+    if not candidates:
+        return []
+    try:
+        sl = Slskd()
+    except SystemExit as e:
+        log(f"Lista „{chart.name}”: {e}")
+        return []
+    jobs, per_artist, budget = [], Counter(), CHART_FILL_PER_RUN * 3
+    for cand in candidates:
+        if len([j for j in jobs if j["status"] == "pending"]) >= CHART_FILL_PER_RUN or budget <= 0:
+            break
+        artist = norm(primary_artist(cand["artist"]))
+        if per_artist[artist] >= MAX_PER_ARTIST or nd.find_song(cand["artist"], cand["title"]):
+            continue
+        budget -= 1
+        log(f"🔎 {cand['via']}: {cand['artist']} — {cand['title']}")
+        try:
+            job = search_and_queue(sl, cand)
+        except (RuntimeError, urllib.error.URLError) as e:
+            log(f"Lista „{chart.name}”: przerywam wyszukiwanie: {e}")
+            break
+        log(f"   → {job['user']} ({job['ext']})" if job["status"] == "pending"
+            else "   brak w Soulseek" if job["status"] == "notfound" else "   slskd nie przyjął żadnego pobrania")
+        if job.get("empty"):  # nikt nie odpowiedział: nie zapisujemy jako „brak” (mogła być awaria Soulseek)
+            continue
+        jobs.append(job)
+        if job["status"] == "pending":
+            per_artist[artist] += 1
+    if jobs:
+        remember(history, jobs)
+        if any(j["status"] == "pending" for j in jobs):
+            log(f"Lista „{chart.name}”: czekam na pobrania (maks. {CHART_FILL_TIMEOUT // 60} min)...")
+            wait_for_downloads(sl, jobs, CHART_FILL_TIMEOUT)
+            remember(history, jobs)
+    return jobs
+
+
+def refresh_charts(state, force=False, dry_run=False):
     """„Top 100 Polska” i inne listy przebojów: z listy ze źródła zostają utwory, które masz w bibliotece, w kolejności
-    listy. Odświeża się co CHART_EVERY_HOURS godzin (oraz po pobraniu nowych utworów). Playlisty usunięte ręcznie
-    nie wracają, a Twoja playlista o tej samej nazwie nie jest nadpisywana."""
+    listy. Odświeża się co CHART_EVERY_HOURS godzin (oraz po pobraniu nowych utworów). Z DISCOVER_CHART_FILL=1 brakujące
+    utwory z czołówki są dociągane przez slskd, a lista powstaje od nowa, gdy trafią do biblioteki. Playlisty usunięte
+    ręcznie nie wracają, a Twoja playlista o tej samej nazwie nie jest nadpisywana."""
     chosen = selected_charts()
     if not chosen or not force and time.time() - state.get("charts_checked", 0) < CHART_EVERY_HOURS * 3600:
         return
@@ -1438,6 +1520,7 @@ def refresh_charts(state, force=False):
         by_name = {p.get("name"): p for p in playlists}
         saved = state.setdefault("charts", {})
         isrc_cache = state.setdefault("chart_isrc", {})
+        history = state.setdefault("history", {})
         now = datetime.now(timezone.utc)
         for chart in chosen:
             record = saved.setdefault(chart.name, {})
@@ -1460,37 +1543,52 @@ def refresh_charts(state, force=False):
                 log(f"Lista „{chart.name}”: {e}")
                 continue
             hits = charts.match(entries, songs)
-            if len(hits) < CHART_MIN_MATCHES:
+            if dry_run:
+                log(f"Lista „{chart.name}” — w bibliotece {len(hits)}/{len(entries)}.")
+                if not CHART_FILL:
+                    log("   (dociąganie jest wyłączone: DISCOVER_CHART_FILL=0 — poniżej podgląd, co by dociągnęło po włączeniu)")
+                fill_chart(nd, chart, entries, hits, history, dry_run=True)
+                continue
+            if len(hits) < CHART_MIN_MATCHES and not CHART_FILL:
                 log(f"Lista „{chart.name}”: w bibliotece tylko {len(hits)} z {len(entries)} utworów "
                     f"({CHART_MIN_MATCHES} potrzeba) — playlista nie powstaje.")
                 continue
-            ids = [song["id"] for _, song, _ in hits]
             try:
-                if existing:
-                    nd.call("createPlaylist", playlistId=existing["id"], songId=ids)
-                    playlist_id = existing["id"]
-                else:
-                    playlist_id = nd.call("createPlaylist", name=chart.name, songId=ids).get("playlist", {}).get("id")
-                if playlist_id:
-                    try:
-                        nd.call("updatePlaylist", playlistId=playlist_id,
-                                comment=charts.comment(chart, len(ids), len(entries), datetime.now()))
-                    except RuntimeError:
-                        pass
-                    ranks = {song["id"]: entry["rank"] for entry, song, _ in hits}
-                    record.update(id=playlist_id, ids=ids, ranks=ranks, previous_ranks=record.get("ranks", {}),
-                                  matched=len(ids), total=len(entries), updated=now.isoformat(timespec="minutes"))
-                    by_isrc = sum(1 for _, _, how in hits if how == "isrc")
-                    log(f"Lista „{chart.name}” — w bibliotece {len(ids)}/{len(entries)} (po ISRC: {by_isrc}).")
+                if len(hits) >= CHART_MIN_MATCHES:
+                    playlist_id = write_chart_playlist(nd, chart, existing["id"] if existing else None, hits, len(entries))
+                    if playlist_id:
+                        existing = {"id": playlist_id}
+                        record.update(id=playlist_id, ids=[s["id"] for _, s, _ in hits],
+                                      ranks={s["id"]: e["rank"] for e, s, _ in hits}, previous_ranks=record.get("ranks", {}),
+                                      matched=len(hits), total=len(entries), updated=now.isoformat(timespec="minutes"))
+                        log(f"Lista „{chart.name}” — w bibliotece {len(hits)}/{len(entries)} "
+                            f"(po ISRC: {sum(1 for _, _, how in hits if how == 'isrc')}).")
+                jobs = fill_chart(nd, chart, entries, hits, history) if CHART_FILL else []
+                if any(j["status"] == "done" for j in jobs):
+                    wait_for_import(jobs)
+                    nd.rescan()
+                    time.sleep(20)  # skan Navidrome trwa chwilę
+                    songs = [s for s in all_native_songs(nd) if not podcasts.is_podcast(s)]
+                    hits = charts.match(entries, songs)
+                    if len(hits) >= CHART_MIN_MATCHES:
+                        playlist_id = write_chart_playlist(nd, chart, existing["id"] if existing else None, hits, len(entries))
+                        if playlist_id:
+                            record.update(id=playlist_id, ids=[s["id"] for _, s, _ in hits],
+                                          ranks={s["id"]: e["rank"] for e, s, _ in hits}, matched=len(hits),
+                                          total=len(entries), updated=now.isoformat(timespec="minutes"))
+                            log(f"Lista „{chart.name}” po dociągnięciu — w bibliotece {len(hits)}/{len(entries)}.")
             except RuntimeError as e:
                 log(f"Lista „{chart.name}”: {e}")
         if len(isrc_cache) > 2000:  # pamięć ISRC nie rośnie w nieskończoność
             for key in list(isrc_cache)[:len(isrc_cache) - 1000]:
                 del isrc_cache[key]
-        state["charts_checked"] = time.time()
+        if not dry_run:
+            state["charts_checked"] = time.time()
     except Exception as e:  # listy przebojów nie mogą zatrzymać odkrywania muzyki
         log(f"Listy przebojów się nie odświeżyły: {e} — spróbuję za godzinę.")
-        state["charts_checked"] = time.time() - CHART_EVERY_HOURS * 3600 + 3600
+        if not dry_run:
+            state["charts_checked"] = time.time() - CHART_EVERY_HOURS * 3600 + 3600
+
 
 # ── podcasty ─────────────────────────────────────────────────────────────────
 
@@ -1574,7 +1672,7 @@ def main():
     parser.add_argument("--stats", action="store_true", help="policz statystyki dla nerdów od razu")
     parser.add_argument("--podcasts", action="store_true", help="sprawdź kanały podcastów od razu")
     parser.add_argument("--mixes", action="store_true", help="odśwież tematyczne miksy (Happy Mix, Dark Mix...) od razu")
-    parser.add_argument("--charts", action="store_true", help="odśwież listy przebojów (Top 100 Polska) od razu")
+    parser.add_argument("--charts", action="store_true", help="odśwież listy przebojów (Top 100 Polska) od razu (z --dry-run: tylko pokaż, co by zrobił)")
     parser.add_argument("--podcast-fetch", metavar="AUDYCJA", help="pobierz starsze odcinki audycji (podgląd, dopóki nie dodasz --yes)")
     parser.add_argument("--year", type=int, help="z --podcast-fetch: tylko odcinki z tego roku")
     parser.add_argument("--match", metavar="REGEX", help="z --podcast-fetch: tylko odcinki z pasującym tytułem (np. serię)")
@@ -1595,8 +1693,9 @@ def main():
         return
     if args.charts:
         state = load_state()
-        refresh_charts(state, force=True)
-        save_state(state)
+        refresh_charts(state, force=True, dry_run=args.dry_run)
+        if not args.dry_run:
+            save_state(state)
         return
     if args.taste:
         state = load_state()

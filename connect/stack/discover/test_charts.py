@@ -75,6 +75,16 @@ class Match(unittest.TestCase):
         self.assertEqual(len(charts.match([entry(1, "A", "One", duration=None)], songs)), 1)
 
 
+class Missing(unittest.TestCase):
+    def test_lists_unmatched_entries_from_the_top_in_rank_order(self):
+        entries = [{"rank": r, "id": f"d{r}", "title": f"T{r}", "artist": "A"} for r in (5, 1, 3, 2, 4)]
+        songs = [song(1, "A", "T2"), song(2, "A", "T4")]
+        hits = charts.match(entries, songs)
+        self.assertEqual([e["rank"] for e in charts.missing(entries, hits, 4)], [1, 3])
+        self.assertEqual([e["rank"] for e in charts.missing(entries, hits, 10)], [1, 3, 5])
+        self.assertEqual(charts.missing(entries, hits, 0), [])
+
+
 class Config(unittest.TestCase):
     def test_default_chart_and_names(self):
         self.assertEqual(charts.by_names([])[0].name, "Top 100 Polska")
