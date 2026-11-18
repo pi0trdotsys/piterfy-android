@@ -64,6 +64,8 @@ public final class PiterfyHomePanel extends LinearLayout implements DefaultLifec
     private final LinearLayout shelf;
     private final LinearLayout mixShelf;
     private final View mixSection;
+    private final LinearLayout chartShelf;
+    private final View chartSection;
     private final Typeface regular;
     private final Typeface bold;
     private boolean destroyed;
@@ -165,6 +167,23 @@ public final class PiterfyHomePanel extends LinearLayout implements DefaultLifec
         mixSection = mixSectionBox;
         addView(mixSectionBox);
 
+        // Piterfy: listy przebojow (Top 100 Polska...) - serwer odswieza je sam, w kolejnosci rankingu
+        LinearLayout chartSectionBox = new LinearLayout(getContext());
+        chartSectionBox.setOrientation(VERTICAL);
+        TextView chartHeading = text(getResources().getString(R.string.piterfy_charts), 22, Color.WHITE, true);
+        chartHeading.setPadding(dp(4), dp(28), 0, dp(12));
+        chartSectionBox.addView(chartHeading);
+        chartShelf = new LinearLayout(getContext());
+        chartShelf.setOrientation(HORIZONTAL);
+        HorizontalScrollView chartScroll = new HorizontalScrollView(getContext());
+        chartScroll.setHorizontalScrollBarEnabled(false);
+        chartScroll.setOverScrollMode(OVER_SCROLL_NEVER);
+        chartScroll.addView(chartShelf);
+        chartSectionBox.addView(chartScroll);
+        chartSectionBox.setVisibility(GONE);
+        chartSection = chartSectionBox;
+        addView(chartSectionBox);
+
         load();
         loadRecentAlbums();
     }
@@ -245,14 +264,18 @@ public final class PiterfyHomePanel extends LinearLayout implements DefaultLifec
                 }
                 List<Playlist> list = new ArrayList<>();
                 List<Playlist> mixList = new ArrayList<>();
+                List<Playlist> chartList = new ArrayList<>();
                 if (sr.getPlaylists().getPlaylists() != null) for (Playlist p : sr.getPlaylists().getPlaylists()) {
                     if (isMix(p)) mixList.add(p);
+                    else if (isChart(p)) chartList.add(p);
                     else if (p.getName() != null && (p.getName().equalsIgnoreCase("Odkrywaj") || p.getName().startsWith("Odkrywaj ")))
                         list.add(p);
                 }
                 list.sort(Comparator.comparing((Playlist p) -> p.getCreated() == null ? new Date(0) : p.getCreated()).reversed());
                 mixList.sort(Comparator.comparing((Playlist p) -> p.getCreated() == null ? new Date(0) : p.getCreated()));
+                chartList.sort(Comparator.comparing((Playlist p) -> p.getName() == null ? "" : p.getName()));
                 showMixes(mixList);
+                showCharts(chartList);
                 discover = list;
                 shelf.removeAllViews();
                 if (list.isEmpty()) {
@@ -276,6 +299,38 @@ public final class PiterfyHomePanel extends LinearLayout implements DefaultLifec
     /** Serwer oznacza playlisty-miksy poczatkiem komentarza (connect/stack/discover/mixes.py, COMMENT_PREFIX). */
     static boolean isMix(Playlist p) {
         return p != null && p.getComment() != null && p.getComment().startsWith("Piterfy Mix");
+    }
+
+    /** Listy przebojow ("Top 100 Polska") serwer oznacza poczatkiem komentarza (connect/stack/discover/charts.py, COMMENT_PREFIX). */
+    static boolean isChart(Playlist p) {
+        return p != null && p.getComment() != null && p.getComment().startsWith("Piterfy Chart");
+    }
+
+    private static final java.util.regex.Pattern CHART_COUNTS = java.util.regex.Pattern.compile("w bibliotece (\\d+)/(\\d+)");
+
+    /** "w bibliotece 31/100" z komentarza listy przebojow -> {31, 100}; null, gdy komentarz nie ma takiego zapisu. */
+    static int[] chartCounts(String comment) {
+        if (comment == null) return null;
+        java.util.regex.Matcher m = CHART_COUNTS.matcher(comment);
+        if (!m.find()) return null;
+        try {
+            return new int[]{Integer.parseInt(m.group(1)), Integer.parseInt(m.group(2))};
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
+    private void showCharts(List<Playlist> list) {
+        chartShelf.removeAllViews();
+        int index = 0;
+        for (Playlist p : list) {
+            int[] counts = chartCounts(p.getComment());
+            String subtitle = counts == null ? null : getResources().getString(R.string.piterfy_chart_in_library, counts[0], counts[1]);
+            View c = card(p, subtitle);
+            PiterfyMotion.enter(c, index++);
+            chartShelf.addView(c);
+        }
+        chartSection.setVisibility(list.isEmpty() ? GONE : VISIBLE);
     }
 
     private void showMixes(List<Playlist> list) {
@@ -390,6 +445,10 @@ public final class PiterfyHomePanel extends LinearLayout implements DefaultLifec
     }
 
     private View card(Playlist p) {
+        return card(p, null);
+    }
+
+    private View card(Playlist p, String subtitle) {
         LinearLayout card = new LinearLayout(getContext());
         card.setOrientation(VERTICAL);
         LayoutParams params = new LayoutParams(dp(148), -2);
@@ -417,7 +476,7 @@ public final class PiterfyHomePanel extends LinearLayout implements DefaultLifec
         name.setEllipsize(android.text.TextUtils.TruncateAt.END);
         name.setPadding(0, dp(8), 0, 0);
         card.addView(name);
-        TextView count = text(getResources().getString(R.string.piterfy_discover_count, p.getSongCount()), 12, 0xFFB3B3B3, false);
+        TextView count = text(subtitle != null ? subtitle : getResources().getString(R.string.piterfy_discover_count, p.getSongCount()), 12, 0xFFB3B3B3, false);
         count.setMaxLines(2);
         card.addView(count);
 

@@ -1114,6 +1114,8 @@ html:not([data-pf-light]) .pf-hello {
 .pf-card-art[data-pf-art="mix-rock"]::before { content: "🎸"; }
 .pf-card-art[data-pf-art="mix-hip-hop"] { background: linear-gradient(135deg, #f7971e, #8e2de2); background-size: 220% 220%; }
 .pf-card-art[data-pf-art="mix-hip-hop"]::before { content: "🎤"; }
+.pf-card-art[data-pf-art="mix-chart"] { background: linear-gradient(135deg, #b30024, #ff6b81 70%, #ffd1d9); background-size: 220% 220%; }
+.pf-card-art[data-pf-art="mix-chart"]::before { content: "🏆"; }
 
 /* wiersze kart mają zapas u góry, żeby uniesiona okładka nie była ucięta przez overflow */
 .pf-row { padding-top: 10px; margin-top: -10px; }

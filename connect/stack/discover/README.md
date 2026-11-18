@@ -105,6 +105,17 @@ Navidrome + Last.fm ──► discover ──► slskd ──► incoming/ ─�
       playlista o tej samej nazwie nie jest nadpisywana.
     - Aplikacja pokazuje miksy w półce „Twoje miksy” na ekranie głównym (rozpoznaje je po początku komentarza „Piterfy Mix”).
     - Odświeżenie od ręki: `docker compose run --rm --no-deps piterfy-discover --mixes`.
+12. **Listy przebojów.** `charts.py` układa „Top 100 Polska” z playlisty Deezera „Top Poland” (100 utworów, odświeżana codziennie,
+    publiczne API bez klucza):
+    - Playlista Navidrome może zawierać tylko utwory z biblioteki, więc zostają te z listy, które masz, **w kolejności listy**
+      (komentarz: „w bibliotece X/100”). Utwory, których nie masz, są pomijane — nic się nie pobiera.
+    - Dopasowanie: najpierw po ISRC (Deezer podaje go dla każdego utworu; zapamiętujemy go w `state.json`), potem po tytule
+      i wykonawcy (bez „feat.”, „radio edit”, „remastered”; „Slowed”, „Remix” i inne wersje nie podszywają się pod oryginał;
+      długość może się różnić o 12 s). Jeden utwór trafia do listy raz.
+    - Lista odświeża się co 12 godzin i zaraz po pobraniu nowych utworów. Poniżej 3 pasujących utworów playlista nie
+      powstaje, usunięta ręcznie nie wraca, a cudza playlista o tej samej nazwie nie jest nadpisywana.
+    - Aplikacja i strona pokazują listy w półce „Listy przebojów” (rozpoznają je po początku komentarza „Piterfy Chart”).
+    - Odświeżenie od ręki: `docker compose run --rm --no-deps piterfy-discover --charts`.
 
 - **Statystyki dla nerdów** (`stats.py`): co `DISCOVER_STATS_EVERY_HOURS` (domyślnie 6) godzin discover liczy trzy zestawienia
   i zapisuje je w `discover/state/stats.json`; aplikacja i strona WWW pobierają plik z `GET /piterfy-api/stats`
@@ -138,6 +149,7 @@ Navidrome + Last.fm ──► discover ──► slskd ──► incoming/ ─�
 | `reports/discover-*.md` | raport z każdego przebiegu (ta sama treść co w mailu) |
 | `discover/taste.py` | generator panelu gustu (uruchamia go discover co noc) |
 | `discover/mixes.py` | tematyczne miksy (Happy Mix, Dark Mix, Electronic Mix, Bass Boost...): reguły gatunków i nastroju oraz dobór utworów |
+| `discover/charts.py` | listy przebojów (Top 100 Polska): dopasowanie wpisów z Deezera do biblioteki (ISRC, tytuł i wykonawca) |
 | `discover/podcasts.py`, `discover/podcasts.txt` | podcasty: moduł (RSS → pliki audio z tagami) i lista audycji |
 | `library/Podcasty/` | odcinki podcastów, po jednym folderze na audycję |
 | `discover/stats.py`, `discover/state/stats.json` | statystyki dla nerdów: liczy je discover co kilka godzin, oddaje `/piterfy-api/stats` |
@@ -178,6 +190,9 @@ Po zmianie uruchom `docker compose up -d piterfy-discover`.
 | `DISCOVER_MIX_EVERY_HOURS` | `24` | co ile godzin miksy dobierają utwory od nowa |
 | `DISCOVER_MIX_SIZE` / `DISCOVER_MIX_SIZE_MAX` | `40` / `100` | najmniejsza i największa liczba utworów w miksie |
 | `DISCOVER_MIX_MAX_PER_ARTIST` | `3` | najwyżej tylu utworów jednego wykonawcy w miksie |
+| `DISCOVER_CHARTS` | `all` | które listy przebojów tworzyć: `all`, lista nazw po `;` (np. `Top 100 Polska`) albo pusta = bez list |
+| `DISCOVER_CHART_EVERY_HOURS` | `12` | co ile godzin listy przebojów odświeżają się |
+| `DISCOVER_CHART_MIN` | `3` | ile utworów z listy musi być w bibliotece, żeby powstała playlista |
 | `DISCOVER_STATS_EVERY_HOURS` | `6` | co ile godzin liczą się statystyki dla nerdów (`0` = wyłączone) |
 | `DISCOVER_BLOCK` | | wykonawcy do pomijania, rozdzieleni `;` |
 | `DISCOVER_DOWNLOAD_TIMEOUT_MIN` | `90` | ile minut czekać na pobrania (reszta dociągnie się później) |
@@ -197,6 +212,7 @@ docker compose run --rm piterfy-discover --search "Artysta - Tytuł"  # jedno pr
 docker compose run --rm --no-deps piterfy-discover --test-mail      # próbny mail
 docker compose run --rm --no-deps piterfy-discover --taste          # odśwież panel gustu od razu
 docker compose run --rm --no-deps piterfy-discover --mixes          # odśwież miksy (Happy Mix, Dark Mix...) od razu
+docker compose run --rm --no-deps piterfy-discover --charts         # odśwież listy przebojów (Top 100 Polska) od razu
 docker compose run --rm --no-deps piterfy-discover --stats          # policz statystyki dla nerdów od razu
 docker compose run --rm piterfy-discover --now                      # przebieg poza harmonogramem
 docker logs -f piterfy-discover                                      # co robi discover

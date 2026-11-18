@@ -248,6 +248,10 @@ The player's format and bitrate label gives what was actually decoded, not the t
 
 Downloaded tracks show the format on disk. When Tempus transcodes a download, the row and the track info dialog carry the transcoded format and bitrate instead of the source values.
 
+**Listy przebojów (Top 100 Polska)**
+
+On the home screen (app and web) the **Listy przebojów** shelf shows chart playlists the server builds from the public Deezer chart "Top Poland". Because a playlist can only contain tracks from your library, a chart playlist holds the chart tracks you already have, in chart order, and the card says how many ("W bibliotece 9 z 100"). The playlist refreshes every 12 hours and right after new downloads; nothing is downloaded for it. Delete the playlist in Navidrome and it stays deleted; a playlist of yours with the same name is never overwritten.
+
 **Canvas (Android)**
 
 The full-screen player has an animated backdrop that Piterfy draws from the cover colours: auras, waves, fireflies, sonar rings, soft gradients or a vinyl glow. Every track always gets the same style, picked from its ID. The backdrop is cut like a music video: every few seconds (about 6–11) a new shot starts, in another style and colour shade, with a slow camera move and a cut, fade, iris, slide, zoom or flash between shots, always the same for the same track and matching the position in the song. It moves only while the player is expanded and the music is playing, never runs faster than 30 frames per second, and stays a still picture in battery saver or when system animations are off. Turn it off in **Settings → Piterfy · odtwarzanie i odkrywanie → Canvas** (the backdrop is also skipped on Android TV, for radio, podcasts and while playing on another device).

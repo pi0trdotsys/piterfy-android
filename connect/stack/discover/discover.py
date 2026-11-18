@@ -87,6 +87,9 @@ MIXES            = os.environ.get("DISCOVER_MIXES", "all")      # „all”, lis
 MIX_EVERY_HOURS  = env_float("DISCOVER_MIX_EVERY_HOURS", 24)    # co ile godzin miksy dobierają utwory od nowa
 MIX_SIZE         = env_int("DISCOVER_MIX_SIZE", 40)             # najmniejsza liczba utworów w miksie (rośnie z biblioteką)
 MIX_SIZE_MAX     = env_int("DISCOVER_MIX_SIZE_MAX", 100)        # największa liczba utworów w miksie
+CHARTS           = os.environ.get("DISCOVER_CHARTS", "all")     # „all”, lista nazw po średniku albo pusta = bez list przebojów (charts.py)
+CHART_EVERY_HOURS = env_float("DISCOVER_CHART_EVERY_HOURS", 12)  # co ile godzin listy przebojów dobierają utwory od nowa
+CHART_MIN_MATCHES = env_int("DISCOVER_CHART_MIN", 3)             # tyle utworów z listy musi być w bibliotece, żeby powstała playlista
 STATS_EVERY_HOURS = env_float("DISCOVER_STATS_EVERY_HOURS", 6)  # co ile godzin liczymy „Statystyki dla nerdów” (stats.py); 0 = wyłączone
 MIX_MAX_PER_ARTIST = env_int("DISCOVER_MIX_MAX_PER_ARTIST", 3)  # tylu utworów jednego wykonawcy najwyżej w miksie
 
@@ -113,6 +116,7 @@ FILLER_WORDS = {"the", "and", "feat", "ft"}
 # „Wykonawcy”, którzy nie są wykonawcami: składanki i pliki bez tagu (Navidrome pokazuje je jako [Unknown Artist])
 import podcasts  # noqa: E402  (podcasty: ściąganie odcinków RSS jako pliki audio w bibliotece)
 import mixes  # noqa: E402  (tematyczne miksy: Happy Mix, Dark Mix, Electronic Mix, Bass Boost...)
+import charts  # noqa: E402  (listy przebojów: Top 100 Polska — dopasowanie do biblioteki)
 
 VARIOUS_ARTISTS = {"various artists", "various", "va", "unknown artist", "unknown", ""}
 
@@ -1245,6 +1249,7 @@ def run(dry_run=False):
     save_state(state)
     if any(j["status"] == "done" for j in jobs):  # nowa muzyka od razu wpada do miksów
         refresh_mixes(state, force=True)
+        refresh_charts(state, force=True)
         save_state(state)
 
     lines = report_lines(started, seed_artists, jobs, liked, trashed, free, low_space, fakes)
@@ -1387,6 +1392,106 @@ def refresh_mixes(state, force=False):
         state["mixes_checked"] = time.time() - MIX_EVERY_HOURS * 3600 + 3600
 
 
+
+# ── listy przebojów ──────────────────────────────────────────────────────────
+
+def selected_charts():
+    if not CHARTS.strip():
+        return []
+    return charts.by_names([] if CHARTS.strip().lower() == "all" else CHARTS.split(";"))
+
+
+def fetch_chart(chart, isrc_cache):
+    """Wpisy listy ze źródła: [{"rank", "id", "title", "artist", "isrc", "duration"}]. ISRC każdego utworu pobieramy raz
+    (Deezer podaje go dopiero w danych pojedynczego utworu) i zapamiętujemy w `isrc_cache`."""
+    if chart.source != "deezer":
+        raise RuntimeError(f"nieznane źródło listy: {chart.source}")
+    deezer = Deezer()
+    tracks = as_list(deezer.call(f"playlist/{chart.ref}/tracks", limit=200).get("data"))
+    if not tracks:
+        raise RuntimeError("Deezer nie zwrócił listy utworów")
+    entries = []
+    for rank, track in enumerate(tracks[:200], 1):
+        track_id = str(track.get("id"))
+        isrc = track.get("isrc") or isrc_cache.get(track_id)
+        if not isrc:
+            isrc = deezer.call(f"track/{track_id}").get("isrc") or ""
+            isrc_cache[track_id] = isrc
+        entries.append({"rank": rank, "id": track_id, "title": track.get("title", ""),
+                        "artist": (track.get("artist") or {}).get("name", ""), "isrc": isrc,
+                        "duration": track.get("duration")})
+    return entries
+
+
+def refresh_charts(state, force=False):
+    """„Top 100 Polska” i inne listy przebojów: z listy ze źródła zostają utwory, które masz w bibliotece, w kolejności
+    listy. Odświeża się co CHART_EVERY_HOURS godzin (oraz po pobraniu nowych utworów). Playlisty usunięte ręcznie
+    nie wracają, a Twoja playlista o tej samej nazwie nie jest nadpisywana."""
+    chosen = selected_charts()
+    if not chosen or not force and time.time() - state.get("charts_checked", 0) < CHART_EVERY_HOURS * 3600:
+        return
+    try:
+        nd = Navidrome()
+        songs = [s for s in all_native_songs(nd) if not podcasts.is_podcast(s)]
+        playlists = as_list(nd.call("getPlaylists").get("playlists", {}).get("playlist"))
+        by_id = {p["id"]: p for p in playlists}
+        by_name = {p.get("name"): p for p in playlists}
+        saved = state.setdefault("charts", {})
+        isrc_cache = state.setdefault("chart_isrc", {})
+        now = datetime.now(timezone.utc)
+        for chart in chosen:
+            record = saved.setdefault(chart.name, {})
+            if record.get("removed"):
+                continue
+            existing = by_id.get(record.get("id"))
+            if existing is None and record.get("id"):
+                record["removed"] = True  # playlista usunięta ręcznie w Navidrome — nie odtwarzamy jej
+                log(f"Lista „{chart.name}” została usunięta w Navidrome — więcej jej nie tworzę.")
+                continue
+            if existing is None and chart.name in by_name:
+                if not (by_name[chart.name].get("comment") or "").startswith(charts.COMMENT_PREFIX):
+                    log(f"Lista „{chart.name}”: playlista o tej nazwie jest Twoja — nie nadpisuję jej.")
+                    record["removed"] = True
+                    continue
+                existing = by_name[chart.name]
+            try:
+                entries = fetch_chart(chart, isrc_cache)
+            except (RuntimeError, urllib.error.URLError, ValueError) as e:
+                log(f"Lista „{chart.name}”: {e}")
+                continue
+            hits = charts.match(entries, songs)
+            if len(hits) < CHART_MIN_MATCHES:
+                log(f"Lista „{chart.name}”: w bibliotece tylko {len(hits)} z {len(entries)} utworów "
+                    f"({CHART_MIN_MATCHES} potrzeba) — playlista nie powstaje.")
+                continue
+            ids = [song["id"] for _, song, _ in hits]
+            try:
+                if existing:
+                    nd.call("createPlaylist", playlistId=existing["id"], songId=ids)
+                    playlist_id = existing["id"]
+                else:
+                    playlist_id = nd.call("createPlaylist", name=chart.name, songId=ids).get("playlist", {}).get("id")
+                if playlist_id:
+                    try:
+                        nd.call("updatePlaylist", playlistId=playlist_id,
+                                comment=charts.comment(chart, len(ids), len(entries), datetime.now()))
+                    except RuntimeError:
+                        pass
+                    ranks = {song["id"]: entry["rank"] for entry, song, _ in hits}
+                    record.update(id=playlist_id, ids=ids, ranks=ranks, previous_ranks=record.get("ranks", {}),
+                                  matched=len(ids), total=len(entries), updated=now.isoformat(timespec="minutes"))
+                    by_isrc = sum(1 for _, _, how in hits if how == "isrc")
+                    log(f"Lista „{chart.name}” — w bibliotece {len(ids)}/{len(entries)} (po ISRC: {by_isrc}).")
+            except RuntimeError as e:
+                log(f"Lista „{chart.name}”: {e}")
+        if len(isrc_cache) > 2000:  # pamięć ISRC nie rośnie w nieskończoność
+            for key in list(isrc_cache)[:len(isrc_cache) - 1000]:
+                del isrc_cache[key]
+        state["charts_checked"] = time.time()
+    except Exception as e:  # listy przebojów nie mogą zatrzymać odkrywania muzyki
+        log(f"Listy przebojów się nie odświeżyły: {e} — spróbuję za godzinę.")
+        state["charts_checked"] = time.time() - CHART_EVERY_HOURS * 3600 + 3600
+
 # ── podcasty ─────────────────────────────────────────────────────────────────
 
 def load_podcast_shows():
@@ -1469,6 +1574,7 @@ def main():
     parser.add_argument("--stats", action="store_true", help="policz statystyki dla nerdów od razu")
     parser.add_argument("--podcasts", action="store_true", help="sprawdź kanały podcastów od razu")
     parser.add_argument("--mixes", action="store_true", help="odśwież tematyczne miksy (Happy Mix, Dark Mix...) od razu")
+    parser.add_argument("--charts", action="store_true", help="odśwież listy przebojów (Top 100 Polska) od razu")
     parser.add_argument("--podcast-fetch", metavar="AUDYCJA", help="pobierz starsze odcinki audycji (podgląd, dopóki nie dodasz --yes)")
     parser.add_argument("--year", type=int, help="z --podcast-fetch: tylko odcinki z tego roku")
     parser.add_argument("--match", metavar="REGEX", help="z --podcast-fetch: tylko odcinki z pasującym tytułem (np. serię)")
@@ -1485,6 +1591,11 @@ def main():
     if args.mixes:
         state = load_state()
         refresh_mixes(state, force=True)
+        save_state(state)
+        return
+    if args.charts:
+        state = load_state()
+        refresh_charts(state, force=True)
         save_state(state)
         return
     if args.taste:
@@ -1523,6 +1634,7 @@ def main():
         refresh_taste(state)
         refresh_podcasts(state)
         refresh_mixes(state)
+        refresh_charts(state)
         refresh_stats(state)
         save_state(state)
         if time.time() >= retry_at and is_due(state, datetime.now()):

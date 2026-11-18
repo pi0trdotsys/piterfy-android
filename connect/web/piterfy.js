@@ -1173,6 +1173,9 @@
       .sort((a, b) => String(b.created).localeCompare(String(a.created)));
     const isMix = (p) => /^Piterfy Mix/.test(p.comment || "");
     const mixes = playlists.filter(isMix).sort((a, b) => String(a.created).localeCompare(String(b.created)));
+    // listy przebojów (Top 100 Polska...) układa serwer: playlisty z komentarzem „Piterfy Chart: …”
+    const isChart = (p) => /^Piterfy Chart/.test(p.comment || "");
+    const charts = playlists.filter(isChart).sort((a, b) => String(a.created).localeCompare(String(b.created)));
     const fresh = daily[0] ? ((await subsonic("getPlaylist", { id: daily[0].id })).playlist || {}).entry || [] : [];
     const artists = taste && taste.top_artists ? (await Promise.all(taste.top_artists.slice(0, 10).map(async (a) => {
       const found = ((await subsonic("search3", { query: a.name, artistCount: 5, albumCount: 0, songCount: 0 }))
@@ -1183,8 +1186,8 @@
     return {
       recent: albums(recent), frequent: albums(frequent), newest: albums(newest),
       daily: daily, mix: playlists.find((p) => p.name === "Odkrywaj"), fresh: fresh,
-      mixes: mixes,
-      own: playlists.filter((p) => p.name !== "Odkrywaj" && !DAILY.test(p.name) && !isMix(p)),
+      mixes: mixes, charts: charts,
+      own: playlists.filter((p) => p.name !== "Odkrywaj" && !DAILY.test(p.name) && !isMix(p) && !isChart(p)),
       artists: artists, taste: taste,
     };
   }
@@ -1251,6 +1254,12 @@
     const mixSlug = (name) => name.toLowerCase().replace(/\s*mix$/, "").replace(/[^a-z]+/g, "-").replace(/^-|-$/g, "");
     const mixCards = (d.mixes || []).map((p) => card("#/playlist/" + p.id + "/show", p.name,
       songs(p), "", { art: "mix-" + mixSlug(p.name), label: p.name.replace(/\s*Mix$/i, "") }));
+    // listy przebojów: podpis „w bibliotece X/Y” bierzemy z komentarza playlisty
+    const chartSub = (p) => {
+      const m = /w bibliotece (\d+)\/(\d+)/.exec(p.comment || "");
+      return m ? "W bibliotece " + m[1] + " z " + m[2] : songs(p);
+    };
+    const chartCards = (d.charts || []).map((p) => card("#/playlist/" + p.id + "/show", p.name, chartSub(p), "", { art: "mix-chart", label: p.name }));
     const madeForYou = (d.mix ? [playlistCard(d.mix, "Wszystko, co dla Ciebie znalazłem", "mix")] : [])
       .concat(d.daily.slice(0, 7).map((p) => playlistCard(p, songs(p) + " · nowe dla Ciebie", "daily")));
 
@@ -1260,6 +1269,7 @@
       "</nav></header>" +
       '<div class="pf-tiles">' + tiles.join("") + "</div>" +
       section("Twoje miksy", "#/playlist", mixCards, "Odświeżane codziennie", "pf-row-mixes") +
+      section("Listy przebojów", "#/playlist", chartCards, "Z listy przebojów, tylko to, co masz", "pf-row-mixes") +
       section("Odkryte dla Ciebie", "#/playlist", madeForYou, "Stworzone dla Ciebie") +
       section("Świeże odkrycia", d.daily[0] ? "#/playlist/" + d.daily[0].id + "/show" : "",
         d.fresh.map((s) => card("#/album/" + s.albumId + "/show", s.title, s.artist || "", cover(s.coverArt))), d.daily[0] && d.daily[0].name) +
