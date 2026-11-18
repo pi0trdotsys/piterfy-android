@@ -34,7 +34,7 @@ Przygotuj nowy katalog poleceniem powyżej, ale przed pierwszym uruchomieniem od
 | Z kopii źródłowej | Gdzie odtworzyć |
 | --- | --- |
 | Dane wolumenu Navidrome (`/data`, w tym `navidrome.db`) | Wolumen Compose `navidrome_data` nowego projektu. Baza zawiera m.in. konta, historię, ulubione i playlisty. |
-| Muzyka i podcasty | `library/` z dotychczasową strukturą ścieżek, widoczną w kontenerze jako `/music` |
+| Muzyka i podcasty | `library/` (albo katalog z `PITERFY_MUSIC_DIR`, np. na dysku USB) z dotychczasową strukturą ścieżek, widoczny w kontenerze jako `/music` |
 | Stan Discover, zdjęcia profilowe, Connect i ustawienia biblioteki | `discover/state/` |
 | Baza DJ i zapowiedzi | `discover/dj-state/`. Katalog musi być zapisywalny dla UID/GID ustawionego w `.env`. |
 | Baza beets i analiza widma | `discover/beets/library.db` i `discover/beets/spectrum.json` |
@@ -58,3 +58,20 @@ Po przywróceniu sprawdź logowanie i odtwarzanie utworu, potem `/gust/`, `/app/
 ## Utrzymanie źródeł
 
 Zmiany w plikach serwera zapisuj w repozytorium przed wdrożeniem. Zasoby przeglądarki są w `connect/web`, backend Connect i DJ w `connect/server`, szablon poczty w `connect/discovery`, a konfiguracja Compose, Caddy i pozostałe procesy w tym katalogu. Starsze skrypty `connect/deploy_*.py` odnoszą się do pierwotnego układu produkcji. Na nowym hoście źródłem pełnego wdrożenia jest `prepare.py`.
+
+## Biblioteka na zewnętrznym dysku (USB)
+
+Cała biblioteka (Navidrome, beets, discover) widzi muzykę pod `/music`, więc można ją przenieść bez ruszania baz: wystarczy zmienić katalog
+źródłowy woluminu (zmienna `PITERFY_MUSIC_DIR` w `.env`, domyślnie `./library`). Kolejność, jak przy przenosinach na dysk NTFS `/srv/media/USB`:
+
+1. Zamontuj dysk do zapisu (`fstab`: `ntfs3 rw,nosuid,nodev,noexec,nofail,uid=1000,gid=1000,umask=022`). Gdy dysk był wcześniej montowany tylko do
+   odczytu, `remount,rw` się nie uda („journal is not replayed”) — trzeba go odmontować i zamontować od nowa (na chwilę zatrzymaj kontenery, które go używają).
+2. Skopiuj bibliotekę na żywo: `rsync -rt --no-perms --no-owner --no-group ~/piterfy-stack/library/ /srv/media/USB/Muzyka/`.
+3. Zatrzymaj `piterfy-navidrome`, `piterfy-discover` i `piterfy-beets`, powtórz `rsync` z `--delete` i sprawdź, że liczba plików i bajtów się zgadza.
+4. Zmień woluminy `/music` tych trzech usług na `/srv/media/USB/Muzyka` w długiej składni z `bind: {create_host_path: false}` (bez dysku kontener
+   nie wystartuje zamiast widzieć pustą bibliotekę, przy której Navidrome oznaczyłby wszystko jako brakujące) i uruchom `docker compose up -d`.
+5. `ops/start-after-usb.sh` (w crontabie: `@reboot`) po restarcie serwera czeka na dysk, a potem uruchamia te trzy kontenery.
+6. Stary `library/` zostaw jako kopię na kilka dni, a potem usuń.
+
+NTFS (`ntfs3`) przyjmuje nazwy ze znakiem `?`, kończące się spacją i różniące się tylko wielkością liter, ale Windows ich nie pokaże poprawnie.
+Po nieczystym odłączeniu dysku NTFS może odmówić montowania do zapisu — wtedy `ntfsfix -d` albo `chkdsk` w Windows.

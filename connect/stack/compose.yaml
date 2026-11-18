@@ -34,7 +34,7 @@ services:
       TZ: Europe/Warsaw
     volumes:
       - navidrome_data:/data
-      - ./library:/music:ro
+      - ${PITERFY_MUSIC_DIR:-./library}:/music:ro
     expose:
       - "4533"
 
@@ -112,7 +112,7 @@ services:
     volumes:
       - ./discover:/app
       - ./reports:/reports
-      - ./library:/music
+      - ${PITERFY_MUSIC_DIR:-./library}:/music
       - ./discover-trash:/trash
       - ./incoming:/incoming:ro
       - ./gust:/gust
@@ -134,7 +134,7 @@ services:
     volumes:
       - ./discover/beets:/config
       - ./incoming:/incoming
-      - ./library:/music
+      - ${PITERFY_MUSIC_DIR:-./library}:/music
       - /etc/localtime:/etc/localtime:ro
 
   piterfy-connect:
