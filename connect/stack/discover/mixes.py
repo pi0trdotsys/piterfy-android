@@ -33,6 +33,8 @@ class Mix:
     mood: tuple = field(default=())    # (min_valence, max_valence, min_energy, max_energy, min_tempo) z eksportu Spotify
     min_bpm: int = 0                   # tag BPM z pliku; 0 = nie sprawdzaj (używane razem z `bpm_genres`)
     bpm_genres: tuple = ()             # gatunki, które wchodzą do miksu dopiero przy szybkim tempie
+    origin: str = ""                   # klucz z origins.py: pula utworów wg pochodzenia wykonawcy (zamiast gatunków)
+    years: tuple = ()                  # (od, do) rok wydania: miks dekady, bez względu na gatunek
 
 
 MIXES = (
@@ -84,6 +86,21 @@ MIXES = (
         genres=("hip hop", "rap", "trap", "boom bap", "grime", "drill", "g funk", "cloud rap", "r and b", "rnb",
                 "gangsta", "conscious hip hop", "crunk", "phonk", "polish hip hop", "polski rap"),
         exclude=("rap metal", "rap rock", "nu metal", "classical")),
+    # ── wg pochodzenia wykonawcy (origins.py) ──
+    Mix("French Music", "Francuska muzyka: chanson, pop i rap", origin="french"),
+    Mix("Latin Music", "Latino: reggaeton, salsa, bachata i latin pop", origin="latin"),
+    Mix("Polska Muzyka", "Polskie utwory: pop, rock i rap", origin="polish"),
+    Mix("Polski Rap", "Polski hip-hop i rap", origin="polish-rap"),
+    Mix("German Music", "Niemieckie utwory: rap, rock i pop", origin="german"),
+    Mix("Asia Pop", "K-pop, J-pop i azjatyckie brzmienia", origin="asia"),
+    Mix("Brazil Music", "Brazylijskie rytmy: samba, bossa nova, funk", origin="brazil"),
+    # ── dekady i dodatkowe gatunki ──
+    Mix("Lata 80.", "Przeboje z lat 80.", years=(1980, 1989)),
+    Mix("Lata 90.", "Przeboje z lat 90.", years=(1990, 1999)),
+    Mix("Lata 2000.", "Przeboje z pierwszej dekady XXI wieku", years=(2000, 2009)),
+    Mix("Phonk Mix", "Phonk, drift phonk i mroczny trap",
+        genres=("phonk", "drift phonk", "phonk house", "brazilian phonk", "memphis rap"),
+        exclude=("classical", "acoustic", "ambient")),
 )
 
 
@@ -119,6 +136,9 @@ def genre_names(song, feature=None):
 
 def matches(mix, song, feature=None):
     """Czy utwór pasuje do miksu. `feature` = {"e","v","t",...} z eksportu Spotify albo None."""
+    if mix.years:
+        year = int(song.get("year") or song.get("releaseYear") or 0)
+        return mix.years[0] <= year <= mix.years[1]
     include, exclude, fast = _compiled(mix)
     names = genre_names(song, feature)
     text = " | ".join(names)
@@ -192,16 +212,17 @@ def artist_of(song):
     return normalize(song.get("albumArtist") or song.get("artist") or "")
 
 
-def pick(mix, songs, features=None, previous=(), now=None, rng=None, base=40, cap=100, max_per_artist=3):
+def pick(mix, songs, features=None, previous=(), now=None, rng=None, base=40, cap=100, max_per_artist=3, include=None):
     """Zwraca listę identyfikatorów utworów (w losowej kolejności) albo [] gdy pula jest za mała.
 
     `features` — funkcja utwór → cechy audio albo None (domyślnie brak cech).
+    `include` — funkcja utwór → bool zamiast reguł gatunków (miksy wg pochodzenia).
     """
     now = now or datetime.now(timezone.utc)
     rng = rng or random.Random()
     previous = set(previous)
     feature_of = features or (lambda song: None)
-    pool = [s for s in songs if eligible(s) and matches(mix, s, feature_of(s))]
+    pool = [s for s in songs if eligible(s) and (include(s) if include else matches(mix, s, feature_of(s)))]
     if len(pool) < MIN_POOL:
         return []
     scored = sorted(((affinity(s, now, previous) + rng.random() * 2.5, s) for s in pool),

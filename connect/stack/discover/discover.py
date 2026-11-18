@@ -24,6 +24,7 @@ import shutil
 import smtplib
 import time
 import traceback
+import types
 import unicodedata
 import urllib.error
 import urllib.parse
@@ -87,9 +88,18 @@ MIXES            = os.environ.get("DISCOVER_MIXES", "all")      # „all”, lis
 MIX_EVERY_HOURS  = env_float("DISCOVER_MIX_EVERY_HOURS", 24)    # co ile godzin miksy dobierają utwory od nowa
 MIX_SIZE         = env_int("DISCOVER_MIX_SIZE", 40)             # najmniejsza liczba utworów w miksie (rośnie z biblioteką)
 MIX_SIZE_MAX     = env_int("DISCOVER_MIX_SIZE_MAX", 100)        # największa liczba utworów w miksie
+ARTIST_TAG_BATCH = env_int("DISCOVER_ARTIST_TAG_BATCH", 400)  # ilu wykonawców na jedno odświeżenie miksów dopytać o tagi w Last.fm (miksy wg pochodzenia)
+ARTIST_TAG_DAYS  = env_int("DISCOVER_ARTIST_TAG_DAYS", 120)    # po ilu dniach tagi wykonawcy z Last.fm odświeżamy
 CHARTS           = os.environ.get("DISCOVER_CHARTS", "all")     # „all”, lista nazw po średniku albo pusta = bez list przebojów (charts.py)
 CHART_EVERY_HOURS = env_float("DISCOVER_CHART_EVERY_HOURS", 12)  # co ile godzin listy przebojów dobierają utwory od nowa
 CHART_MIN_MATCHES = env_int("DISCOVER_CHART_MIN", 3)             # tyle utworów z listy musi być w bibliotece, żeby powstała playlista
+CHART_TARGET     = env_int("DISCOVER_CHART_TARGET", 100)        # tyle utworów z listy chcemy mieć w bibliotece: gdy mniej, lista sięga głębiej (200, 300, 500, 1000) i — przy dociąganiu — dociąga więcej
+CHART_FILL_CATCHUP = env_int("DISCOVER_CHART_FILL_CATCHUP", 20)  # tyle utworów najwyżej na odświeżenie, gdy w bibliotece jest mniej niż CHART_TARGET
+GAME_LIST        = os.environ.get("DISCOVER_GAMES", "all")        # „all”, lista nazw gier po średniku albo pusta = bez soundtracków (games.py)
+GAME_EVERY_HOURS = env_float("DISCOVER_GAME_EVERY_HOURS", 6)    # co ile godzin soundtracki gier odświeżają się (i dociąga kolejna porcja)
+GAME_TARGET      = env_int("DISCOVER_GAME_TARGET", 15)          # tyle utworów soundtracku gry chcemy mieć w bibliotece (dociąganie: po jednej grze naraz)
+GAME_MIN         = env_int("DISCOVER_GAME_MIN", 5)              # tyle utworów musi być w bibliotece, żeby powstała playlista gry
+GAME_FILL_PER_RUN = env_int("DISCOVER_GAME_FILL_PER_RUN", 10)   # najwyżej tyle utworów soundtracku na jedno odświeżenie (dociąganie wymaga DISCOVER_CHART_FILL=1)
 CHART_FILL       = env_int("DISCOVER_CHART_FILL", 0)             # 1 = dociągaj przez slskd brakujące utwory z czołówki list przebojów (domyślnie wyłączone)
 CHART_FILL_TOP   = env_int("DISCOVER_CHART_FILL_TOP", 30)        # tylko z tylu pierwszych miejsc listy
 CHART_FILL_PER_RUN = env_int("DISCOVER_CHART_FILL_PER_RUN", 5)   # najwyżej tyle utworów na jedno odświeżenie listy
@@ -121,6 +131,8 @@ FILLER_WORDS = {"the", "and", "feat", "ft"}
 import podcasts  # noqa: E402  (podcasty: ściąganie odcinków RSS jako pliki audio w bibliotece)
 import mixes  # noqa: E402  (tematyczne miksy: Happy Mix, Dark Mix, Electronic Mix, Bass Boost...)
 import charts  # noqa: E402  (listy przebojów: Top 100 Polska — dopasowanie do biblioteki)
+import origins  # noqa: E402  (miksy wg pochodzenia: French Music, Latin Music, Polski Rap...)
+import games  # noqa: E402  (soundtracki z najpopularniejszych gier jako playlisty)
 
 VARIOUS_ARTISTS = {"various artists", "various", "va", "unknown artist", "unknown", ""}
 
@@ -379,7 +391,7 @@ class LastFm:
         params.update(method=method, api_key=LASTFM_API_KEY, format="json", autocorrect=1)
         try:
             data = http("GET", "https://ws.audioscrobbler.com/2.0/", params=params)
-        except (urllib.error.URLError, ValueError) as e:
+        except (urllib.error.URLError, ValueError, OSError) as e:  # OSError: m.in. przekroczony czas odpowiedzi
             log(f"   Last.fm {method}: {e}")
             return {}
         finally:
@@ -410,7 +422,7 @@ class Deezer:
         for attempt in range(2):
             try:
                 data = http("GET", f"https://api.deezer.com/{path}", params=params)
-            except (urllib.error.URLError, ValueError) as e:
+            except (urllib.error.URLError, ValueError, OSError) as e:
                 log(f"   Deezer {path}: {e}")
                 return {}
             finally:
@@ -1256,6 +1268,7 @@ def run(dry_run=False):
     if any(j["status"] == "done" for j in jobs):  # nowa muzyka od razu wpada do miksów
         refresh_mixes(state, force=True)
         refresh_charts(state, force=True)
+        refresh_games(state, force=True)
         save_state(state)
 
     lines = report_lines(started, seed_artists, jobs, liked, trashed, free, low_space, fakes)
@@ -1342,6 +1355,36 @@ def selected_mixes():
     return mixes.by_names([] if MIXES.strip().lower() == "all" else MIXES.split(";"))
 
 
+def refresh_artist_tags(state, songs):
+    """Tagi wykonawców z Last.fm (artist.getTopTags) do miksów wg pochodzenia: pamiętane w stanie, po ARTIST_TAG_BATCH
+    wykonawców na odświeżenie (cała biblioteka w kilka dni), odświeżane co ARTIST_TAG_DAYS dni. Bez klucza Last.fm
+    miksy wg pochodzenia opierają się tylko na języku, ISRC i gatunkach z tagów plików."""
+    if not LASTFM_API_KEY:
+        return
+    cache = state.setdefault("artist_tags", {})
+    today = date.today()
+    names = {}
+    for song in songs:
+        names.setdefault(origins.artist_key(song), origins.primary_name(song))
+
+    def stale(key):
+        entry = cache.get(key)
+        return entry is None or (today - date.fromisoformat(entry["at"])).days >= ARTIST_TAG_DAYS
+
+    todo = [key for key in names if key and stale(key)]
+    if not todo:
+        return
+    lastfm, done = LastFm(), 0
+    for key in todo[:ARTIST_TAG_BATCH]:
+        data = lastfm.call("artist.getTopTags", artist=names[key])
+        tags = [(t.get("name", ""), t.get("count", 0)) for t in as_list(data.get("toptags", {}).get("tag"))]
+        # brak odpowiedzi (błąd, nieznany wykonawca): spróbujemy ponownie za tydzień, nie za ARTIST_TAG_DAYS dni
+        age = 0 if tags else max(0, ARTIST_TAG_DAYS - 7)
+        cache[key] = {"at": (today - timedelta(days=age)).isoformat(), "tags": origins.relevant_tags(tags)}
+        done += 1
+    log(f"Tagi wykonawców z Last.fm: {done}" + (f" (jeszcze {len(todo) - done} przy następnym odświeżeniu)." if len(todo) > done else "."))
+
+
 def refresh_mixes(state, force=False):
     """Happy Mix, Dark Mix, Electronic Mix, Bass Boost i inne: playlisty dobierane od nowa co MIX_EVERY_HOURS godzin
     (oraz zaraz po pobraniu nowych utworów) z całej biblioteki. Playlisty usunięte ręcznie nie wracają."""
@@ -1352,6 +1395,12 @@ def refresh_mixes(state, force=False):
         nd = Navidrome()
         songs = [s for s in all_native_songs(nd) if not podcasts.is_podcast(s)]
         feature_of = mix_feature_lookup()
+        classes = {}
+        if any(m.origin for m in chosen):
+            refresh_artist_tags(state, songs)
+            tag_cache = state.get("artist_tags", {})
+            classes = origins.classify(songs, lambda key: (tag_cache.get(key) or {}).get("tags"))
+            log("Pochodzenie utworów: " + ", ".join(f"{k} {len(v)}" for k, v in classes.items()) + ".")
         playlists = as_list(nd.call("getPlaylists").get("playlists", {}).get("playlist"))
         by_id = {p["id"]: p for p in playlists}
         by_name = {p.get("name"): p for p in playlists}
@@ -1372,8 +1421,10 @@ def refresh_mixes(state, force=False):
                     record["removed"] = True
                     continue
                 existing = by_name[mix.name]
+            pool_ids = classes.get(mix.origin, set()) if mix.origin else None
             ids = mixes.pick(mix, songs, feature_of, previous=record.get("ids", []), now=now,
-                             base=MIX_SIZE, cap=MIX_SIZE_MAX, max_per_artist=MIX_MAX_PER_ARTIST)
+                             base=MIX_SIZE, cap=MIX_SIZE_MAX, max_per_artist=MIX_MAX_PER_ARTIST,
+                             include=(lambda song, pool_ids=pool_ids: song["id"] in pool_ids) if mix.origin else None)
             if not ids:
                 log(f"Miks „{mix.name}”: za mało pasujących utworów w bibliotece ({mixes.MIN_POOL} potrzeba).")
                 continue
@@ -1429,42 +1480,75 @@ def fetch_chart(chart, isrc_cache):
     return entries
 
 
-def write_chart_playlist(nd, chart, existing_id, hits, total):
-    """Zapisuje playlistę listy przebojów (w kolejności listy) i jej komentarz; zwraca id playlisty albo None."""
+def fetch_geo(country, want):
+    """Dalsze miejsca listy z Last.fm (geo.getTopTracks, 100 na stronę): [{"id","title","artist","isrc","duration"}]."""
+    lastfm, extra = LastFm(), []
+    for page in range(1, min(13, want // 100 + 2) + 1):
+        data = lastfm.call("geo.getTopTracks", country=country, limit=100, page=page)
+        tracks = as_list(data.get("tracks", {}).get("track"))
+        if not tracks:
+            break
+        for t in tracks:
+            artist = (t.get("artist") or {}).get("name", "")
+            extra.append({"id": f"lf:{track_key(artist, t.get('name', ''))}", "title": t.get("name", ""), "artist": artist,
+                          "isrc": "", "duration": int(t.get("duration") or 0) or None})
+    return extra
+
+
+def write_chart_playlist(nd, chart, existing_id, hits, total, depth=100):
+    """Zapisuje playlistę listy przebojów (w kolejności listy), jej komentarz i nazwę zależną od głębokości listy
+    („Top 100 Polska”, „Top 200 Polska”…); zwraca id playlisty albo None."""
+    name = charts.display_name(chart, depth)
     ids = [song["id"] for _, song, _ in hits]
     if existing_id:
         nd.call("createPlaylist", playlistId=existing_id, songId=ids)
         playlist_id = existing_id
     else:
-        playlist_id = nd.call("createPlaylist", name=chart.name, songId=ids).get("playlist", {}).get("id")
+        playlist_id = nd.call("createPlaylist", name=name, songId=ids).get("playlist", {}).get("id")
     if playlist_id:
         try:
-            nd.call("updatePlaylist", playlistId=playlist_id, comment=charts.comment(chart, len(ids), total, datetime.now()))
+            nd.call("updatePlaylist", playlistId=playlist_id, name=name,
+                    comment=charts.comment(chart, len(ids), total, datetime.now()))
         except RuntimeError:
             pass
     return playlist_id
 
 
-def fill_chart(nd, chart, entries, hits, history, dry_run=False):
+def fill_chart(nd, chart, entries, hits, history, dry_run=False, have=None, target=None, per_run=None, top=None,
+               artist=None, present=(), per_artist_limit=None):
     """Dociąga przez slskd brakujące utwory z czołówki listy (tylko CHART_FILL_TOP pierwszych miejsc, najwyżej
     CHART_FILL_PER_RUN naraz). Zwraca zlecenia; pobrane pliki beets przenosi do biblioteki, a `review_discoveries`
-    sprząta te, których nie odsłuchasz, jak każde inne odkrycie."""
+    sprząta te, których nie odsłuchasz, jak każde inne odkrycie.
+
+    Dla list przebojów parametry biorą się z ustawień (CHART_TARGET itd.). Soundtracki gier podają własne: `have` (ile już
+    jest w bibliotece), `target`, `per_run`, `top`, `artist` (nazwa gry zamiast kompozytora — jest w ścieżkach plików),
+    `present` (znormalizowane tytuły, które już masz) i `per_artist_limit`."""
     free = free_gb()
     if free is not None and free < MIN_FREE_GB:
         log(f"Lista „{chart.name}”: za mało miejsca na dysku ({free:.0f} GB, limit {MIN_FREE_GB:.0f} GB) — niczego nie dociągam.")
         return []
     blocked = {norm(a) for a in BLOCKED_ARTISTS}
+    have = len(hits) if have is None else have
+    goal = CHART_TARGET if target is None else target
+    need = max(0, goal - have)
+    if per_run is None:
+        per_run = min(max(CHART_FILL_PER_RUN, need), max(CHART_FILL_CATCHUP, CHART_FILL_PER_RUN)) if need else CHART_FILL_PER_RUN
+    if top is None:
+        top = max((e["rank"] for e in entries), default=CHART_FILL_TOP) if need else CHART_FILL_TOP  # za mało w bibliotece: z całej listy
     candidates = []
-    for entry in charts.missing(entries, hits, CHART_FILL_TOP):
-        key = track_key(entry["artist"], entry["title"])
+    for entry in charts.missing(entries, hits, top):
+        if charts.clean_title(entry["title"]) in present:
+            continue
+        name = artist or entry["artist"]
+        key = track_key(name, entry["title"])
         if norm(primary_artist(entry["artist"])) in blocked or skip_from_history(history.get(key)):
             continue
-        candidates.append({"key": key, "artist": entry["artist"], "title": entry["title"], "score": 1.0, "best": 1.0,
-                           "via": f"{chart.name} #{entry['rank']}", "duration": entry.get("duration"),
+        candidates.append({"key": key, "artist": name, "real_artist": entry["artist"], "title": entry["title"], "score": 1.0,
+                           "best": 1.0, "via": f"{chart.name} #{entry['rank']}", "duration": entry.get("duration"),
                            "pool": "chart", "chart": chart.name})
     if dry_run:
-        log(f"Lista „{chart.name}” — do dociągnięcia (do {CHART_FILL_PER_RUN}, z {len(candidates)} brakujących w czołówce):")
-        for cand in candidates[:CHART_FILL_PER_RUN * 3]:
+        log(f"Lista „{chart.name}” — do dociągnięcia (do {per_run}, z {len(candidates)} brakujących; w bibliotece {have}, cel {goal}):")
+        for cand in candidates[:per_run * 3]:
             log(f"   {cand['via']}: {cand['artist']} — {cand['title']}")
         return []
     if not candidates:
@@ -1474,12 +1558,12 @@ def fill_chart(nd, chart, entries, hits, history, dry_run=False):
     except SystemExit as e:
         log(f"Lista „{chart.name}”: {e}")
         return []
-    jobs, per_artist, budget = [], Counter(), CHART_FILL_PER_RUN * 3
+    jobs, per_artist, budget = [], Counter(), per_run * 3
     for cand in candidates:
-        if len([j for j in jobs if j["status"] == "pending"]) >= CHART_FILL_PER_RUN or budget <= 0:
+        if len([j for j in jobs if j["status"] == "pending"]) >= per_run or budget <= 0:
             break
-        artist = norm(primary_artist(cand["artist"]))
-        if per_artist[artist] >= MAX_PER_ARTIST or nd.find_song(cand["artist"], cand["title"]):
+        who = norm(primary_artist(cand["artist"]))
+        if per_artist[who] >= (per_artist_limit or MAX_PER_ARTIST) or nd.find_song(cand["real_artist"], cand["title"]):
             continue
         budget -= 1
         log(f"🔎 {cand['via']}: {cand['artist']} — {cand['title']}")
@@ -1494,7 +1578,7 @@ def fill_chart(nd, chart, entries, hits, history, dry_run=False):
             continue
         jobs.append(job)
         if job["status"] == "pending":
-            per_artist[artist] += 1
+            per_artist[who] += 1
     if jobs:
         remember(history, jobs)
         if any(j["status"] == "pending" for j in jobs):
@@ -1531,20 +1615,33 @@ def refresh_charts(state, force=False, dry_run=False):
                 record["removed"] = True  # playlista usunięta ręcznie w Navidrome — nie odtwarzamy jej
                 log(f"Lista „{chart.name}” została usunięta w Navidrome — więcej jej nie tworzę.")
                 continue
-            if existing is None and chart.name in by_name:
-                if not (by_name[chart.name].get("comment") or "").startswith(charts.COMMENT_PREFIX):
-                    log(f"Lista „{chart.name}”: playlista o tej nazwie jest Twoja — nie nadpisuję jej.")
+            same_name = next((by_name[n] for n in charts.names(chart) if n in by_name), None)
+            if existing is None and same_name is not None:
+                if not (same_name.get("comment") or "").startswith(charts.COMMENT_PREFIX):
+                    log(f"Lista „{chart.name}”: playlista „{same_name.get('name')}” jest Twoja — nie nadpisuję jej.")
                     record["removed"] = True
                     continue
-                existing = by_name[chart.name]
+                existing = same_name
             try:
                 entries = fetch_chart(chart, isrc_cache)
             except (RuntimeError, urllib.error.URLError, ValueError) as e:
                 log(f"Lista „{chart.name}”: {e}")
                 continue
             hits = charts.match(entries, songs)
+            depth = charts.STEPS[0]
+            if chart.extension and LASTFM_API_KEY and len(hits) < CHART_TARGET:
+                # za mało w bibliotece: lista sięga głębiej (200, 300, 500, 1000), aż będzie CHART_TARGET utworów
+                base, extra = entries, None
+                for step in charts.STEPS[1:]:
+                    if len(hits) >= CHART_TARGET:
+                        break
+                    if extra is None:
+                        extra = fetch_geo(chart.extension, charts.STEPS[-1])
+                    entries = charts.extend(base, extra, step)
+                    hits = charts.match(entries, songs)
+                    depth = step
             if dry_run:
-                log(f"Lista „{chart.name}” — w bibliotece {len(hits)}/{len(entries)}.")
+                log(f"Lista „{chart.name}” ({charts.display_name(chart, depth)}) — w bibliotece {len(hits)}/{len(entries)}.")
                 if not CHART_FILL:
                     log("   (dociąganie jest wyłączone: DISCOVER_CHART_FILL=0 — poniżej podgląd, co by dociągnęło po włączeniu)")
                 fill_chart(nd, chart, entries, hits, history, dry_run=True)
@@ -1555,13 +1652,13 @@ def refresh_charts(state, force=False, dry_run=False):
                 continue
             try:
                 if len(hits) >= CHART_MIN_MATCHES:
-                    playlist_id = write_chart_playlist(nd, chart, existing["id"] if existing else None, hits, len(entries))
+                    playlist_id = write_chart_playlist(nd, chart, existing["id"] if existing else None, hits, len(entries), depth)
                     if playlist_id:
                         existing = {"id": playlist_id}
                         record.update(id=playlist_id, ids=[s["id"] for _, s, _ in hits],
                                       ranks={s["id"]: e["rank"] for e, s, _ in hits}, previous_ranks=record.get("ranks", {}),
-                                      matched=len(hits), total=len(entries), updated=now.isoformat(timespec="minutes"))
-                        log(f"Lista „{chart.name}” — w bibliotece {len(hits)}/{len(entries)} "
+                                      matched=len(hits), total=len(entries), depth=depth, updated=now.isoformat(timespec="minutes"))
+                        log(f"Lista „{charts.display_name(chart, depth)}” — w bibliotece {len(hits)}/{len(entries)} "
                             f"(po ISRC: {sum(1 for _, _, how in hits if how == 'isrc')}).")
                 jobs = fill_chart(nd, chart, entries, hits, history) if CHART_FILL else []
                 if any(j["status"] == "done" for j in jobs):
@@ -1571,7 +1668,7 @@ def refresh_charts(state, force=False, dry_run=False):
                     songs = [s for s in all_native_songs(nd) if not podcasts.is_podcast(s)]
                     hits = charts.match(entries, songs)
                     if len(hits) >= CHART_MIN_MATCHES:
-                        playlist_id = write_chart_playlist(nd, chart, existing["id"] if existing else None, hits, len(entries))
+                        playlist_id = write_chart_playlist(nd, chart, existing["id"] if existing else None, hits, len(entries), depth)
                         if playlist_id:
                             record.update(id=playlist_id, ids=[s["id"] for _, s, _ in hits],
                                           ranks={s["id"]: e["rank"] for e, s, _ in hits}, matched=len(hits),
@@ -1588,6 +1685,117 @@ def refresh_charts(state, force=False, dry_run=False):
         log(f"Listy przebojów się nie odświeżyły: {e} — spróbuję za godzinę.")
         if not dry_run:
             state["charts_checked"] = time.time() - CHART_EVERY_HOURS * 3600 + 3600
+
+
+# ── soundtracki z gier ───────────────────────────────────────────────────────
+
+def selected_games():
+    if not GAME_LIST.strip():
+        return []
+    return games.by_names([] if GAME_LIST.strip().lower() == "all" else GAME_LIST.split(";"))
+
+
+def resolve_game(game, cache):
+    """Album soundtracku gry w Deezerze (`games.pick_album`); wynik, także „nie ma”, pamiętamy (brak sprawdzamy co 30 dni)."""
+    entry = cache.get(game.title)
+    if entry and (entry.get("album") or (date.today() - date.fromisoformat(entry["at"])).days < 30):
+        return entry.get("album")
+    results = as_list(Deezer().call("search/album", q=game.query, limit=15).get("data"))
+    album = games.pick_album(game, results)
+    cache[game.title] = {"album": album["id"] if album else None, "title": album.get("title") if album else None,
+                         "tracks": album.get("nb_tracks") if album else None, "at": date.today().isoformat()}
+    return cache[game.title]["album"]
+
+
+def refresh_games(state, force=False, dry_run=False):
+    """Playlisty „Soundtrack: Minecraft”, „Soundtrack: The Witcher 3”…: z biblioteki bierzemy utwory z płyty soundtracku
+    albo zgodne z albumem z Deezera. Z DISCOVER_CHART_FILL=1 dociągamy brakujące utwory najpopularniejszej gry, której
+    w bibliotece jest mniej niż GAME_TARGET (najwyżej GAME_FILL_PER_RUN na odświeżenie, po jednej grze naraz). Playlista
+    powstaje od GAME_MIN utworów; usunięta ręcznie nie wraca, a Twoja playlista o tej samej nazwie nie jest nadpisywana."""
+    chosen = selected_games()
+    if not chosen or not force and time.time() - state.get("games_checked", 0) < GAME_EVERY_HOURS * 3600:
+        return
+    try:
+        nd = Navidrome()
+        songs = [s for s in all_native_songs(nd) if not podcasts.is_podcast(s)]
+        playlists = as_list(nd.call("getPlaylists").get("playlists", {}).get("playlist"))
+        by_id = {p["id"]: p for p in playlists}
+        by_name = {p.get("name"): p for p in playlists}
+        saved = state.setdefault("games", {})
+        albums = state.setdefault("game_albums", {})
+        history = state.setdefault("history", {})
+        now = datetime.now(timezone.utc)
+        filled = False  # dociągamy tylko jedną grę na odświeżenie
+        for game in chosen:
+            record = saved.setdefault(game.title, {})
+            if record.get("removed"):
+                continue
+            existing = by_id.get(record.get("id"))
+            if existing is None and record.get("id"):
+                record["removed"] = True
+                log(f"Soundtrack „{game.title}” został usunięty w Navidrome — więcej go nie tworzę.")
+                continue
+            if existing is None and game.playlist in by_name:
+                if not (by_name[game.playlist].get("comment") or "").startswith(games.COMMENT_PREFIX):
+                    log(f"Soundtrack „{game.title}”: playlista o tej nazwie jest Twoja — nie nadpisuję jej.")
+                    record["removed"] = True
+                    continue
+                existing = by_name[game.playlist]
+            entries = []
+            try:
+                album_id = resolve_game(game, albums)
+                if album_id:
+                    entries = games.album_entries(as_list(Deezer().call(f"album/{album_id}/tracks", limit=100).get("data")))
+            except (RuntimeError, urllib.error.URLError, ValueError) as e:
+                log(f"Soundtrack „{game.title}”: {e}")
+            found, hits = games.collect(game, entries, songs)
+            total = max(len(entries), len(found))
+            if dry_run:
+                log(f"Soundtrack „{game.title}” — album Deezera: {albums.get(game.title, {}).get('title')}, "
+                    f"w bibliotece {len(found)}/{total} (playlista od {GAME_MIN}).")
+                if CHART_FILL and not filled and entries and len(found) < GAME_TARGET:
+                    filled = True
+                    present = {charts.clean_title(s["title"]) for s in found}
+                    fill_chart(nd, types.SimpleNamespace(name=game.playlist), entries, hits, history, dry_run=True, have=len(found),
+                               target=GAME_TARGET, per_run=GAME_FILL_PER_RUN, top=min(len(entries), 25), artist=game.short,
+                               present=present, per_artist_limit=GAME_FILL_PER_RUN)
+                continue
+            if CHART_FILL and not filled and entries and len(found) < GAME_TARGET:
+                present = {charts.clean_title(s["title"]) for s in found}
+                jobs = fill_chart(nd, types.SimpleNamespace(name=game.playlist), entries, hits, history, have=len(found),
+                                  target=GAME_TARGET, per_run=GAME_FILL_PER_RUN, top=min(len(entries), 25), artist=game.short,
+                                  present=present, per_artist_limit=GAME_FILL_PER_RUN)
+                filled = bool(jobs)
+                if any(j["status"] == "done" for j in jobs):
+                    wait_for_import(jobs)
+                    nd.rescan()
+                    time.sleep(20)  # skan Navidrome trwa chwilę
+                    songs = [s for s in all_native_songs(nd) if not podcasts.is_podcast(s)]
+                    found, hits = games.collect(game, entries, songs)
+            if len(found) < GAME_MIN:
+                continue
+            ids = [song["id"] for song in found]
+            try:
+                if existing:
+                    nd.call("createPlaylist", playlistId=existing["id"], songId=ids)
+                    playlist_id = existing["id"]
+                else:
+                    playlist_id = nd.call("createPlaylist", name=game.playlist, songId=ids).get("playlist", {}).get("id")
+                if playlist_id:
+                    try:
+                        nd.call("updatePlaylist", playlistId=playlist_id, comment=games.comment(game, len(ids), total, datetime.now()))
+                    except RuntimeError:
+                        pass
+                    record.update(id=playlist_id, ids=ids, matched=len(ids), total=total, updated=now.isoformat(timespec="minutes"))
+                    log(f"Soundtrack „{game.title}” — w bibliotece {len(ids)}/{total}.")
+            except RuntimeError as e:
+                log(f"Soundtrack „{game.title}”: {e}")
+        if not dry_run:
+            state["games_checked"] = time.time()
+    except Exception as e:  # soundtracki nie mogą zatrzymać odkrywania muzyki
+        log(f"Soundtracki gier się nie odświeżyły: {e} — spróbuję za godzinę.")
+        if not dry_run:
+            state["games_checked"] = time.time() - GAME_EVERY_HOURS * 3600 + 3600
 
 
 # ── podcasty ─────────────────────────────────────────────────────────────────
@@ -1673,6 +1881,7 @@ def main():
     parser.add_argument("--podcasts", action="store_true", help="sprawdź kanały podcastów od razu")
     parser.add_argument("--mixes", action="store_true", help="odśwież tematyczne miksy (Happy Mix, Dark Mix...) od razu")
     parser.add_argument("--charts", action="store_true", help="odśwież listy przebojów (Top 100 Polska) od razu (z --dry-run: tylko pokaż, co by zrobił)")
+    parser.add_argument("--games", action="store_true", help="odśwież soundtracki gier od razu (z --dry-run: tylko pokaż, co by zrobił)")
     parser.add_argument("--podcast-fetch", metavar="AUDYCJA", help="pobierz starsze odcinki audycji (podgląd, dopóki nie dodasz --yes)")
     parser.add_argument("--year", type=int, help="z --podcast-fetch: tylko odcinki z tego roku")
     parser.add_argument("--match", metavar="REGEX", help="z --podcast-fetch: tylko odcinki z pasującym tytułem (np. serię)")
@@ -1690,6 +1899,12 @@ def main():
         state = load_state()
         refresh_mixes(state, force=True)
         save_state(state)
+        return
+    if args.games:
+        state = load_state()
+        refresh_games(state, force=True, dry_run=args.dry_run)
+        if not args.dry_run:
+            save_state(state)
         return
     if args.charts:
         state = load_state()
@@ -1734,6 +1949,7 @@ def main():
         refresh_podcasts(state)
         refresh_mixes(state)
         refresh_charts(state)
+        refresh_games(state)
         refresh_stats(state)
         save_state(state)
         if time.time() >= retry_at and is_due(state, datetime.now()):

@@ -85,6 +85,24 @@ class Missing(unittest.TestCase):
         self.assertEqual(charts.missing(entries, hits, 0), [])
 
 
+class Depth(unittest.TestCase):
+    def test_extension_skips_duplicates_and_continues_ranks(self):
+        first = [entry(1, "A", "One"), entry(2, "B", "Two")]
+        extra = [{"title": "One (feat. X)", "artist": "A", "isrc": "", "id": "lf1"}, {"title": "Three", "artist": "C", "id": "lf2"},
+                 {"title": "Four", "artist": "D", "id": "lf3"}, {"title": "Five", "artist": "E", "id": "lf4"}]
+        got = charts.extend(first, extra, 4)
+        self.assertEqual([(e["rank"], e["title"]) for e in got], [(1, "One"), (2, "Two"), (3, "Three"), (4, "Four")])
+        self.assertEqual(len(charts.extend(first, extra, 100)), 5)
+        self.assertEqual(charts.extend(first, [], 10), first)
+
+    def test_names_follow_depth(self):
+        chart = charts.CHARTS[0]
+        self.assertEqual(charts.display_name(chart, 200), "Top 200 Polska")
+        self.assertIn("Top 100 Polska", charts.names(chart))
+        self.assertIn("Top 1000 Polska", charts.names(chart))
+        self.assertEqual(charts.STEPS, (100, 200, 300, 500, 1000))
+
+
 class Config(unittest.TestCase):
     def test_default_chart_and_names(self):
         self.assertEqual(charts.by_names([])[0].name, "Top 100 Polska")

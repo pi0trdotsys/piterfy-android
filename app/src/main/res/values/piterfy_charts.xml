@@ -2,4 +2,5 @@
 <resources>
     <string name="piterfy_charts">Charts</string>
     <string name="piterfy_chart_in_library">%1$d/%2$d in your library</string>
+    <string name="piterfy_games">Game soundtracks</string>
 </resources>

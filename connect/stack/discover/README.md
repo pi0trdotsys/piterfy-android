@@ -112,6 +112,10 @@ Navidrome + Last.fm ──► discover ──► slskd ──► incoming/ ─�
     - Dopasowanie: najpierw po ISRC (Deezer podaje go dla każdego utworu; zapamiętujemy go w `state.json`), potem po tytule
       i wykonawcy (bez „feat.”, „radio edit”, „remastered”; „Slowed”, „Remix” i inne wersje nie podszywają się pod oryginał;
       długość może się różnić o 12 s). Jeden utwór trafia do listy raz.
+    - **Cel: `DISCOVER_CHART_TARGET` (100) utworów z listy w bibliotece.** Gdy z pierwszej setki jest ich mniej, lista sięga głębiej:
+      do top 200, 300, 500 i 1000 (dalsze miejsca z Last.fm `geo.getTopTracks` dla Polski — wymaga `LASTFM_API_KEY`), aż będzie cel;
+      playlista nazywa się wtedy „Top 200 Polska” itd. (nazwa zmienia się sama). Z włączonym dociąganiem, dopóki w bibliotece
+      jest mniej niż cel, serwer dociąga do `DISCOVER_CHART_FILL_CATCHUP` (20) utworów na odświeżenie z całej listy, nie tylko z czołówki.
     - Lista odświeża się co 12 godzin i zaraz po pobraniu nowych utworów. Poniżej 3 pasujących utworów playlista nie
       powstaje, usunięta ręcznie nie wraca, a cudza playlista o tej samej nazwie nie jest nadpisywana.
     - Aplikacja i strona pokazują listy w półce „Listy przebojów” (rozpoznają je po początku komentarza „Piterfy Chart”).
@@ -124,6 +128,26 @@ Navidrome + Last.fm ──► discover ──► slskd ──► incoming/ ─�
       od kraju — włączasz to świadomie.
     - Podgląd bez zmian: `docker compose run --rm --no-deps piterfy-discover --charts --dry-run` pokazuje, ile utworów jest
       w bibliotece i co by się dociągnęło.
+
+13. **Miksy według pochodzenia i dekady.** Do miksów z gatunków (punkt 11) dochodzą „French Music”, „Latin Music”, „Polska Muzyka”,
+    „Polski Rap”, „German Music”, „Asia Pop”, „Brazil Music”, „Phonk Mix” oraz „Lata 80.”, „Lata 90.” i „Lata 2000.”:
+    - Gatunki w tagach niewiele mówią o kraju wykonawcy, więc `origins.py` liczy pochodzenie z trzech słabych sygnałów — tagów
+      wykonawcy z Last.fm (`artist.getTopTags`: „french”, „polish”, „latin”…, pamiętane w `state.json`, po `DISCOVER_ARTIST_TAG_BATCH`
+      (400) wykonawców na odświeżenie, odświeżane co `DISCOVER_ARTIST_TAG_DAYS` (120) dni), języka z tagów plików (MusicBrainz
+      `language`) i kraju z kodu ISRC — a utwór wchodzi do miksu od dwóch punktów (sam ISRC nie wystarcza). „Polski Rap” wymaga
+      dodatkowo gatunku rap/hip-hop. Miks bez 12 pasujących utworów nie powstaje, jak inne miksy.
+    - Dekady biorą rok wydania, bez względu na gatunek. Miksy mają te same zasady odświeżania i okładki co pozostałe.
+14. **Soundtracki z gier.** `games.py` układa playlisty „Soundtrack: Minecraft”, „Soundtrack: The Witcher 3”, „Soundtrack: Elden Ring”
+    i inne (18 najpopularniejszych gier, lista w `games.py`):
+    - Utwór należy do gry, gdy album w bibliotece ma w tytule nazwę gry i słowo typu „soundtrack”/„score”, albo gdy tytuł i
+      wykonawca zgadzają się z albumem soundtracku z Deezera (znajdowanym po nazwie gry; sequele, wersje „lofi”, „piano”, „remix”
+      są pomijane). Playlista powstaje od `DISCOVER_GAME_MIN` (5) utworów w bibliotece.
+    - Z `DISCOVER_CHART_FILL=1` serwer dociąga brakujące utwory najpopularniejszej gry, której w bibliotece jest mniej niż
+      `DISCOVER_GAME_TARGET` (15): najwyżej `DISCOVER_GAME_FILL_PER_RUN` (10) na odświeżenie (co `DISCOVER_GAME_EVERY_HOURS`, 6),
+      po jednej grze naraz, w kolejności popularności. Pliki szukane są po nazwie gry w ścieżce (np. „Witcher 3”), te same reguły
+      jakości, formatu i miejsca co przy odkryciach; nie trafiają do „Odkrywaj”, a nieodsłuchane znikają po `DISCOVER_CLEANUP_DAYS` dniach.
+    - Aplikacja i strona pokazują je w półce „Soundtracki z gier” (komentarz zaczyna się od „Piterfy Game”).
+    - Podgląd: `docker compose run --rm --no-deps piterfy-discover --games --dry-run`; od ręki: `--games`.
 
 - **Statystyki dla nerdów** (`stats.py`): co `DISCOVER_STATS_EVERY_HOURS` (domyślnie 6) godzin discover liczy trzy zestawienia
   i zapisuje je w `discover/state/stats.json`; aplikacja i strona WWW pobierają plik z `GET /piterfy-api/stats`
@@ -158,6 +182,8 @@ Navidrome + Last.fm ──► discover ──► slskd ──► incoming/ ─�
 | `discover/taste.py` | generator panelu gustu (uruchamia go discover co noc) |
 | `discover/mixes.py` | tematyczne miksy (Happy Mix, Dark Mix, Electronic Mix, Bass Boost...): reguły gatunków i nastroju oraz dobór utworów |
 | `discover/charts.py` | listy przebojów (Top 100 Polska): dopasowanie wpisów z Deezera do biblioteki (ISRC, tytuł i wykonawca) |
+| `discover/origins.py` | miksy według pochodzenia (French Music, Latin Music, Polski Rap…): sygnały z tagów Last.fm, języka i ISRC |
+| `discover/games.py` | soundtracki z gier jako playlisty: lista gier, wybór albumu w Deezerze i dopasowanie do biblioteki |
 | `discover/podcasts.py`, `discover/podcasts.txt` | podcasty: moduł (RSS → pliki audio z tagami) i lista audycji |
 | `library/Podcasty/` | odcinki podcastów, po jednym folderze na audycję |
 | `discover/stats.py`, `discover/state/stats.json` | statystyki dla nerdów: liczy je discover co kilka godzin, oddaje `/piterfy-api/stats` |
@@ -201,9 +227,15 @@ Po zmianie uruchom `docker compose up -d piterfy-discover`.
 | `DISCOVER_CHARTS` | `all` | które listy przebojów tworzyć: `all`, lista nazw po `;` (np. `Top 100 Polska`) albo pusta = bez list |
 | `DISCOVER_CHART_EVERY_HOURS` | `12` | co ile godzin listy przebojów odświeżają się |
 | `DISCOVER_CHART_MIN` | `3` | ile utworów z listy musi być w bibliotece, żeby powstała playlista |
+| `DISCOVER_CHART_TARGET` | `100` | ile utworów z listy przebojów chcemy mieć w bibliotece (poniżej lista sięga głębiej: 200–1000) |
+| `DISCOVER_CHART_FILL_CATCHUP` | `20` | ile utworów na odświeżenie dociągać, gdy w bibliotece jest mniej niż cel |
 | `DISCOVER_CHART_FILL` | `0` | `1` = dociągaj przez slskd brakujące utwory z czołówki list przebojów (patrz wyżej) |
 | `DISCOVER_CHART_FILL_TOP` / `DISCOVER_CHART_FILL_PER_RUN` | `30` / `5` | z ilu pierwszych miejsc listy i ile utworów na jedno odświeżenie |
 | `DISCOVER_CHART_FILL_TIMEOUT_MIN` | `20` | ile minut czekać na pobrania przy odświeżeniu listy (reszta dociągnie się później) |
+| `DISCOVER_ARTIST_TAG_BATCH` / `DISCOVER_ARTIST_TAG_DAYS` | `400` / `120` | ilu wykonawców na odświeżenie pytać Last.fm o tagi (miksy wg pochodzenia) i po ilu dniach je odświeżać |
+| `DISCOVER_GAMES` | `all` | które soundtracki gier tworzyć: `all`, lista nazw po `;` albo pusta = bez soundtracków |
+| `DISCOVER_GAME_EVERY_HOURS` | `6` | co ile godzin soundtracki odświeżają się (i dociąga się kolejna porcja) |
+| `DISCOVER_GAME_TARGET` / `DISCOVER_GAME_MIN` / `DISCOVER_GAME_FILL_PER_RUN` | `15` / `5` / `10` | ile utworów soundtracku gry chcemy mieć, od ilu powstaje playlista i ile dociągać na odświeżenie (dociąganie wymaga `DISCOVER_CHART_FILL=1`) |
 | `DISCOVER_STATS_EVERY_HOURS` | `6` | co ile godzin liczą się statystyki dla nerdów (`0` = wyłączone) |
 | `DISCOVER_BLOCK` | | wykonawcy do pomijania, rozdzieleni `;` |
 | `DISCOVER_DOWNLOAD_TIMEOUT_MIN` | `90` | ile minut czekać na pobrania (reszta dociągnie się później) |
@@ -224,6 +256,7 @@ docker compose run --rm --no-deps piterfy-discover --test-mail      # próbny ma
 docker compose run --rm --no-deps piterfy-discover --taste          # odśwież panel gustu od razu
 docker compose run --rm --no-deps piterfy-discover --mixes          # odśwież miksy (Happy Mix, Dark Mix...) od razu
 docker compose run --rm --no-deps piterfy-discover --charts         # odśwież listy przebojów (Top 100 Polska) od razu
+docker compose run --rm --no-deps piterfy-discover --games          # odśwież soundtracki gier od razu (z --dry-run: tylko podgląd)
 docker compose run --rm --no-deps piterfy-discover --stats          # policz statystyki dla nerdów od razu
 docker compose run --rm piterfy-discover --now                      # przebieg poza harmonogramem
 docker logs -f piterfy-discover                                      # co robi discover

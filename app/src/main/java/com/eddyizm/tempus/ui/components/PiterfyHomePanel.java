@@ -66,6 +66,8 @@ public final class PiterfyHomePanel extends LinearLayout implements DefaultLifec
     private final View mixSection;
     private final LinearLayout chartShelf;
     private final View chartSection;
+    private final LinearLayout gameShelf;
+    private final View gameSection;
     private final Typeface regular;
     private final Typeface bold;
     private boolean destroyed;
@@ -184,6 +186,23 @@ public final class PiterfyHomePanel extends LinearLayout implements DefaultLifec
         chartSection = chartSectionBox;
         addView(chartSectionBox);
 
+        // Piterfy: soundtracki z gier ("Soundtrack: Minecraft"...) - serwer odswieza je sam
+        LinearLayout gameSectionBox = new LinearLayout(getContext());
+        gameSectionBox.setOrientation(VERTICAL);
+        TextView gameHeading = text(getResources().getString(R.string.piterfy_games), 22, Color.WHITE, true);
+        gameHeading.setPadding(dp(4), dp(28), 0, dp(12));
+        gameSectionBox.addView(gameHeading);
+        gameShelf = new LinearLayout(getContext());
+        gameShelf.setOrientation(HORIZONTAL);
+        HorizontalScrollView gameScroll = new HorizontalScrollView(getContext());
+        gameScroll.setHorizontalScrollBarEnabled(false);
+        gameScroll.setOverScrollMode(OVER_SCROLL_NEVER);
+        gameScroll.addView(gameShelf);
+        gameSectionBox.addView(gameScroll);
+        gameSectionBox.setVisibility(GONE);
+        gameSection = gameSectionBox;
+        addView(gameSectionBox);
+
         load();
         loadRecentAlbums();
     }
@@ -265,17 +284,21 @@ public final class PiterfyHomePanel extends LinearLayout implements DefaultLifec
                 List<Playlist> list = new ArrayList<>();
                 List<Playlist> mixList = new ArrayList<>();
                 List<Playlist> chartList = new ArrayList<>();
+                List<Playlist> gameList = new ArrayList<>();
                 if (sr.getPlaylists().getPlaylists() != null) for (Playlist p : sr.getPlaylists().getPlaylists()) {
                     if (isMix(p)) mixList.add(p);
                     else if (isChart(p)) chartList.add(p);
+                    else if (isGame(p)) gameList.add(p);
                     else if (p.getName() != null && (p.getName().equalsIgnoreCase("Odkrywaj") || p.getName().startsWith("Odkrywaj ")))
                         list.add(p);
                 }
                 list.sort(Comparator.comparing((Playlist p) -> p.getCreated() == null ? new Date(0) : p.getCreated()).reversed());
                 mixList.sort(Comparator.comparing((Playlist p) -> p.getCreated() == null ? new Date(0) : p.getCreated()));
                 chartList.sort(Comparator.comparing((Playlist p) -> p.getName() == null ? "" : p.getName()));
+                gameList.sort(Comparator.comparing((Playlist p) -> p.getName() == null ? "" : p.getName()));
                 showMixes(mixList);
                 showCharts(chartList);
+                showGames(gameList);
                 discover = list;
                 shelf.removeAllViews();
                 if (list.isEmpty()) {
@@ -306,6 +329,19 @@ public final class PiterfyHomePanel extends LinearLayout implements DefaultLifec
         return p != null && p.getComment() != null && p.getComment().startsWith("Piterfy Chart");
     }
 
+    /** Soundtracki gier ("Soundtrack: Minecraft") serwer oznacza poczatkiem komentarza (connect/stack/discover/games.py, COMMENT_PREFIX). */
+    static boolean isGame(Playlist p) {
+        return p != null && p.getComment() != null && p.getComment().startsWith("Piterfy Game");
+    }
+
+    private static final String GAME_NAME_PREFIX = "Soundtrack: ";
+
+    /** Tytul karty gry bez prefiksu nazwy playlisty: "Soundtrack: Minecraft" -> "Minecraft". */
+    static String gameTitle(String name) {
+        if (name == null) return "";
+        return name.startsWith(GAME_NAME_PREFIX) ? name.substring(GAME_NAME_PREFIX.length()) : name;
+    }
+
     private static final java.util.regex.Pattern CHART_COUNTS = java.util.regex.Pattern.compile("w bibliotece (\\d+)/(\\d+)");
 
     /** "w bibliotece 31/100" z komentarza listy przebojow -> {31, 100}; null, gdy komentarz nie ma takiego zapisu. */
@@ -331,6 +367,19 @@ public final class PiterfyHomePanel extends LinearLayout implements DefaultLifec
             chartShelf.addView(c);
         }
         chartSection.setVisibility(list.isEmpty() ? GONE : VISIBLE);
+    }
+
+    private void showGames(List<Playlist> list) {
+        gameShelf.removeAllViews();
+        int index = 0;
+        for (Playlist p : list) {
+            int[] counts = chartCounts(p.getComment());
+            String subtitle = counts == null ? null : getResources().getString(R.string.piterfy_chart_in_library, counts[0], counts[1]);
+            View c = card(p, gameTitle(p.getName()), subtitle);
+            PiterfyMotion.enter(c, index++);
+            gameShelf.addView(c);
+        }
+        gameSection.setVisibility(list.isEmpty() ? GONE : VISIBLE);
     }
 
     private void showMixes(List<Playlist> list) {
@@ -449,6 +498,10 @@ public final class PiterfyHomePanel extends LinearLayout implements DefaultLifec
     }
 
     private View card(Playlist p, String subtitle) {
+        return card(p, p.getName(), subtitle);
+    }
+
+    private View card(Playlist p, String title, String subtitle) {
         LinearLayout card = new LinearLayout(getContext());
         card.setOrientation(VERTICAL);
         LayoutParams params = new LayoutParams(dp(148), -2);
@@ -471,7 +524,7 @@ public final class PiterfyHomePanel extends LinearLayout implements DefaultLifec
         pp.bottomMargin = dp(8);
         frame.addView(play, pp);
 
-        TextView name = text(p.getName(), 14, Color.WHITE, true);
+        TextView name = text(title, 14, Color.WHITE, true);
         name.setSingleLine(true);
         name.setEllipsize(android.text.TextUtils.TruncateAt.END);
         name.setPadding(0, dp(8), 0, 0);
@@ -486,7 +539,7 @@ public final class PiterfyHomePanel extends LinearLayout implements DefaultLifec
             tracks(p, card, true);  // dlugie przytrzymanie pobiera playliste offline
             return true;
         });
-        card.setContentDescription(p.getName());
+        card.setContentDescription(title);
         return card;
     }
 

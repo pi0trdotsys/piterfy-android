@@ -20,15 +20,46 @@ DURATION_SLACK = 12               # tyle sekund może różnić się długość 
 
 @dataclass(frozen=True)
 class Chart:
-    name: str     # nazwa playlisty w Navidrome
-    source: str   # skąd lista: „deezer”
-    ref: str      # identyfikator w źródle (dla Deezera: id playlisty)
-    title: str    # opis w komentarzu playlisty
+    name: str            # nazwa konfiguracji (klucz w stanie); playlista nazywa się wg głębokości, np. „Top 200 Polska”
+    source: str          # skąd lista: „deezer”
+    ref: str             # identyfikator w źródle (dla Deezera: id playlisty)
+    title: str           # opis w komentarzu playlisty
+    extension: str = ""  # kraj Last.fm (geo.getTopTracks), z którego dobieramy dalsze miejsca, gdy w bibliotece jest mało
+    template: str = "Top {depth} Polska"  # nazwa playlisty zależna od głębokości listy
 
 
 CHARTS = (
-    Chart("Top 100 Polska", "deezer", "1266972311", "Deezer Top Poland"),
+    Chart("Top 100 Polska", "deezer", "1266972311", "Deezer Top Poland + Last.fm Polska", extension="poland"),
 )
+STEPS = (100, 200, 300, 500, 1000)  # kolejne głębokości listy, gdy w bibliotece nie ma jeszcze wystarczająco utworów
+
+
+def display_name(chart, depth):
+    """Nazwa playlisty dla danej głębokości listy: „Top 100 Polska”, „Top 200 Polska”…"""
+    return chart.template.format(depth=depth)
+
+
+def dedupe_key(artist, title):
+    keys = sorted(artist_keys(artist))
+    return f"{clean_title(title)}|{keys[0] if keys else ''}"
+
+
+def extend(entries, extra, depth):
+    """Dokłada do `entries` (z numerami miejsc) wpisy z `extra` (kolejność źródła dodatkowego), pomijając te, które już
+    są, aż lista ma `depth` pozycji. Nowe miejsca idą dalej po numerach pierwszej listy."""
+    result = list(entries)
+    seen = {dedupe_key(e["artist"], e["title"]) for e in result}
+    rank = max((e["rank"] for e in result), default=0)
+    for item in extra:
+        if len(result) >= depth:
+            break
+        key = dedupe_key(item["artist"], item["title"])
+        if key in seen:
+            continue
+        seen.add(key)
+        rank += 1
+        result.append({**item, "rank": rank})
+    return result
 
 
 def by_names(names):
@@ -157,3 +188,8 @@ def missing(entries, hits, top):
 
 def comment(chart, matched, total, now):
     return f"{COMMENT_PREFIX}: {chart.title} · w bibliotece {matched}/{total} · aktualizacja {now:%Y-%m-%d}. Odświeżana automatycznie."
+
+
+def names(chart):
+    """Wszystkie nazwy, pod którymi playlista tej listy może występować w Navidrome (zależnie od głębokości)."""
+    return [display_name(chart, d) for d in STEPS]

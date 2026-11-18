@@ -2,4 +2,5 @@
 <resources>
     <string name="piterfy_charts">Listy przebojów</string>
     <string name="piterfy_chart_in_library">w bibliotece %1$d/%2$d</string>
+    <string name="piterfy_games">Soundtracki z gier</string>
 </resources>
