@@ -16,6 +16,7 @@ import android.graphics.drawable.Drawable
 import android.os.Build
 import android.view.View
 import android.view.animation.OvershootInterpolator
+import androidx.annotation.RequiresApi
 import com.eddyizm.tempus.util.PiterfyGlassPlan
 import kotlin.math.abs
 
@@ -93,6 +94,7 @@ class PiterfyGlassDrawable(
         canvas.drawPath(path, edge)
     }
 
+    @RequiresApi(Build.VERSION_CODES.S)
     private fun drawBackdropBlur(canvas: Canvas) {
         val src = blurSource ?: return
         val host = blurHost ?: return
