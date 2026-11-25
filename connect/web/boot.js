@@ -11,6 +11,18 @@
   var root = document.documentElement;
   if (window.__pfBootDone || root.hasAttribute("data-pf-boot")) return;
 
+  // Liquid Glass włączony przy poprzedniej wizycie: glass.css (blokuje rysowanie) i ustawienia dochodzą jeszcze w <head>,
+  // żeby pierwsza klatka była już szklana, a nie dopiero po załadowaniu piterfy.js.
+  var self = document.currentScript, bootVersion = ((self && self.src.match(/[?&]v=([^&]+)/)) || [])[1] || "";
+  try {
+    var glass = JSON.parse(localStorage.getItem("pf-glass") || "{}");
+    if (glass && glass.on) {
+      document.write('<link rel="stylesheet" id="pf-glass-css" href="/piterfy-ui/glass.css?v=' + bootVersion + '">' +
+        '<script src="/piterfy-ui/glass-core.js?v=' + bootVersion + '"><\/script>' +
+        '<script>window.PiterfyGlassCore&&PiterfyGlassCore.apply(document.documentElement,PiterfyGlassCore.parse(localStorage.getItem("pf-glass")))<\/script>');
+    }
+  } catch (e) { /* bez szkła przy pierwszym rysunku; glass.js i tak je zastosuje */ }
+
   var MIN_MS = 1500, MAX_MS = 4000, OUT_MS = 800; // MIN_MS = długość intro (gra raz, nic się nie zapętla)
   var t0 = performance.now();
   // Navidrome po pierwszym uruchomieniu (nowy service worker) przeładowuje stronę sam. Drugie wejście w ciągu kilku sekund

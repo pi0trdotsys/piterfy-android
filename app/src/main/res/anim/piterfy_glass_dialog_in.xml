@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Liquid Glass: dialog wchodzi z lekkim powiekszeniem i zanikiem (jak okna w iOS) -->
+<set xmlns:android="http://schemas.android.com/apk/res/android" android:shareInterpolator="false">
+    <scale android:fromXScale="0.92" android:toXScale="1" android:fromYScale="0.92" android:toYScale="1"
+        android:pivotX="50%" android:pivotY="50%" android:duration="260"
+        android:interpolator="@android:anim/decelerate_interpolator" />
+    <alpha android:fromAlpha="0" android:toAlpha="1" android:duration="200" android:interpolator="@android:anim/decelerate_interpolator" />
+</set>

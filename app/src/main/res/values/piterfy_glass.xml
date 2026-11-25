@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="glass_title">Liquid Glass</string>
+    <string name="glass_summary">Semi-transparent, frosted surfaces with highlights and springy motion. Works with every theme.</string>
+    <string name="glass_intensity">Effect strength</string>
+    <string name="glass_note_old_android">On Android 11 and older surfaces are translucent without the blur.</string>
+
+    <!-- Nakladka motywu nakladana po presecie, gdy Liquid Glass jest wlaczony (ThemeHelper.enableThemeSwitch) -->
+    <style name="ThemeOverlay.PiterfyGlass" parent="">
+        <item name="materialAlertDialogTheme">@style/ThemeOverlay.PiterfyGlass.AlertDialog</item>
+        <item name="materialCardViewStyle">@style/Widget.PiterfyGlass.Card</item>
+    </style>
+    <style name="ThemeOverlay.PiterfyGlass.AlertDialog" parent="ThemeOverlay.Material3.MaterialAlertDialog">
+        <item name="android:windowAnimationStyle">@style/PiterfyGlassDialogAnimation</item>
+    </style>
+    <style name="PiterfyGlassDialogAnimation" parent="@android:style/Animation.Dialog">
+        <item name="android:windowEnterAnimation">@anim/piterfy_glass_dialog_in</item>
+        <item name="android:windowExitAnimation">@anim/piterfy_glass_dialog_out</item>
+    </style>
+    <style name="Widget.PiterfyGlass.Card" parent="Widget.Material3.CardView.Filled">
+        <item name="cardCornerRadius">16dp</item>
+        <item name="cardElevation">0dp</item>
+        <item name="cardBackgroundColor">@color/piterfy_glass_card</item>
+        <item name="strokeColor">#40FFFFFF</item>
+        <item name="strokeWidth">1dp</item>
+    </style>
+</resources>

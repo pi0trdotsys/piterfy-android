@@ -255,6 +255,7 @@
       el('small','Od 2 dni przed do 2 dni po święcie motyw i ikona zmieniają się same',labels);
       box.addEventListener('change',()=>{saveAppearance({...appearancePrefs(),auto:box.checked});applyAppearance(true);render();});
       const note=occasionNote();if(note)el('p',note,dlg,'pf-ap-note');
+      window.PiterfyGlass?.section(dlg);  // Liquid Glass: włącznik i siła (glass.js)
       el('h3','Motywy',dlg);
       const themes=el('div','',dlg,'pf-ap-grid');
       const pick=(group,id)=>{saveAppearance({...appearancePrefs(),[group]:id});applyAppearance(true);render();};

@@ -1,0 +1,180 @@
+/* Piterfy — „Liquid Glass” (glass.js, glass-core.js): półprzezroczyste, rozmyte powierzchnie z jasną krawędzią i połyskiem,
+ * sprężyste animacje, niezależnie od motywu kolorystycznego. Wszystko pod :root[data-pf-glass]; siłę efektu (blur, wypełnienie,
+ * krawędź, połysk) ustawiają zmienne --pf-glass-* z glass-core.js. Selektory są o jeden poziom specyficzniejsze niż w piterfy.css
+ * (które ładuje się później i ma !important), więc wygrywają bez przestawiania kolejności plików.
+ * Rozmycie (backdrop-filter) dostają tylko duże, pojedyncze powierzchnie (panel boczny, górny pasek, odtwarzacz, okna i menu);
+ * karty i kafelki mają samo półprzezroczyste wypełnienie, bo jest ich dziesiątki. */
+
+:root[data-pf-glass] {
+  --pf-glass-bg: color-mix(in srgb, var(--pf-panel, #121212) var(--pf-glass-fill, 38%), transparent);
+  --pf-glass-bg-strong: color-mix(in srgb, var(--pf-panel, #121212) var(--pf-glass-fill-strong, 56%), transparent);
+  --pf-glass-line: rgba(255, 255, 255, calc(var(--pf-glass-edge, 0.35) * 0.55));
+  --pf-glass-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, var(--pf-glass-edge, 0.35)),
+    inset 0 0 0 1px var(--pf-glass-line),
+    inset 0 -14px 26px -18px rgba(255, 255, 255, calc(var(--pf-glass-edge, 0.35) * 0.45)),
+    0 10px 34px rgba(0, 0, 0, 0.3);
+  --pf-glass-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* ═════ tło pod szkłem: powoli dryfujące poświaty w kolorach motywu (szkło ma co rozmywać) ═════ */
+:root[data-pf-glass]:not([data-pf-light]) body::before {
+  content: ""; position: fixed; inset: -25%; z-index: 0; pointer-events: none;
+  background:
+    radial-gradient(38% 34% at 18% 24%, color-mix(in srgb, var(--pf-accent, #1db954) 74%, transparent), transparent 72%),
+    radial-gradient(34% 40% at 82% 18%, color-mix(in srgb, var(--pf-accent-2, #a4edc2) 56%, transparent), transparent 72%),
+    radial-gradient(44% 40% at 62% 86%, color-mix(in srgb, var(--pf-tint, #1c3b2b) 100%, transparent), transparent 72%);
+  opacity: calc(0.3 + var(--pf-glass-glow, 0.2) * 2.2);
+  animation: pf-glass-drift 42s ease-in-out infinite alternate; will-change: transform;
+}
+:root[data-pf-glass][data-pf-light] body::before {
+  content: ""; position: fixed; inset: -25%; z-index: 0; pointer-events: none;
+  background:
+    radial-gradient(38% 34% at 18% 24%, rgba(120, 200, 255, 0.55), transparent 72%),
+    radial-gradient(34% 40% at 82% 18%, rgba(255, 170, 200, 0.45), transparent 72%),
+    radial-gradient(44% 40% at 62% 86%, rgba(170, 255, 200, 0.4), transparent 72%);
+  animation: pf-glass-drift 42s ease-in-out infinite alternate; will-change: transform;
+}
+:root[data-pf-glass] #root { position: relative; z-index: 1; }
+@keyframes pf-glass-drift {
+  0% { transform: translate3d(-3%, -2%, 0) scale(1); }
+  50% { transform: translate3d(3%, 2%, 0) scale(1.08); }
+  100% { transform: translate3d(-1%, 4%, 0) scale(1.03); }
+}
+
+/* ═════ układ: prześwitujące tło i szklany panel główny ═════ */
+:root[data-pf-glass]:not([data-pf-light]) .layout { background: transparent !important; }
+:root[data-pf-glass]:not([data-pf-light]) #main-content {
+  background-color: color-mix(in srgb, var(--pf-panel, #121212) calc(var(--pf-glass-fill, 38%) * 0.7), transparent) !important;
+  background-image: linear-gradient(180deg, color-mix(in srgb, var(--pf-tint, #1c3b2b) 34%, transparent) 0, transparent 360px) !important;
+  box-shadow: var(--pf-glass-shadow);
+}
+:root[data-pf-glass]:not([data-pf-light])[data-pf-route=start] #main-content {
+  background-image: linear-gradient(180deg, color-mix(in srgb, var(--pf-tint-2, #1f4a33) 34%, transparent) 0, transparent 380px) !important;
+}
+
+/* ═════ duże powierzchnie z rozmyciem: górny pasek, panel boczny, odtwarzacz, kolejka ═════ */
+:root[data-pf-glass]:not([data-pf-light]) header.MuiAppBar-root,
+:root[data-pf-glass]:not([data-pf-light]) .MuiDrawer-docked .MuiDrawer-paper,
+:root[data-pf-glass]:not([data-pf-light]) .MuiDrawer-modal .MuiDrawer-paper,
+:root[data-pf-glass]:not([data-pf-light]) body .react-jinke-music-player-main .music-player-panel,
+:root[data-pf-glass]:not([data-pf-light]) body .react-jinke-music-player-main .audio-lists-panel,
+:root[data-pf-glass]:not([data-pf-light]) .pf-mobile-bar {
+  background-color: var(--pf-glass-bg) !important;
+  background-image: radial-gradient(130% 160% at var(--pf-mx, 14%) var(--pf-my, 0%), rgba(255, 255, 255, var(--pf-glass-sheen, 0.14)), transparent 58%) !important;
+  -webkit-backdrop-filter: blur(var(--pf-glass-blur, 20px)) saturate(var(--pf-glass-sat, 1.6));
+  backdrop-filter: blur(var(--pf-glass-blur, 20px)) saturate(var(--pf-glass-sat, 1.6));
+  box-shadow: var(--pf-glass-shadow) !important;
+  border: 0 !important;
+}
+:root[data-pf-glass]:not([data-pf-light]) header.MuiAppBar-root { box-shadow: inset 0 -1px 0 var(--pf-glass-line) !important; }
+:root[data-pf-glass]:not([data-pf-light]) .MuiDrawer-docked .MuiDrawer-paper { margin-top: 8px; margin-bottom: 8px; height: calc(100% - 16px); }
+
+/* panel boczny: pozycja zaznaczona rysuje „pigułka” (glass.js), która płynnie przesuwa się między pozycjami */
+:root[data-pf-glass]:not([data-pf-light]) .MuiDrawer-paper a.MuiMenuItem-root[aria-current="page"],
+:root[data-pf-glass]:not([data-pf-light]) .pf-start[aria-current="page"] { background: transparent !important; }
+:root[data-pf-glass]:not([data-pf-light]) .MuiDrawer-paper a.MuiMenuItem-root { position: relative; z-index: 1; }
+.pf-glass-pill {
+  position: absolute; left: 8px; right: 8px; top: 0; height: 0; z-index: 0; pointer-events: none; border-radius: 14px; opacity: 0;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.07));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.42), inset 0 0 0 1px rgba(255, 255, 255, 0.14), 0 6px 18px rgba(0, 0, 0, 0.25);
+  transition: transform 0.55s var(--pf-glass-spring, cubic-bezier(0.34, 1.56, 0.64, 1)), height 0.4s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.25s;
+  will-change: transform;
+}
+.pf-glass-pill.pf-on { opacity: 1; }
+
+/* ═════ okna, menu, podpowiedzi, toasty, pływające przyciski: mocniejsze wypełnienie i rozmycie ═════ */
+:root[data-pf-glass]:not([data-pf-light]) .MuiPopover-paper,
+:root[data-pf-glass]:not([data-pf-light]) .MuiMenu-paper,
+:root[data-pf-glass]:not([data-pf-light]) .MuiDialog-paper,
+:root[data-pf-glass]:not([data-pf-light]) .MuiAutocomplete-paper,
+:root[data-pf-glass]:not([data-pf-light]) dialog:not(#pf-canvas-dialog),
+:root[data-pf-glass]:not([data-pf-light]) .pf-toast,
+:root[data-pf-glass]:not([data-pf-light]) .MuiSnackbarContent-root,
+:root[data-pf-glass]:not([data-pf-light]) #pf-lyrics-button,
+:root[data-pf-glass]:not([data-pf-light]) #pf-canvas-button,
+:root[data-pf-glass]:not([data-pf-light]) #pf-connect-button,
+:root[data-pf-glass]:not([data-pf-light]) .pf-login-card.MuiCard-root {
+  background-color: var(--pf-glass-bg-strong) !important;
+  background-image: radial-gradient(130% 160% at var(--pf-mx, 14%) var(--pf-my, 0%), rgba(255, 255, 255, var(--pf-glass-sheen, 0.14)), transparent 60%) !important;
+  -webkit-backdrop-filter: blur(var(--pf-glass-blur, 20px)) saturate(var(--pf-glass-sat, 1.6));
+  backdrop-filter: blur(var(--pf-glass-blur, 20px)) saturate(var(--pf-glass-sat, 1.6));
+  box-shadow: var(--pf-glass-shadow) !important;
+  border: 1px solid var(--pf-glass-line) !important;
+}
+:root[data-pf-glass]:not([data-pf-light]) dialog:not(#pf-canvas-dialog)::backdrop { background: rgba(0, 0, 0, 0.32); -webkit-backdrop-filter: blur(var(--pf-glass-blur-soft, 8px)); backdrop-filter: blur(var(--pf-glass-blur-soft, 8px)); }
+:root[data-pf-glass]:not([data-pf-light]) .MuiPopover-paper, :root[data-pf-glass]:not([data-pf-light]) .MuiMenu-paper,
+:root[data-pf-glass]:not([data-pf-light]) .MuiDialog-paper { border-radius: 18px !important; }
+:root[data-pf-glass]:not([data-pf-light]) dialog:not(#pf-canvas-dialog) { border-radius: 22px; }
+:root[data-pf-glass]:not([data-pf-light]) .pf-toast, :root[data-pf-glass]:not([data-pf-light]) .MuiSnackbarContent-root { border-radius: 999px !important; }
+:root[data-pf-glass]:not([data-pf-light]) #pf-lyrics-button, :root[data-pf-glass]:not([data-pf-light]) #pf-canvas-button,
+:root[data-pf-glass]:not([data-pf-light]) #pf-connect-button { color: var(--pf-text, #fff); }
+
+/* ═════ karty, kafelki, chipy, baner: samo wypełnienie, krawędź i połysk (bez rozmycia) ═════ */
+:root[data-pf-glass]:not([data-pf-light]) #main-content .pf-home .pf-tile,
+:root[data-pf-glass]:not([data-pf-light]) #main-content .pf-home .pf-card,
+:root[data-pf-glass]:not([data-pf-light]) #main-content .pf-home .pf-chips a,
+:root[data-pf-glass]:not([data-pf-light]) #main-content .pf-home .pf-banner {
+  background-color: color-mix(in srgb, var(--pf-panel, #121212) calc(var(--pf-glass-fill, 38%) * 0.9), transparent) !important;
+  background-image: radial-gradient(120% 150% at var(--pf-mx, 14%) var(--pf-my, 0%), rgba(255, 255, 255, var(--pf-glass-sheen, 0.14)), transparent 62%) !important;
+  box-shadow: var(--pf-glass-shadow) !important;
+  border: 0 !important;
+}
+:root[data-pf-glass]:not([data-pf-light]) #main-content .pf-home .pf-chips > a[aria-current="page"] {
+  background-color: color-mix(in srgb, var(--pf-mint, #a4edc2) 88%, transparent) !important; background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.35), transparent 70%) !important;
+}
+:root[data-pf-glass]:not([data-pf-light]) #main-content .pf-home .pf-tile, :root[data-pf-glass]:not([data-pf-light]) #main-content .pf-home .pf-card,
+:root[data-pf-glass]:not([data-pf-light]) #main-content .pf-home .pf-chips a, :root[data-pf-glass]:not([data-pf-light]) #main-content .pf-home .pf-banner,
+:root[data-pf-glass]:not([data-pf-light]) .pf-library-button, :root[data-pf-glass]:not([data-pf-light]) .pf-btn-play,
+:root[data-pf-glass]:not([data-pf-light]) .pf-btn-ghost {
+  transition: transform 0.5s var(--pf-glass-spring, cubic-bezier(0.34, 1.56, 0.64, 1)), background-color 0.3s, box-shadow 0.3s !important;
+}
+/* sprężyste naciśnięcie: skala w dół i „przeregulowanie” z powrotem po puszczeniu */
+:root[data-pf-glass] #main-content .pf-home .pf-tile:active, :root[data-pf-glass] #main-content .pf-home .pf-card:active,
+:root[data-pf-glass] #main-content .pf-home .pf-chips a:active, :root[data-pf-glass] .pf-library-button:active,
+:root[data-pf-glass] .pf-btn-play:active, :root[data-pf-glass] .pf-btn-ghost:active { transform: scale(0.955) !important; }
+:root[data-pf-glass] #main-content .pf-home .pf-card:active .pf-card-art { transform: scale(0.97) !important; }
+:root[data-pf-glass] #main-content .pf-home .pf-tile:hover, :root[data-pf-glass] #main-content .pf-home .pf-chips a:hover { transform: translateY(-3px) scale(1.015) !important; }
+
+/* pola wyszukiwania i listy */
+:root[data-pf-glass]:not([data-pf-light]) .MuiFilledInput-root, :root[data-pf-glass]:not([data-pf-light]) .pf-search input {
+  background-color: color-mix(in srgb, var(--pf-panel, #121212) var(--pf-glass-fill, 38%), transparent) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, calc(var(--pf-glass-edge, 0.35) * 0.8)), inset 0 0 0 1px var(--pf-glass-line);
+  border-radius: 14px !important;
+}
+:root[data-pf-glass]:not([data-pf-light]) #main-content tbody tr:hover { background: rgba(255, 255, 255, 0.1) !important; }
+
+/* ═════ animacje ═════ */
+@keyframes pf-glass-pop {
+  from { opacity: 0; transform: scale(0.93) translateY(10px); filter: blur(10px); }
+  60% { filter: blur(0); }
+  to { opacity: 1; transform: none; filter: none; }
+}
+@keyframes pf-glass-route { from { opacity: 0; transform: translateY(10px); filter: blur(8px); } to { opacity: 1; transform: none; filter: none; } }
+@keyframes pf-glass-toast { from { opacity: 0; transform: translate(-50%, 24px) scale(0.9); } to { opacity: 1; transform: translate(-50%, 0) scale(1); } }
+@keyframes pf-glass-breathe { 0%, 100% { box-shadow: var(--pf-glass-shadow); } 50% { box-shadow: var(--pf-glass-shadow), 0 0 44px -6px color-mix(in srgb, var(--pf-accent, #1db954) 55%, transparent); } }
+
+:root[data-pf-glass] :is(.MuiPopover-paper, .MuiMenu-paper, .MuiDialog-paper, .MuiAutocomplete-paper) { animation: pf-glass-pop 0.5s cubic-bezier(0.2, 0.9, 0.25, 1.12) both; transform-origin: top center; }
+:root[data-pf-glass] dialog[open]:not(#pf-canvas-dialog) { animation: pf-glass-pop 0.55s cubic-bezier(0.2, 0.9, 0.25, 1.12) both; }
+:root[data-pf-glass] #main-content.pf-route-in { animation: pf-glass-route 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) both !important; }
+:root[data-pf-glass] .pf-toast { animation: pf-glass-toast 0.5s var(--pf-glass-spring, cubic-bezier(0.34, 1.56, 0.64, 1)) both; }
+:root[data-pf-glass]:not([data-pf-light])[data-pf-playing="1"] body .react-jinke-music-player-main .music-player-panel { animation: pf-glass-breathe 4.5s ease-in-out infinite; }
+
+/* ═════ jasny motyw: szkło mleczne zamiast ciemnego ═════ */
+:root[data-pf-glass][data-pf-light] header.MuiAppBar-root,
+:root[data-pf-glass][data-pf-light] .MuiDrawer-docked .MuiDrawer-paper,
+:root[data-pf-glass][data-pf-light] .MuiDrawer-modal .MuiDrawer-paper,
+:root[data-pf-glass][data-pf-light] .react-jinke-music-player-main .music-player-panel,
+:root[data-pf-glass][data-pf-light] .MuiPopover-paper, :root[data-pf-glass][data-pf-light] .MuiMenu-paper,
+:root[data-pf-glass][data-pf-light] .MuiDialog-paper, :root[data-pf-glass][data-pf-light] dialog:not(#pf-canvas-dialog) {
+  background-color: rgba(255, 255, 255, 0.66) !important;
+  -webkit-backdrop-filter: blur(var(--pf-glass-blur, 20px)) saturate(var(--pf-glass-sat, 1.6));
+  backdrop-filter: blur(var(--pf-glass-blur, 20px)) saturate(var(--pf-glass-sat, 1.6));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), inset 0 0 0 1px rgba(255, 255, 255, 0.55), 0 10px 34px rgba(30, 40, 70, 0.18) !important;
+}
+:root[data-pf-glass][data-pf-light] .layout, :root[data-pf-glass][data-pf-light] #main-content { background: transparent !important; }
+
+/* bez rozmycia (przeglądarka go nie umie): pełne, nieprzezroczyste wypełnienie, żeby tekst był czytelny */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  :root[data-pf-glass] { --pf-glass-bg: var(--pf-panel, #121212); --pf-glass-bg-strong: var(--pf-card-hover, #282828); }
+}

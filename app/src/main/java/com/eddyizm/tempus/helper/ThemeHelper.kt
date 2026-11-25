@@ -122,9 +122,15 @@ object ThemeHelper {
      * Allow activities to switch among themes when first built.
      * This includes light|night mode and dynamic colors.
      */
-    @SuppressLint("UseKtx")
     @JvmStatic
     fun enableThemeSwitch(activity: AppCompatActivity) {
+        enableBaseThemeSwitch(activity)
+        // Piterfy: Liquid Glass nakłada się na dowolny motyw (nakładka z półprzezroczystymi kartami, dialogami i arkuszami)
+        if (PiterfyAppearance.glassEnabled()) activity.theme.applyStyle(com.eddyizm.tempus.R.style.ThemeOverlay_PiterfyGlass, true)
+    }
+
+    @SuppressLint("UseKtx")
+    private fun enableBaseThemeSwitch(activity: AppCompatActivity) {
         PiterfyAppearance.effectiveTheme()?.let { applyPreset(activity, it); return }
         val theme        = getTheme()
         val nightMode    = activity.resources.configuration.uiMode and UI_MODE_NIGHT_MASK
@@ -198,6 +204,7 @@ object ThemeHelper {
     @JvmStatic
     fun themeSignature(): String {
         val accent = if (isDynamicColorAccent()) "DYNAMIC" else getColorAccent()
-        return "${getTheme()}|${isDarkThemeBlack()}|$accent|${PiterfyAppearance.effectiveThemeId()}"
+        val glass = if (PiterfyAppearance.glassEnabled()) "glass${PiterfyAppearance.glassIntensity()}" else "noglass"
+        return "${getTheme()}|${isDarkThemeBlack()}|$accent|${PiterfyAppearance.effectiveThemeId()}|$glass"
     }
 }

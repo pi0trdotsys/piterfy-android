@@ -248,6 +248,7 @@ public class MainActivity extends BaseActivity {
         initBottomSheet();
         initNavigation();
         initBackPressedDispatcher();
+        initGlass();
 
         if (Preferences.getPassword() != null || (Preferences.getToken() != null && Preferences.getSalt() != null)) {
             goFromLogin();
@@ -442,6 +443,31 @@ public class MainActivity extends BaseActivity {
 
     private void animateBottomSheet(float slideOffset) {
         bottomSheetController.animate(slideOffset);
+        // Piterfy: Liquid Glass — przezroczysty panel i szklany nagłówek mini odtwarzacza, znikające w miarę rozwijania
+        com.eddyizm.tempus.ui.components.PiterfyGlass.onSheetSlide(bind.playerBottomSheet, bind.navHostFragment, slideOffset);
+    }
+
+    /**
+     * Piterfy: Liquid Glass — tło z poświatami, szkło dolnej nawigacji (z pigułką zaznaczenia) oraz dialogi i arkusze ze szklanym
+     * tłem; ekrany z nieprzezroczystym tłem dostają przezroczystość, żeby poświaty było widać. Bez włączonej opcji nic się nie zmienia.
+     */
+    private void initGlass() {
+        com.eddyizm.tempus.ui.components.PiterfyGlass.install(bind.glassBackdrop, bind.bottomNavigation, bind.navHostFragment);
+        if (!com.eddyizm.tempus.appearance.PiterfyAppearance.glassEnabled()) return;
+        getSupportFragmentManager().registerFragmentLifecycleCallbacks(new FragmentManager.FragmentLifecycleCallbacks() {
+            @Override
+            public void onFragmentViewCreated(@NonNull FragmentManager fm, @NonNull Fragment f, @NonNull View v,
+                                              @Nullable Bundle savedInstanceState) {
+                if (!(f instanceof DialogFragment)) com.eddyizm.tempus.ui.components.PiterfyGlass.relaxBackground(v);
+            }
+
+            @Override
+            public void onFragmentStarted(@NonNull FragmentManager fm, @NonNull Fragment f) {
+                if (f instanceof DialogFragment) {
+                    com.eddyizm.tempus.ui.components.PiterfyGlass.styleDialog(((DialogFragment) f).getDialog());
+                }
+            }
+        }, true);
     }
 
     private void animateBottomNavigation(float slideOffset, int navigationHeight) {

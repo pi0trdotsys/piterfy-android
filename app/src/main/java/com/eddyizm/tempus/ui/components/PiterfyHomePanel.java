@@ -90,7 +90,7 @@ public final class PiterfyHomePanel extends LinearLayout implements DefaultLifec
         dj.setText("Piterfy DJ · Twoja audycja"); dj.setAllCaps(false);
         dj.setTypeface(bold); dj.setTextSize(15); dj.setMinHeight(dp(52));
         dj.setCornerRadius(dp(24)); dj.setTextColor(Color.BLACK);
-        dj.setBackgroundTintList(android.content.res.ColorStateList.valueOf(GREEN));
+        glassTile(dj, GREEN, true);
         dj.setOnClickListener(v -> com.eddyizm.tempus.ui.dialog.PiterfyDJDialog.show(getContext(), play, "dj"));
         addView(dj, new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT));
         LinearLayout shortcuts = new LinearLayout(getContext());
@@ -100,7 +100,7 @@ public final class PiterfyHomePanel extends LinearLayout implements DefaultLifec
         discovery.setText("Odkrywaj"); discovery.setAllCaps(false); discovery.setTypeface(bold);
         discovery.setMinHeight(dp(48)); discovery.setCornerRadius(dp(24));
         discovery.setTextColor(Color.WHITE);
-        discovery.setBackgroundTintList(android.content.res.ColorStateList.valueOf(TILE_COLOR));
+        glassTile(discovery, TILE_COLOR, false);
         discovery.setOnClickListener(v -> com.eddyizm.tempus.ui.dialog.PiterfyDiscoveryDialog.show(getContext(), play));
         LayoutParams discoveryParams = new LayoutParams(0, LayoutParams.WRAP_CONTENT, 1);
         discoveryParams.rightMargin = dp(8);
@@ -108,7 +108,7 @@ public final class PiterfyHomePanel extends LinearLayout implements DefaultLifec
         MaterialButton taste = new MaterialButton(getContext());
         taste.setText(R.string.piterfy_taste); taste.setAllCaps(false); taste.setTypeface(bold);
         taste.setMinHeight(dp(48)); taste.setCornerRadius(dp(24)); taste.setTextColor(Color.WHITE);
-        taste.setBackgroundTintList(android.content.res.ColorStateList.valueOf(TILE_COLOR));
+        glassTile(taste, TILE_COLOR, false);
         // Piterfy: "Moj gust" to ekran w aplikacji (dane z publicznych plikow serwera), nie strona w przegladarce
         taste.setOnClickListener(v -> new com.eddyizm.tempus.ui.dialog.PiterfyTasteDialog()
                 .show(host.getParentFragmentManager(), com.eddyizm.tempus.ui.dialog.PiterfyTasteDialog.TAG));
@@ -120,7 +120,7 @@ public final class PiterfyHomePanel extends LinearLayout implements DefaultLifec
         MaterialButton nerdStats = new MaterialButton(getContext());
         nerdStats.setText(R.string.stats_title); nerdStats.setAllCaps(false); nerdStats.setTypeface(bold);
         nerdStats.setMinHeight(dp(48)); nerdStats.setCornerRadius(dp(24)); nerdStats.setTextColor(Color.WHITE);
-        nerdStats.setBackgroundTintList(android.content.res.ColorStateList.valueOf(TILE_COLOR));
+        glassTile(nerdStats, TILE_COLOR, false);
         nerdStats.setOnClickListener(v -> new com.eddyizm.tempus.ui.dialog.PiterfyStatsDialog()
                 .show(host.getParentFragmentManager(), com.eddyizm.tempus.ui.dialog.PiterfyStatsDialog.TAG));
         LayoutParams nerdParams = new LayoutParams(0, LayoutParams.WRAP_CONTENT, 1);
@@ -129,7 +129,7 @@ public final class PiterfyHomePanel extends LinearLayout implements DefaultLifec
         MaterialButton wrapped = new MaterialButton(getContext());
         wrapped.setText(R.string.stats_tab_wrapped); wrapped.setAllCaps(false); wrapped.setTypeface(bold);
         wrapped.setMinHeight(dp(48)); wrapped.setCornerRadius(dp(24)); wrapped.setTextColor(Color.WHITE);
-        wrapped.setBackgroundTintList(android.content.res.ColorStateList.valueOf(TILE_COLOR));
+        glassTile(wrapped, TILE_COLOR, false);
         wrapped.setOnClickListener(v -> new com.eddyizm.tempus.ui.dialog.PiterfyWrappedDialog()
                 .show(host.getParentFragmentManager(), com.eddyizm.tempus.ui.dialog.PiterfyWrappedDialog.TAG));
         insights.addView(wrapped, new LayoutParams(0, LayoutParams.WRAP_CONTENT, 1));
@@ -224,6 +224,28 @@ public final class PiterfyHomePanel extends LinearLayout implements DefaultLifec
         t.setTextSize(sizeSp);
         t.setTextColor(color);
         return t;
+    }
+
+    /**
+     * Liquid Glass: przycisk skrótu dostaje szkło (z rozmyciem/połyskiem i falą dotyku); bez szkła zostaje zwykły kolor.
+     * [accent] — przycisk w kolorze akcentu (np. Piterfy DJ): szkło barwione tym kolorem zamiast kolorem powierzchni.
+     */
+    private void glassTile(MaterialButton button, int color, boolean accent) {
+        android.graphics.drawable.Drawable glass = accent
+                ? PiterfyGlass.rippled(getContext(), 24f, color)
+                : PiterfyGlass.rippled(getContext(), 24f);
+        if (glass != null) {
+            button.setBackgroundTintList(null);
+            button.setBackground(glass);
+        } else {
+            button.setBackgroundTintList(android.content.res.ColorStateList.valueOf(color));
+        }
+    }
+
+    /** Tło kafelka/karty: szkło przy włączonym Liquid Glass, inaczej zaokrąglony kolor. */
+    private android.graphics.drawable.Drawable surface(int color, int radiusDp) {
+        android.graphics.drawable.Drawable glass = PiterfyGlass.drawable(getContext(), radiusDp, false);
+        return glass != null ? glass : rounded(color, radiusDp);
     }
 
     private GradientDrawable rounded(int color, int radiusDp) {
@@ -461,7 +483,7 @@ public final class PiterfyHomePanel extends LinearLayout implements DefaultLifec
     private View tile(String title, String coverId, Integer plainColor, View.OnClickListener click) {
         LinearLayout tile = new LinearLayout(getContext());
         tile.setGravity(Gravity.CENTER_VERTICAL);
-        tile.setBackground(rounded(TILE_COLOR, 6));
+        tile.setBackground(surface(TILE_COLOR, 6));
         clipRounded(tile);
         ImageView image = new ImageView(getContext());
         image.setScaleType(ImageView.ScaleType.CENTER_CROP);
@@ -509,7 +531,7 @@ public final class PiterfyHomePanel extends LinearLayout implements DefaultLifec
         card.setLayoutParams(params);
 
         FrameLayout frame = new FrameLayout(getContext());
-        frame.setBackground(rounded(TILE_COLOR, 8));
+        frame.setBackground(surface(TILE_COLOR, 8));
         clipRounded(frame);
         ImageView image = new ImageView(getContext());
         image.setScaleType(ImageView.ScaleType.CENTER_CROP);

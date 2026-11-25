@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="glass_title">Liquid Glass</string>
+    <string name="glass_summary">Półprzezroczyste, rozmyte powierzchnie z odblaskami i sprężystym ruchem. Działa z każdym motywem.</string>
+    <string name="glass_intensity">Siła efektu</string>
+    <string name="glass_note_old_android">Na Androidzie 11 i starszym powierzchnie są półprzezroczyste, ale bez rozmycia.</string>
+</resources>

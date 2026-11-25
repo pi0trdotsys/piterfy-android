@@ -11,6 +11,14 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
+        <!-- Piterfy: Liquid Glass — wolno dryfujace poswiaty pod cala trescia (widoczne tylko przy wlaczonej opcji) -->
+        <com.eddyizm.tempus.ui.components.PiterfyGlassBackdropView
+            android:id="@+id/glass_backdrop"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:importantForAccessibility="no"
+            android:visibility="gone" />
+
         <androidx.fragment.app.FragmentContainerView
             android:id="@+id/nav_host_fragment"
             android:name="androidx.navigation.fragment.NavHostFragment"

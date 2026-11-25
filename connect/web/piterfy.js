@@ -1721,6 +1721,17 @@
 })();
 // piterfy-canvas-loader-end
 
+// piterfy-glass-loader
+;(() => {
+  const m = document.currentScript && document.currentScript.src.match(/[?&]v=([^&]+)/);
+  const v = "?v=" + (m ? m[1] : "1");
+  const load = (src, next) => { const s = document.createElement('script'); s.src = '/piterfy-ui/' + src + v; if (next) s.onload = next; document.head.appendChild(s); };
+  const needCore = !window.PiterfyGlassCore;
+  const ui = () => load('glass.js');
+  if (needCore) load('glass-core.js', ui); else ui();
+})();
+// piterfy-glass-loader-end
+
 // piterfy-library-loader
 ;(() => { const s = document.createElement('script'); s.src = '/piterfy-ui/library.js?v=20261104-204612'; document.head.appendChild(s); })();
 // piterfy-library-loader-end

@@ -11,6 +11,15 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
+        <!-- Piterfy: Liquid Glass — poswiaty pod trescia (widoczne tylko przy wlaczonej opcji) -->
+        <com.eddyizm.tempus.ui.components.PiterfyGlassBackdropView
+            android:id="@+id/glass_backdrop"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:importantForAccessibility="no"
+            android:visibility="gone" />
+
+
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="match_parent"

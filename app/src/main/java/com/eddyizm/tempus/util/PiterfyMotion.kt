@@ -18,7 +18,7 @@ object PiterfyMotion {
     private const val MAX_STEPS = 10
 
     // areAnimatorsEnabled() istnieje od API 26; na starszych systemach animujemy zawsze
-    private fun enabled() = Build.VERSION.SDK_INT < Build.VERSION_CODES.O || ValueAnimator.areAnimatorsEnabled()
+    @JvmStatic fun enabled() = Build.VERSION.SDK_INT < Build.VERSION_CODES.O || ValueAnimator.areAnimatorsEnabled()
 
     /** Opóźnienie kaskady dla elementu o danym numerze (ograniczone, żeby długa lista nie czekała w nieskończoność). */
     @JvmStatic fun delayFor(index: Int): Long = min(index.coerceAtLeast(0), MAX_STEPS) * STEP_MS
@@ -43,6 +43,11 @@ object PiterfyMotion {
     /** Sprężyste naciśnięcie: element lekko się zapada pod palcem i wraca z odbiciem. Nie przechwytuje dotyku. */
     @SuppressLint("ClickableViewAccessibility")
     @JvmStatic @JvmOverloads fun pressable(view: View, depth: Float = 0.96f) {
+        // z włączonym Liquid Glass naciśnięcie jest prawdziwą sprężyną (SpringAnimation), nie krótką animacją
+        if (com.eddyizm.tempus.ui.components.PiterfyGlass.springEnabled()) {
+            com.eddyizm.tempus.ui.components.PiterfyGlass.springPress(view, depth)
+            return
+        }
         view.setOnTouchListener { v, event ->
             when (event.actionMasked) {
                 MotionEvent.ACTION_DOWN -> if (enabled()) v.animate().scaleX(depth).scaleY(depth).setDuration(90)

@@ -2,6 +2,7 @@ package com.eddyizm.tempus.appearance
 
 import android.content.Context
 import com.eddyizm.tempus.App
+import com.eddyizm.tempus.util.PiterfyGlassPlan
 import java.util.Calendar
 
 /**
@@ -13,6 +14,8 @@ object PiterfyAppearance {
     const val KEY_AUTO = "piterfy_appearance_auto"
     const val KEY_THEME = "piterfy_theme_preset"
     const val KEY_ICON = "piterfy_icon"
+    const val KEY_GLASS = "piterfy_glass"
+    const val KEY_GLASS_INTENSITY = "piterfy_glass_intensity"
 
     private fun prefs() = App.getInstance().preferences
 
@@ -22,6 +25,12 @@ object PiterfyAppearance {
     @JvmStatic fun setChosenTheme(id: String) = prefs().edit().putString(KEY_THEME, id).apply()
     @JvmStatic fun chosenIcon(): String = prefs().getString(KEY_ICON, CLASSIC) ?: CLASSIC
     @JvmStatic fun setChosenIcon(id: String) = prefs().edit().putString(KEY_ICON, id).apply()
+
+    /** „Liquid Glass”: niezależny od motywu i okazji — półprzezroczyste powierzchnie z rozmyciem, odblaskami i sprężystym ruchem. */
+    @JvmStatic fun glassEnabled(): Boolean = prefs().getBoolean(KEY_GLASS, false)
+    @JvmStatic fun setGlassEnabled(on: Boolean) = prefs().edit().putBoolean(KEY_GLASS, on).apply()
+    @JvmStatic fun glassIntensity(): Int = PiterfyGlassPlan.clampIntensity(prefs().getInt(KEY_GLASS_INTENSITY, PiterfyGlassPlan.DEFAULT_INTENSITY))
+    @JvmStatic fun setGlassIntensity(value: Int) = prefs().edit().putInt(KEY_GLASS_INTENSITY, PiterfyGlassPlan.clampIntensity(value)).apply()
 
     /** Dzisiejsza data jako (rok, miesiąc, dzień); `Calendar` działa od API 1 (minSdk 24 nie ma java.time bez desugaringu). */
     private fun today(): Triple<Int, Int, Int> {

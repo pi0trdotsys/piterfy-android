@@ -1178,6 +1178,11 @@ html:not([data-pf-light]) body .react-jinke-music-player-main .music-player-pane
 .pf-ap-auto { display: flex; gap: 12px; align-items: center; padding: 12px 14px; border-radius: 12px; background: rgba(255, 255, 255, 0.06); cursor: pointer; }
 .pf-ap-auto input { width: 20px; height: 20px; accent-color: #1db954; }
 .pf-ap-auto small { display: block; margin-top: 2px; color: #b3b3b3; }
+.pf-glass-toggle { margin-top: 10px; }
+.pf-glass-range { display: flex; gap: 12px; align-items: center; margin: 6px 0 0; padding: 10px 14px; border-radius: 12px; background: rgba(255, 255, 255, 0.06); font-size: 13px; }
+.pf-glass-range[hidden] { display: none; }
+.pf-glass-range input { flex: 1; accent-color: #1db954; }
+.pf-glass-range output { min-width: 40px; text-align: right; font-variant-numeric: tabular-nums; color: #b3b3b3; }
 .pf-ap-note { margin: 10px 2px 0; color: #b3b3b3; font-size: 13px; }
 .pf-ap-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px; }
 .pf-ap-card { display: flex; flex-direction: column; gap: 14px; padding: 12px; border: 2px solid rgba(255, 255, 255, 0.1); border-radius: 14px; background: var(--c0); color: var(--ct);

@@ -21,6 +21,7 @@ import com.eddyizm.tempus.appearance.PiterfyCatalog
 import com.eddyizm.tempus.helper.ThemeHelper
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.materialswitch.MaterialSwitch
+import com.google.android.material.slider.Slider
 
 /**
  * Piterfy: wybór motywu kolorystycznego i ikony aplikacji oraz przełącznik automatycznych zmian w dni okolicznościowe
@@ -71,6 +72,22 @@ class PiterfyAppearanceDialog : DialogFragment() {
             root.addView(text(it, 12.5f, alpha = 0.85f).apply { setPadding(0, dp(6), 0, 0) })
         }
 
+        // Liquid Glass: niezależny od motywu; suwak siły tylko przy włączonym szkle
+        root.addView(glassRow().apply { setPadding(0, dp(18), 0, 0) })
+        if (PiterfyAppearance.glassEnabled()) {
+            root.addView(text(getString(R.string.glass_intensity), 12.5f, alpha = 0.85f).apply { setPadding(0, dp(10), 0, 0) })
+            root.addView(Slider(ctx).apply {
+                valueFrom = 0f; valueTo = 100f; stepSize = 5f
+                value = PiterfyAppearance.glassIntensity().toFloat()
+                // zapis i przebudowa ekranu dopiero po puszczeniu suwaka, a nie przy każdym kroku
+                addOnSliderTouchListener(object : Slider.OnSliderTouchListener {
+                    override fun onStartTrackingTouch(slider: Slider) {}
+                    override fun onStopTrackingTouch(slider: Slider) { PiterfyAppearance.setGlassIntensity(slider.value.toInt()); changed() }
+                })
+            })
+            if (Build.VERSION.SDK_INT < 31) root.addView(text(getString(R.string.glass_note_old_android), 12f, alpha = 0.7f))
+        }
+
         // motywy
         root.addView(text(getString(R.string.appearance_themes), 14f, bold = true).apply { setPadding(0, dp(18), 0, dp(8)) })
         val chosen = PiterfyAppearance.chosenTheme()
@@ -94,6 +111,20 @@ class PiterfyAppearanceDialog : DialogFragment() {
             root.addView(HorizontalScrollView(ctx).apply { isHorizontalScrollBarEnabled = false; addView(iconRow) })
             root.addView(text(getString(R.string.appearance_icon_note), 12f, alpha = 0.7f).apply { setPadding(0, dp(8), 0, 0) })
         }
+    }
+
+    private fun glassRow(): View {
+        val ctx = requireContext()
+        val row = LinearLayout(ctx).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
+        val labels = LinearLayout(ctx).apply { orientation = LinearLayout.VERTICAL }
+        labels.addView(text(getString(R.string.glass_title), 15f, bold = true))
+        labels.addView(text(getString(R.string.glass_summary), 12f, alpha = 0.7f))
+        row.addView(labels, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+        row.addView(MaterialSwitch(ctx).apply {
+            isChecked = PiterfyAppearance.glassEnabled()
+            setOnCheckedChangeListener { _, on -> PiterfyAppearance.setGlassEnabled(on); changed() }
+        })
+        return row
     }
 
     private fun themeCard(name: String, bg: Long, accent: Long, accent2: Long, textColor: Long, selected: Boolean, onClick: () -> Unit): View {

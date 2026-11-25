@@ -8,6 +8,7 @@ activity = "1.13.0"
 constraintlayout = "2.2.0"
 coordinatorlayout = "1.2.0"
 preferenceKtx = "1.2.1"
+dynamicanimation = "1.0.0"
 navigation = "2.8.6"
 recyclerview = "1.4.0"
 room = "2.7.0"
@@ -50,6 +51,7 @@ androidx-activity = { group = "androidx.activity", name="activity", version.ref 
 androidx-constraintlayout = { group = "androidx.constraintlayout", name = "constraintlayout", version.ref = "constraintlayout" }
 androidx-coordinatorlayout = { group = "androidx.coordinatorlayout", name = "coordinatorlayout", version.ref = "coordinatorlayout" }
 androidx-preference-ktx = { group = "androidx.preference", name = "preference-ktx", version.ref = "preferenceKtx" }
+androidx-dynamicanimation = { group = "androidx.dynamicanimation", name = "dynamicanimation", version.ref = "dynamicanimation" }
 androidx-navigation-fragment-ktx = { group = "androidx.navigation", name = "navigation-fragment-ktx", version.ref = "navigation" }
 androidx-navigation-ui-ktx = { group = "androidx.navigation", name = "navigation-ui-ktx", version.ref = "navigation" }
 androidx-recyclerview = { group = "androidx.recyclerview", name = "recyclerview", version.ref = "recyclerview" }
