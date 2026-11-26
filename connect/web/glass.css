@@ -178,3 +178,21 @@
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   :root[data-pf-glass] { --pf-glass-bg: var(--pf-panel, #121212); --pf-glass-bg-strong: var(--pf-card-hover, #282828); }
 }
+
+/* ═════ szkło + kolory z okładki: poświata tła, panel główny, pasek odtwarzacza i pigułka biorą żywy kolor grającej okładki ═════ */
+:root[data-pf-glass][data-pf-cover]:not([data-pf-light]) body::before {
+  background:
+    radial-gradient(38% 34% at 18% 24%, color-mix(in srgb, var(--pf-now-accent) 78%, transparent), transparent 72%),
+    radial-gradient(34% 40% at 82% 18%, color-mix(in srgb, var(--pf-accent-2, #a4edc2) 40%, var(--pf-now-accent) 30%), transparent 72%),
+    radial-gradient(44% 40% at 62% 86%, color-mix(in srgb, var(--pf-now-accent) 45%, var(--pf-tint, #1c3b2b)), transparent 72%);
+}
+:root[data-pf-glass][data-pf-cover]:not([data-pf-light]) #main-content {
+  background-image: linear-gradient(180deg, color-mix(in srgb, var(--pf-now-accent) 34%, transparent) 0, transparent 380px) !important;
+}
+:root[data-pf-glass][data-pf-cover]:not([data-pf-light]) body .react-jinke-music-player-main .music-player-panel {
+  background-image: radial-gradient(130% 160% at var(--pf-mx, 14%) var(--pf-my, 0%), rgba(255, 255, 255, var(--pf-glass-sheen, 0.14)), transparent 58%),
+    linear-gradient(100deg, color-mix(in srgb, var(--pf-now-accent) 36%, transparent), transparent 72%) !important;
+}
+:root[data-pf-cover] .pf-glass-pill {
+  background: linear-gradient(135deg, color-mix(in srgb, var(--pf-now-accent) 48%, rgba(255, 255, 255, 0.2)), rgba(255, 255, 255, 0.07));
+}

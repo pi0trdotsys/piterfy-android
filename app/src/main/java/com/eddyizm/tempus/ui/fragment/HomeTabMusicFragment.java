@@ -1425,7 +1425,7 @@ public class HomeTabMusicFragment extends Fragment implements ClickCallback {
 
     @Override
     public void onAlbumClick(Bundle bundle) {
-        Navigation.findNavController(requireView()).navigate(R.id.albumPageFragment, bundle);
+        com.eddyizm.tempus.ui.components.PiterfyTransitions.navigate(requireView(), R.id.albumPageFragment, bundle);
     }
 
     @Override
@@ -1463,7 +1463,7 @@ public class HomeTabMusicFragment extends Fragment implements ClickCallback {
                 });
             }
         } else {
-            Navigation.findNavController(requireView()).navigate(R.id.artistPageFragment, bundle);
+            com.eddyizm.tempus.ui.components.PiterfyTransitions.navigate(requireView(), R.id.artistPageFragment, bundle);
         }
     }
 
@@ -1486,7 +1486,7 @@ public class HomeTabMusicFragment extends Fragment implements ClickCallback {
 
     @Override
     public void onPlaylistClick(Bundle bundle) {
-        Navigation.findNavController(requireView()).navigate(R.id.playlistPageFragment, bundle);
+        com.eddyizm.tempus.ui.components.PiterfyTransitions.navigate(requireView(), R.id.playlistPageFragment, bundle);
     }
 
     @Override

@@ -127,7 +127,7 @@ public class HomeTabPiterfyPodcastFragment extends Fragment implements ClickCall
     @Override
     public void onAlbumClick(Bundle bundle) {
         bundle.putBoolean("piterfy_downloaded_only", model.downloadedOnly);
-        Navigation.findNavController(requireView()).navigate(R.id.albumPageFragment, bundle);
+        com.eddyizm.tempus.ui.components.PiterfyTransitions.navigate(requireView(), R.id.albumPageFragment, bundle);
     }
 
     @Override

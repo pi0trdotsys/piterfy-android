@@ -19,6 +19,25 @@
       lines.forEach((line, i) => { if (Number.isFinite(line.start) && line.start <= position + offset) active = i; });
       return active;
     },
+    /** Postęp „karaoke” linii `index` (0–1): od jej początku do początku następnej; długie przerwy skracamy do LINE_MAX_MS, ostatnia linia trwa LAST_LINE_MS. */
+    progress(lines, index, position, offset = 0) {
+      const line = lines[index];
+      if (!line || !Number.isFinite(line.start)) return 0;
+      const next = lines[index + 1];
+      const span = next && Number.isFinite(next.start) ? Math.min(next.start - line.start, api.LINE_MAX_MS) : api.LAST_LINE_MS;
+      if (!(span > 0)) return 1;
+      return Math.min(1, Math.max(0, (position + offset - line.start) / span));
+    },
+    /** Wygląd linii wg odległości od aktywnej (0 = aktywna): skala, przezroczystość i rozmycie w px (to samo liczy PiterfyLyricsKaraoke.kt). */
+    style(distance) {
+      const d = Math.min(Math.abs(Math.round(Number(distance) || 0)), api.STYLE_ALPHA.length - 1);
+      return { scale: d === 0 ? 1 : api.INACTIVE_SCALE, alpha: api.STYLE_ALPHA[d], blur: api.STYLE_BLUR[d] };
+    },
+    LINE_MAX_MS: 9000,
+    LAST_LINE_MS: 4000,
+    INACTIVE_SCALE: 0.86,
+    STYLE_ALPHA: [1, 0.56, 0.42, 0.36, 0.3, 0.26],
+    STYLE_BLUR: [0, 0.5, 1.4, 2.4, 3.2, 4],
     structured(entries) {
       if (!Array.isArray(entries)) return null;
       const selected = entries.filter(x => x && Array.isArray(x.line) && x.line.some(line => typeof line?.value === 'string' && (!x.synced || Number.isFinite(line.start)))).sort((a, b) => Number(!!b.synced) - Number(!!a.synced))[0];

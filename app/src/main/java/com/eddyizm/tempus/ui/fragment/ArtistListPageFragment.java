@@ -204,7 +204,7 @@ public class ArtistListPageFragment extends Fragment implements ClickCallback {
 
     @Override
     public void onArtistClick(Bundle bundle) {
-        Navigation.findNavController(requireView()).navigate(R.id.artistPageFragment, bundle);
+        com.eddyizm.tempus.ui.components.PiterfyTransitions.navigate(requireView(), R.id.artistPageFragment, bundle);
     }
 
     @Override

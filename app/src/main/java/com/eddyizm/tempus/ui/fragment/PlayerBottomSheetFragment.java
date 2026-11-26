@@ -78,6 +78,10 @@ public class PlayerBottomSheetFragment extends Fragment {
         com.eddyizm.tempus.lan.LanRemoteSession.state().observe(getViewLifecycleOwner(), this::renderRemote);
 
         canvasTv = requireContext().getPackageManager().hasSystemFeature(android.content.pm.PackageManager.FEATURE_LEANBACK);
+        // Piterfy: okładka z mini odtwarzacza „leci” na miejsce dużej okładki w miarę rozwijania panelu (MainActivity wola onSheetSlide)
+        coverMorph = new com.eddyizm.tempus.ui.components.PiterfyCoverMorph(
+                bind.getRoot(), bind.playerHeaderLayout.playerHeaderMediaCoverImage,
+                () -> bind.getRoot().findViewById(R.id.now_playing_artwork_pager), canvasTv);
         if (getActivity() instanceof MainActivity) {
             MainActivity activity = (MainActivity) getActivity();
             canvasSheetOpen = activity.isBottomSheetExpanded();
@@ -118,6 +122,7 @@ public class PlayerBottomSheetFragment extends Fragment {
         if (progressBarHandler != null) {
             progressBarHandler.removeCallbacks(progressBarRunnable);
         }
+        if (coverMorph != null) { coverMorph.end(); coverMorph = null; }
         remoteVisible = false;
         remoteCover = null;
         remoteMediaSignature = null;
@@ -137,6 +142,13 @@ public class PlayerBottomSheetFragment extends Fragment {
             (prefs, key) -> { if (com.eddyizm.tempus.ui.components.PiterfyPlaybackPreferences.CANVAS_KEY.equals(key)) updateCanvas(); };
 
     /** Wywoływane z MainActivity przy zmianie stanu panelu: animacja idzie tylko przy rozwiniętym odtwarzaczu. */
+    private com.eddyizm.tempus.ui.components.PiterfyCoverMorph coverMorph;
+
+    /** Piterfy: przesunięcie panelu (0 = zwinięty, 1 = rozwinięty) -> lot okładki z mini odtwarzacza na jej duże miejsce. */
+    public void onSheetSlide(float slideOffset) {
+        if (coverMorph != null) coverMorph.onSlide(slideOffset);
+    }
+
     public void onSheetStateChanged(int state) {
         canvasSheetOpen = state != com.google.android.material.bottomsheet.BottomSheetBehavior.STATE_COLLAPSED
                 && state != com.google.android.material.bottomsheet.BottomSheetBehavior.STATE_HIDDEN;

@@ -292,7 +292,7 @@ public class LibraryFragment extends Fragment implements ClickCallback {
 
     @Override
     public void onAlbumClick(Bundle bundle) {
-        Navigation.findNavController(requireView()).navigate(R.id.albumPageFragment, bundle);
+        com.eddyizm.tempus.ui.components.PiterfyTransitions.navigate(requireView(), R.id.albumPageFragment, bundle);
     }
 
     @Override
@@ -302,7 +302,7 @@ public class LibraryFragment extends Fragment implements ClickCallback {
 
     @Override
     public void onArtistClick(Bundle bundle) {
-        Navigation.findNavController(requireView()).navigate(R.id.artistPageFragment, bundle);
+        com.eddyizm.tempus.ui.components.PiterfyTransitions.navigate(requireView(), R.id.artistPageFragment, bundle);
     }
 
     @Override
@@ -317,7 +317,7 @@ public class LibraryFragment extends Fragment implements ClickCallback {
 
     @Override
     public void onPlaylistClick(Bundle bundle) {
-        Navigation.findNavController(requireView()).navigate(R.id.playlistPageFragment, bundle);
+        com.eddyizm.tempus.ui.components.PiterfyTransitions.navigate(requireView(), R.id.playlistPageFragment, bundle);
     }
 
     @Override

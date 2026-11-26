@@ -260,6 +260,12 @@ public class MainActivity extends BaseActivity {
 
     }
 
+    @Override
+    public boolean dispatchTouchEvent(android.view.MotionEvent ev) {
+        com.eddyizm.tempus.ui.components.PiterfyTransitions.recordTouch(ev); // Piterfy: która karta została kliknięta (morf do strony szczegółów)
+        return super.dispatchTouchEvent(ev);
+    }
+
     private void initNavigation() {
         // We link the nav_graph.xml with our navigationController
         NavHostFragment navHostFragment = (NavHostFragment) this
@@ -270,11 +276,21 @@ public class MainActivity extends BaseActivity {
         navHostFragment.getChildFragmentManager().registerFragmentLifecycleCallbacks(
                 new FragmentManager.FragmentLifecycleCallbacks() {
                     @Override
+                    public void onFragmentCreated(@NonNull FragmentManager fm, @NonNull Fragment f, @Nullable Bundle savedInstanceState) {
+                        // Piterfy: morf karta -> strona albumu/wykonawcy/playlisty (MaterialContainerTransform)
+                        com.eddyizm.tempus.ui.components.PiterfyTransitions.onCreated(f, savedInstanceState);
+                    }
+
+                    @Override
                     public void onFragmentViewCreated(@NonNull FragmentManager fm, @NonNull Fragment f,
                                                       @NonNull View v, @Nullable Bundle savedInstanceState) {
-                        if (!(f instanceof DialogFragment)) com.eddyizm.tempus.util.PiterfyMotion.screen(v);
+                        // ekran biorący udział w morfie ma własne wejście, więc zwykłe (zanik + wjazd) pomijamy
+                        boolean morph = !(f instanceof DialogFragment)
+                                && com.eddyizm.tempus.ui.components.PiterfyTransitions.onViewCreated(f, v, savedInstanceState);
+                        if (!(f instanceof DialogFragment) && !morph) com.eddyizm.tempus.util.PiterfyMotion.screen(v);
                     }
                 }, false);
+        com.eddyizm.tempus.ui.components.PiterfyTransitions.install(navController, isTelevision);
         /*
         navController is currently global since some legacy code still invokes it directly
         the MainActivity methods that use it must be converted to NavigationHelper methods
@@ -445,6 +461,9 @@ public class MainActivity extends BaseActivity {
         bottomSheetController.animate(slideOffset);
         // Piterfy: Liquid Glass — przezroczysty panel i szklany nagłówek mini odtwarzacza, znikające w miarę rozwijania
         com.eddyizm.tempus.ui.components.PiterfyGlass.onSheetSlide(bind.playerBottomSheet, bind.navHostFragment, slideOffset);
+        // Piterfy: okładka „leci” z mini odtwarzacza na miejsce dużej okładki
+        PlayerBottomSheetFragment player = (PlayerBottomSheetFragment) getSupportFragmentManager().findFragmentByTag("PlayerBottomSheet");
+        if (player != null) player.onSheetSlide(slideOffset);
     }
 
     /**

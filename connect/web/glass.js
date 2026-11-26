@@ -106,6 +106,26 @@
     slider.addEventListener("input", () => { set({ level: Number(slider.value) }); value.textContent = state.level + "%"; });
   }
 
+  // ── „Kolory z okładki”: interfejs bierze żywy kolor grającej okładki (domyślnie włączone; localStorage pf-cover-colors=0 wyłącza) ──
+  const coverOn = () => { try { return localStorage.getItem("pf-cover-colors") !== "0"; } catch (e) { return true; } };
+  const applyCover = () => { if (coverOn()) root.setAttribute("data-pf-cover", "1"); else root.removeAttribute("data-pf-cover"); };
+  function coverSection(dialog) {
+    if (!dialog) return;
+    const label = document.createElement("label");
+    label.className = "pf-ap-auto pf-glass-toggle";
+    const box = document.createElement("input");
+    box.type = "checkbox"; box.checked = coverOn();
+    const text = document.createElement("span");
+    const title = document.createElement("strong"); title.textContent = "Kolory z okładki";
+    const hint = document.createElement("small");
+    hint.textContent = "Tło, pasek odtwarzacza i akcenty płynnie przybierają barwę grającej okładki";
+    text.append(title, hint); label.append(box, text); dialog.appendChild(label);
+    box.addEventListener("change", () => {
+      try { localStorage.setItem("pf-cover-colors", box.checked ? "1" : "0"); } catch (e) { /* bez zapisu działa do odświeżenia */ }
+      applyCover();
+    });
+  }
+
   function set(patch) {
     state = core.normalize(Object.assign({}, state, patch));
     write();
@@ -113,7 +133,8 @@
   }
 
   state = read();
-  window.PiterfyGlass = { get: () => Object.assign({}, state), set, section, apply };
+  window.PiterfyGlass = { get: () => Object.assign({}, state), set, section, coverSection, apply };
+  applyCover();
   window.addEventListener("storage", (event) => { if (event.key === core.KEY) { state = read(); apply(); } });
   apply();
 })();

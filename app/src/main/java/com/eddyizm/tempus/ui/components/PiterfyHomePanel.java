@@ -384,7 +384,7 @@ public final class PiterfyHomePanel extends LinearLayout implements DefaultLifec
         for (Playlist p : list) {
             int[] counts = chartCounts(p.getComment());
             String subtitle = counts == null ? null : getResources().getString(R.string.piterfy_chart_in_library, counts[0], counts[1]);
-            View c = card(p, subtitle);
+            View c = card(p, p.getName(), subtitle, PiterfyGeneratedArt.Kind.CHART);
             PiterfyMotion.enter(c, index++);
             chartShelf.addView(c);
         }
@@ -397,7 +397,7 @@ public final class PiterfyHomePanel extends LinearLayout implements DefaultLifec
         for (Playlist p : list) {
             int[] counts = chartCounts(p.getComment());
             String subtitle = counts == null ? null : getResources().getString(R.string.piterfy_chart_in_library, counts[0], counts[1]);
-            View c = card(p, gameTitle(p.getName()), subtitle);
+            View c = card(p, gameTitle(p.getName()), subtitle, PiterfyGeneratedArt.Kind.GAME);
             PiterfyMotion.enter(c, index++);
             gameShelf.addView(c);
         }
@@ -408,7 +408,7 @@ public final class PiterfyHomePanel extends LinearLayout implements DefaultLifec
         mixShelf.removeAllViews();
         int index = 0;
         for (Playlist p : list) {
-            View c = card(p);
+            View c = card(p, p.getName(), null, PiterfyGeneratedArt.Kind.MIX);
             PiterfyMotion.enter(c, index++);
             mixShelf.addView(c);
         }
@@ -524,6 +524,14 @@ public final class PiterfyHomePanel extends LinearLayout implements DefaultLifec
     }
 
     private View card(Playlist p, String title, String subtitle) {
+        return card(p, title, subtitle, null);
+    }
+
+    /**
+     * Karta playlisty. {@code art} != null (miks, lista przebojow, soundtrack gry): zamiast okladki z Navidrome rysujemy
+     * wygenerowana okladke jak na stronie (gradient, emoji, podpis) — PiterfyGeneratedArt.
+     */
+    private View card(Playlist p, String title, String subtitle, PiterfyGeneratedArt.Kind art) {
         LinearLayout card = new LinearLayout(getContext());
         card.setOrientation(VERTICAL);
         LayoutParams params = new LayoutParams(dp(148), -2);
@@ -533,10 +541,15 @@ public final class PiterfyHomePanel extends LinearLayout implements DefaultLifec
         FrameLayout frame = new FrameLayout(getContext());
         frame.setBackground(surface(TILE_COLOR, 8));
         clipRounded(frame);
-        ImageView image = new ImageView(getContext());
-        image.setScaleType(ImageView.ScaleType.CENTER_CROP);
-        art(image, p.getCoverArtId(), 320);
-        frame.addView(image, new FrameLayout.LayoutParams(-1, -1));
+        if (art != null) {
+            frame.addView(new PiterfyGeneratedArtView(getContext(), PiterfyGeneratedArt.spec(p.getName(), art)),
+                    new FrameLayout.LayoutParams(-1, -1));
+        } else {
+            ImageView image = new ImageView(getContext());
+            image.setScaleType(ImageView.ScaleType.CENTER_CROP);
+            art(image, p.getCoverArtId(), 320);
+            frame.addView(image, new FrameLayout.LayoutParams(-1, -1));
+        }
         card.addView(frame, new LayoutParams(dp(148), dp(148)));
 
         // zielony przycisk play w prawym dolnym rogu okladki

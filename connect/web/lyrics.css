@@ -7,3 +7,24 @@
 #pf-lyrics-dialog footer{display:flex;gap:8px;flex-wrap:wrap}.pf-lyrics-adjust{background:#182a20;color:white;border:1px solid #426750;border-radius:20px;padding:24px;width:min(420px,calc(100vw - 40px))}.pf-lyrics-adjust button{margin:4px}
 @media(max-width:600px){#pf-lyrics-button{left:12px;bottom:205px}#pf-lyrics-dialog{width:100vw;height:100dvh;max-height:none;max-width:none;border-radius:0;padding:20px 20px max(16px,env(safe-area-inset-bottom))}.pf-lyrics-content{padding-top:45px}.pf-lyric-line{font-size:28px!important}#pf-lyrics-dialog footer{gap:6px}#pf-lyrics-dialog footer button{font-size:12px;padding:9px 12px}}
 @media not all{.pf-lyric-line{transition:none;transform:none!important}}
+
+/* ═════ styl Apple Music: duża aktywna linia, dalsze mniejsze, przygaszone i rozmyte, wypełnienie „karaoke” ═════
+ * Zmienne --ly-scale/--ly-alpha/--ly-blur ustawia lyrics.js wg odległości od aktywnej linii (lyrics-core.js: style),
+ * a --pf-lyric-progress (0–1) wypełnienie aktywnej linii. Linie bez synchronizacji (zwykły tekst) nie mają tych zmiennych. */
+.pf-lyric-line{--ly-scale:1;--ly-alpha:1;--ly-blur:0px;color:#fff;opacity:var(--ly-alpha);transform:scale(var(--ly-scale));transform-origin:left center;
+  filter:blur(var(--ly-blur));font-size:clamp(26px,3.4vw,36px)!important;font-weight:800;line-height:1.3;margin:0 0 22px;cursor:pointer;
+  transition:transform .55s cubic-bezier(.34,1.3,.5,1),opacity .4s ease,filter .5s ease;will-change:transform,opacity}
+p.pf-lyric-line{cursor:default;--ly-scale:1;--ly-alpha:.92;--ly-blur:0px}
+.pf-lyric-line.past,.pf-lyric-line.active{transform:scale(var(--ly-scale))}
+.pf-lyric-line.active{filter:blur(0) drop-shadow(0 0 16px rgba(255,255,255,.28))}
+.pf-lyric-line .pf-lyric-text{display:inline;color:#fff}
+.pf-lyric-line.active .pf-lyric-text{background:linear-gradient(90deg,#fff 0,#fff calc(var(--pf-lyric-progress,0) * 100%),rgba(255,255,255,.42) calc(var(--pf-lyric-progress,0) * 100% + 5%));
+  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent;-webkit-box-decoration-break:slice;box-decoration-break:slice}
+.pf-lyric-line:hover{--ly-alpha:.85}.pf-lyric-line.active:hover{--ly-alpha:1}
+.pf-lyric-line:focus-visible{outline:2px solid #fff;outline-offset:6px;border-radius:10px}
+/* Liquid Glass: aktywna linia na szklanej pigułce */
+:root[data-pf-glass] .pf-lyric-line.active{background:linear-gradient(135deg,rgba(255,255,255,.16),rgba(255,255,255,.05));border-radius:20px;
+  padding:8px 16px;margin-left:-16px;box-shadow:inset 0 1px 0 rgba(255,255,255,.4),inset 0 0 0 1px rgba(255,255,255,.14),0 8px 24px rgba(0,0,0,.22)}
+@media(max-width:600px){.pf-lyric-line{font-size:clamp(24px,7vw,30px)!important}}
+@media not all{.pf-lyric-line{transition:none}}
+

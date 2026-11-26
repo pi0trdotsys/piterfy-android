@@ -205,6 +205,13 @@ public class ArtistPageFragment extends Fragment implements ClickCallback {
                             ? currentArtist.getId()
                             : null;
                     
+                    // Piterfy: tlo strony i panel zwijanego paska w kolorze okladki wykonawcy (jak na stronie albumu)
+                    com.eddyizm.tempus.util.PiterfyAmbient.forCover(requireContext(), primaryId, color -> {
+                        if (bind == null) return;
+                        bind.getRoot().setBackground(com.eddyizm.tempus.util.PiterfyAmbient.pageGradient(color));
+                        bind.collapsingToolbar.setContentScrimColor(com.eddyizm.tempus.util.PiterfyCoverTheme.readableHeader(color));
+                    });
+
                     CustomGlideRequest.Builder
                             .from(requireContext(), primaryId, CustomGlideRequest.ResourceType.Artist)
                             .build()
@@ -463,7 +470,7 @@ public class ArtistPageFragment extends Fragment implements ClickCallback {
 
     @Override
     public void onAlbumClick(Bundle bundle) {
-        Navigation.findNavController(requireView()).navigate(R.id.albumPageFragment, bundle);
+        com.eddyizm.tempus.ui.components.PiterfyTransitions.navigate(requireView(), R.id.albumPageFragment, bundle);
     }
 
     @Override
@@ -473,7 +480,7 @@ public class ArtistPageFragment extends Fragment implements ClickCallback {
 
     @Override
     public void onArtistClick(Bundle bundle) {
-        Navigation.findNavController(requireView()).navigate(R.id.artistPageFragment, bundle);
+        com.eddyizm.tempus.ui.components.PiterfyTransitions.navigate(requireView(), R.id.artistPageFragment, bundle);
     }
 
     @Override

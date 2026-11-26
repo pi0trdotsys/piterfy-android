@@ -29,6 +29,7 @@ public final class PiterfyAmbient {
     public static final int SURFACE = 0xFF121212;
     public static final MutableLiveData<Integer> COLOR = new MutableLiveData<>(DEFAULT);
     private static String lastCover;
+    private static final long TRANSITION_MS = 500;
 
     private PiterfyAmbient() {
     }
@@ -113,28 +114,51 @@ public final class PiterfyAmbient {
                 });
     }
 
-    /** Tlo strony jak w Spotify: kolor okladki u gory, plynnie przechodzacy w czern powierzchni. */
+    /**
+     * Tlo strony jak w Spotify: kolor okladki u gory, plynnie przechodzacy w czern powierzchni. Kolor jest korygowany
+     * tak, zeby bialy tekst mial kontrast co najmniej 4,5 (PiterfyCoverTheme), a przy wlaczonym Liquid Glass gradient jest
+     * polprzezroczysty, zeby pod spodem bylo widac poswiaty szkla.
+     */
     public static Drawable pageGradient(int color) {
+        boolean glass = false;
+        try {
+            glass = com.eddyizm.tempus.appearance.PiterfyAppearance.glassEnabled();
+        } catch (RuntimeException ignored) {
+            // bez aplikacji (np. w testach) zwykly, nieprzezroczysty gradient
+        }
         return new android.graphics.drawable.GradientDrawable(
-                android.graphics.drawable.GradientDrawable.Orientation.TOP_BOTTOM, new int[]{color, SURFACE, SURFACE});
+                android.graphics.drawable.GradientDrawable.Orientation.TOP_BOTTOM,
+                PiterfyCoverTheme.headerGradient(color, SURFACE, glass));
     }
 
     /**
-     * Subskrybuje kolor i przekazuje go do {@code apply}, plynnie przechodzac od poprzedniego do nowego.
-     * Subskrypcja konczy sie razem z {@code owner}.
+     * Subskrybuje kolor i przekazuje go do {@code apply}, plynnie (ok. 500 ms) przechodzac od poprzedniego do nowego.
+     * Nowy kolor w trakcie przejscia przerywa poprzednia animacje (zaczyna od koloru, ktory w tej chwili widac),
+     * a subskrypcja i animacja koncza sie razem z {@code owner}.
      */
     public static void observe(LifecycleOwner owner, IntConsumer apply) {
         final int[] current = {COLOR.getValue() == null ? DEFAULT : COLOR.getValue()};
+        final ValueAnimator[] running = {null};
         apply.accept(current[0]);
         COLOR.observe(owner, target -> {
-            if (target == null || target == current[0]) return;
+            if (target == null) return;
+            if (running[0] != null) running[0].cancel();
+            if (target == current[0]) return;
             ValueAnimator animator = ValueAnimator.ofObject(new ArgbEvaluator(), current[0], target);
-            animator.setDuration(450);
+            animator.setDuration(TRANSITION_MS);
             animator.addUpdateListener(a -> {
                 current[0] = (int) a.getAnimatedValue();
                 apply.accept(current[0]);
             });
+            running[0] = animator;
             animator.start();
+        });
+        owner.getLifecycle().addObserver(new androidx.lifecycle.DefaultLifecycleObserver() {
+            @Override
+            public void onDestroy(@NonNull LifecycleOwner o) {
+                if (running[0] != null) running[0].cancel();
+                o.getLifecycle().removeObserver(this);
+            }
         });
     }
 }

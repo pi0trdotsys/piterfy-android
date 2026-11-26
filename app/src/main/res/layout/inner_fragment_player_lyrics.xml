@@ -5,9 +5,15 @@
         android:minHeight="48dp" android:gravity="center_vertical" android:textColor="#B8D9C3" android:textSize="12sp" android:text="Szukam tekstu…" />
     <androidx.core.widget.NestedScrollView android:id="@+id/now_playing_song_lyrics_sroll_view"
         android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" android:clipToPadding="false">
-        <TextView android:id="@+id/now_playing_song_lyrics_text_view" android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:paddingTop="60dp" android:paddingBottom="120dp" android:textSize="28sp" android:textStyle="bold"
-            android:textColor="#FFFFFF" android:lineSpacingExtra="7dp" android:gravity="start" />
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical">
+            <!-- tekst bez synchronizacji: zwykły, duży tekst (bez karaoke) -->
+            <TextView android:id="@+id/now_playing_song_lyrics_text_view" android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:paddingTop="60dp" android:paddingBottom="120dp" android:textSize="28sp" android:textStyle="bold"
+                android:textColor="#FFFFFF" android:lineSpacingExtra="7dp" android:gravity="start" />
+            <!-- tekst synchronizowany: jedna PiterfyLyricLineView na linijkę (styl Apple Music) -->
+            <LinearLayout android:id="@+id/lyrics_lines_container" android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:orientation="vertical" android:paddingTop="40dp" android:paddingBottom="260dp" android:clipChildren="false" android:clipToPadding="false" android:visibility="gone" />
+        </LinearLayout>
     </androidx.core.widget.NestedScrollView>
         <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:paddingVertical="8dp">
             <com.google.android.material.button.MaterialButton android:id="@+id/sync_lyrics_tap_button" style="@style/Widget.Material3.Button.TonalButton"

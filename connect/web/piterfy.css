@@ -1303,3 +1303,25 @@ html[data-pf-theme="birthday"] .pf-home-head::after { background: radial-gradien
 html[data-pf-theme="birthday"] .pf-play { background: #1ED760; color: #000000; }
 html[data-pf-theme="birthday"] body .react-jinke-music-player-main .music-player-panel { background: #121212CC !important; }
 /* piterfy-themes:end */
+
+/* ═════ Kolory z okładki w całym interfejsie (library.js ustawia --pf-now-accent z grającej okładki; glass.js włącza data-pf-cover) ═════ */
+@property --pf-now-accent { syntax: "<color>"; inherits: true; initial-value: #1db954; }
+html { transition: --pf-now-accent 0.9s ease; }  /* płynna zmiana koloru przy zmianie utworu */
+html[data-pf-cover]:not([data-pf-light]) body #main-content {
+  background: linear-gradient(180deg, color-mix(in srgb, var(--pf-now-accent) 40%, var(--pf-tint, #1c3b2b)) 0, var(--pf-panel) 340px) !important;
+}
+html[data-pf-cover]:not([data-pf-light])[data-pf-route=start] body #main-content {
+  background: linear-gradient(180deg, color-mix(in srgb, var(--pf-now-accent) 40%, var(--pf-tint-2, #1f4a33)) 0, var(--pf-panel) 380px) !important;
+}
+html[data-pf-cover]:not([data-pf-light]) body .react-jinke-music-player-main .music-player-panel {
+  background-image: linear-gradient(100deg, color-mix(in srgb, var(--pf-now-accent) 36%, transparent), transparent 72%) !important;
+}
+
+/* przejścia z morfem okładki (morph.js, View Transitions API) */
+::view-transition-old(root), ::view-transition-new(root) { animation-duration: 0.38s; animation-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1); }
+::view-transition-old(root) { animation-name: pf-vt-out; }
+::view-transition-new(root) { animation-name: pf-vt-in; }
+@keyframes pf-vt-out { to { opacity: 0; transform: scale(0.985); } }
+@keyframes pf-vt-in { from { opacity: 0; transform: translateY(10px) scale(1.01); } }
+::view-transition-group(pf-cover) { animation-duration: 0.55s; animation-timing-function: cubic-bezier(0.34, 1.25, 0.5, 1); }
+::view-transition-old(pf-cover), ::view-transition-new(pf-cover) { height: 100%; object-fit: cover; animation-duration: 0.55s; }

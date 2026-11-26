@@ -197,7 +197,7 @@ public class PlaylistCatalogueFragment extends Fragment implements ClickCallback
     @Override
     public void onPlaylistClick(Bundle bundle) {
         bundle.putBoolean("is_offline", false);
-        Navigation.findNavController(requireView()).navigate(R.id.playlistPageFragment, bundle);
+        com.eddyizm.tempus.ui.components.PiterfyTransitions.navigate(requireView(), R.id.playlistPageFragment, bundle);
         hideKeyboard(requireView());
     }
 

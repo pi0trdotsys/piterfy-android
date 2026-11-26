@@ -42,6 +42,7 @@ jobs:
           node --check connect/web/canvas.js
           node --check connect/web/glass-core.js
           node --check connect/web/glass.js
+          node --check connect/web/morph.js
           python3 -m unittest discover -s connect/stack/discover -p 'test_*.py'
           node --test connect/web/media-kind-core.test.cjs
           node --test connect/web/offline-core.test.cjs connect/web/offline-sw.test.cjs

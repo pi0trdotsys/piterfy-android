@@ -34,28 +34,79 @@
     followButton.textContent = follow ? 'Śledzenie włączone' : 'Wróć do tekstu';
     correctionButton.textContent = 'Synchronizacja ' + (correction / 1000).toLocaleString('pl', {signDisplay:'always', minimumFractionDigits:1}) + ' s';
   }
+  // ── styl Apple Music: aktywna linia duża, dalsze mniejsze, przygaszone i rozmyte; karaoke wypełnia aktywną linię ──
+  let anchorPos = 0, anchorAt = 0, playing = false, karaokeFrame = 0, spring = { raf: 0, pos: 0, vel: 0, target: 0 };
+  function remember(now) {  // pozycja z ostatniego odczytu; między odczytami (co 200 ms) dopisujemy upływ czasu, żeby wypełnienie płynęło
+    const c = current();
+    anchorPos = c?.position || 0; anchorAt = now;
+    const element = audio();
+    playing = c?.playing ?? !!(element && !element.paused && !element.ended);
+  }
+  function livePosition(now) { return anchorPos + (playing ? now - anchorAt : 0); }
+  function styleLines(activeIndex) {
+    [...content.children].forEach((line, i) => {
+      const d = activeIndex < 0 ? Math.min(i + 1, 5) : i - activeIndex;
+      const st = timing.style(d);
+      line.style.setProperty('--ly-scale', st.scale);
+      line.style.setProperty('--ly-alpha', st.alpha);
+      line.style.setProperty('--ly-blur', (reduced ? 0 : st.blur) + 'px');
+      line.style.setProperty('--pf-lyric-progress', i < activeIndex || (reduced && i === activeIndex) ? 1 : 0);
+    });
+  }
+  function karaoke(now) {
+    karaokeFrame = 0;
+    if (!dialog.open || !data?.synced || active < 0 || reduced) return;
+    const line = content.children[active];
+    if (line) line.style.setProperty('--pf-lyric-progress', timing.progress(data.lines, active, livePosition(now), data.offset + correction).toFixed(3));
+    if (playing) karaokeFrame = requestAnimationFrame(karaoke);
+  }
+  function springTo(top) {
+    if (reduced) { content.scrollTop = top; return; }
+    spring.target = top;
+    if (spring.raf) return;
+    spring.pos = content.scrollTop; spring.vel = 0;
+    let last = performance.now();
+    const step = now => {
+      const dt = Math.min(0.032, (now - last) / 1000); last = now;
+      const k = 170, c = 2 * Math.sqrt(k) * 0.82;  // sprężyna lekko niedotłumiona: delikatne „dobicie” do celu
+      spring.vel += (-k * (spring.pos - spring.target) - c * spring.vel) * dt;
+      spring.pos += spring.vel * dt;
+      content.scrollTop = spring.pos;
+      if (Math.abs(spring.vel) < 0.5 && Math.abs(spring.pos - spring.target) < 0.5) { content.scrollTop = spring.target; spring.raf = 0; return; }
+      spring.raf = requestAnimationFrame(step);
+    };
+    spring.raf = requestAnimationFrame(step);
+  }
+  function stopSpring() { if (spring.raf) cancelAnimationFrame(spring.raf); spring.raf = 0; }
   function paint(force = false) {
     if (!data?.synced) return;
-    const next = timing.active(data.lines, current()?.position || 0, data.offset + correction);
-    if (!force && next === active) return;
+    remember(performance.now());
+    const next = timing.active(data.lines, anchorPos, data.offset + correction);
+    if (!force && next === active) { if (!karaokeFrame && playing) karaokeFrame = requestAnimationFrame(karaoke); return; }
     active = next;
+    styleLines(active);
     [...content.children].forEach((line, i) => {
       line.classList.toggle('active', i === active); line.classList.toggle('past', i < active);
       if (i === active) line.setAttribute('aria-current', 'true'); else line.removeAttribute('aria-current');
     });
-    if (follow && active >= 0) content.children[active]?.scrollIntoView({block:'center', behavior:reduced ? 'auto' : 'smooth'});
+    if (follow && active >= 0) {
+      const line = content.children[active];
+      if (line) springTo(line.getBoundingClientRect().top - content.getBoundingClientRect().top + content.scrollTop + line.offsetHeight / 2 - content.clientHeight / 2);
+    }
+    cancelAnimationFrame(karaokeFrame); karaokeFrame = requestAnimationFrame(karaoke);
   }
   function render(result) {
     data = result; active = -2; content.replaceChildren();
     status.textContent = result.status;
     result.lines.forEach(line => {
-      const el = node(result.synced ? 'button' : 'p', line.value.trim() || '♪', content, 'pf-lyric-line');
+      const el = node(result.synced ? 'button' : 'p', '', content, 'pf-lyric-line');
+      node('span', line.value.trim() || '♪', el, 'pf-lyric-text');
       if (result.synced) {
         el.type = 'button';
         el.addEventListener('click', () => { seek(Math.max(0, line.start - result.offset - correction)); follow = true; controls(); paint(true); });
       }
     });
-    controls(); paint(true);
+    controls(); if (result.synced) styleLines(-1); paint(true);
   }
   async function json(url, signal, local = false) {
     const response = await fetch(url, { signal, credentials: local ? 'same-origin' : 'omit',
@@ -137,7 +188,7 @@
     button('Zamknij', header, () => dialog.close());
     status = node('p', '', dialog, 'pf-lyrics-source'); status.setAttribute('role', 'status');
     content = node('div', '', dialog, 'pf-lyrics-content');
-    ['wheel','touchmove'].forEach(type => content.addEventListener(type, () => { follow = false; controls(); }, {passive:true}));
+    ['wheel','touchmove'].forEach(type => content.addEventListener(type, () => { follow = false; stopSpring(); controls(); }, {passive:true}));
     content.addEventListener('keydown', event => { if (['ArrowDown','ArrowUp','PageDown','PageUp','Home','End'].includes(event.key)) {follow=false; controls();} });
     const footer = node('footer', '', dialog);
     followButton = button('Śledzenie włączone', footer, () => {follow=true; controls(); paint(true);});
@@ -160,7 +211,7 @@
       correctionDialog.addEventListener('close', () => correctionDialog.remove()); correctionDialog.showModal();
     });
     retryButton = button('Spróbuj ponownie', footer, () => { if (track) load(track, true); }); retryButton.hidden = true;
-    dialog.addEventListener('close', () => { clearTimeout(timer); generation++; abort?.abort(); });
+    dialog.addEventListener('close', () => { clearTimeout(timer); cancelAnimationFrame(karaokeFrame); karaokeFrame = 0; stopSpring(); generation++; abort?.abort(); });
   }
   boot();
 })();

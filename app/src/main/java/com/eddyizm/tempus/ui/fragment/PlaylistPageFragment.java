@@ -354,6 +354,24 @@ public class PlaylistPageFragment extends Fragment implements ClickCallback {
                         });
     }
 
+    /**
+     * Piterfy: tlo strony w kolorze okladki jak w Spotify. Miks, lista przebojow i soundtrack gry (playlisty serwera) biora
+     * kolor swojej wygenerowanej okladki, pozostale — dominujacy kolor okladki playlisty. Bez okladki albo przy bledzie
+     * zostaje dotychczasowe tlo.
+     */
+    private void applyHeaderColor(Playlist playlist, String coverId) {
+        com.eddyizm.tempus.ui.components.PiterfyGeneratedArt.Kind kind =
+                com.eddyizm.tempus.ui.components.PiterfyGeneratedArt.kindOf(playlist.getComment());
+        java.util.function.IntConsumer apply = color -> {
+            if (bind != null) bind.getRoot().setBackground(com.eddyizm.tempus.util.PiterfyAmbient.pageGradient(color));
+        };
+        if (kind != null) {
+            apply.accept(com.eddyizm.tempus.ui.components.PiterfyGeneratedArt.spec(playlist.getName(), kind).getFrom());
+        } else {
+            com.eddyizm.tempus.util.PiterfyAmbient.forCover(requireContext(), coverId, apply);
+        }
+    }
+
     private void initBackCover() {
         // Observe with the view lifecycle, not the activity. The view model is
         // activity-scoped, so observing its shared LiveData with requireActivity()
@@ -367,6 +385,7 @@ public class PlaylistPageFragment extends Fragment implements ClickCallback {
         if (playlist == null || bind == null) return;
 
         String playlistCoverId = playlist.getCoverArtId();
+        applyHeaderColor(playlist, playlistCoverId);
 
         // Retrieve the parent container holding the cover views
         ViewGroup coverContainer = (ViewGroup) bind.playlistCoverImageViewTopLeft.getParent();

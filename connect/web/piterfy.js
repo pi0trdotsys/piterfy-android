@@ -972,6 +972,7 @@
   // Zmiana widoku: treść wjeżdża łagodnie (animacja w piterfy.css), o ile użytkownik nie wyłączył ruchu.
   function routeFade() {
     const main = document.getElementById("main-content");
+    if (window.__pfMorphing) return;  // morph.js (View Transitions) robi własne przejście
     if (!main || (() => { try { return localStorage.getItem("pf-calm") === "1"; } catch (e) { return false; } })()) return;
     main.classList.remove("pf-route-in");
     void main.offsetWidth;  // restart animacji
@@ -1720,6 +1721,15 @@
   document.head.appendChild(core);
 })();
 // piterfy-canvas-loader-end
+
+// piterfy-morph-loader
+;(() => {
+  const m = document.currentScript && document.currentScript.src.match(/[?&]v=([^&]+)/);
+  const el = document.createElement('script');
+  el.src = '/piterfy-ui/morph.js?v=' + (m ? m[1] : '1');
+  document.head.appendChild(el);
+})();
+// piterfy-morph-loader-end
 
 // piterfy-glass-loader
 ;(() => {

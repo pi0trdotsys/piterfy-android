@@ -256,6 +256,7 @@
       box.addEventListener('change',()=>{saveAppearance({...appearancePrefs(),auto:box.checked});applyAppearance(true);render();});
       const note=occasionNote();if(note)el('p',note,dlg,'pf-ap-note');
       window.PiterfyGlass?.section(dlg);  // Liquid Glass: włącznik i siła (glass.js)
+      window.PiterfyGlass?.coverSection(dlg);  // Kolory z okładki (glass.js)
       el('h3','Motywy',dlg);
       const themes=el('div','',dlg,'pf-ap-grid');
       const pick=(group,id)=>{saveAppearance({...appearancePrefs(),[group]:id});applyAppearance(true);render();};
@@ -641,10 +642,19 @@
           for(let i=0;i<pixels.length;i+=4){const rgb=[pixels[i],pixels[i+1],pixels[i+2]],weight=(Math.max(...rgb)-Math.min(...rgb))/255;if(weight<.12)continue;total+=weight;rgb.forEach((v,j)=>sum[j]+=v*weight);}
           const color=total?sum.map(v=>Math.round(v/total*.28)):[18,18,18];
           document.documentElement.style.setProperty('--pf-cover-accent','rgb('+color.join(',')+')');
+          document.documentElement.style.setProperty('--pf-now-accent',vividCover(total?sum.map(v=>v/total):[29,185,84]));  // żywa wersja koloru okładki dla całego interfejsu
         }catch(_){}};
         image.src=url.href;
       }
     }
+  }
+  /** Kolor okładki jako żywy akcent interfejsu: nasycenie ≥ 45%, jasność 42–60% (czytelny na ciemnym tle, nie wypłowiały). */
+  function vividCover(rgb){
+    const [r,g,b]=rgb.map(v=>v/255),max=Math.max(r,g,b),min=Math.min(r,g,b),d=max-min;
+    let h=0;if(d){h=max===r?((g-b)/d)%6:max===g?(b-r)/d+2:(r-g)/d+4;h=Math.round(h*60);if(h<0)h+=360;}
+    const l=(max+min)/2,sat=d?d/(1-Math.abs(2*l-1)):0;
+    const S=Math.round(Math.min(.85,Math.max(.45,sat))*100),L=Math.round(Math.min(.6,Math.max(.42,l))*100);
+    return 'hsl('+h+' '+S+'% '+L+'%)';
   }
   function observe() {
     const player=findStore()?.getState().player,element=audio();if(!player||!element||!account)return;
