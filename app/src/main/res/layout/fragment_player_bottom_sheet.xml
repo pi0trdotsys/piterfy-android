@@ -10,6 +10,15 @@
         android:importantForAccessibility="no"
         android:visibility="gone" />
 
+    <!-- Piterfy: Liquid Glass — rozmyta okładka jako tło pełnego odtwarzacza (widoczna tylko przy włączonym szkle, gdy nie ma Canvasa) -->
+    <ImageView
+        android:id="@+id/player_glass_backdrop"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:scaleType="centerCrop"
+        android:importantForAccessibility="no"
+        android:visibility="gone" />
+
     <View
         android:id="@+id/player_canvas_scrim"
         android:layout_width="match_parent"

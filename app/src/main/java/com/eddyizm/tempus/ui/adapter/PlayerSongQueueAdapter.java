@@ -181,6 +181,8 @@ public class PlayerSongQueueAdapter extends RecyclerView.Adapter<PlayerSongQueue
 
     private void bindPlaybackState(@NonNull PlayerSongQueueAdapter.ViewHolder holder, @NonNull Child song) {
         boolean isCurrent = currentPlayingId != null && currentPlayingId.equals(song.getId());
+        // Piterfy: Liquid Glass — graćny utwór w kolejce leży na szklanej pigułce (tylko gdy szkło włączone)
+        com.eddyizm.tempus.ui.components.PiterfyGlassPlayer.styleQueueRow(holder.itemView, isCurrent);
 
         if (isCurrent) {
             holder.item.playPauseIcon.setVisibility(View.VISIBLE);

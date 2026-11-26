@@ -25,6 +25,8 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
@@ -100,6 +102,9 @@ fun NowPlayingArtworkPager(
         0.dp
     }
 
+    // Liquid Glass: okladka z miekkim, glebokim cieniem (jak w odtwarzaczu iOS)
+    val glass = remember { com.eddyizm.tempus.appearance.PiterfyAppearance.glassEnabled() }
+
     HorizontalPager(
         state = pagerState,
         modifier = Modifier.fillMaxSize(),
@@ -122,6 +127,12 @@ fun NowPlayingArtworkPager(
                     scaleY = scale
                     this.alpha = alpha
                 }
+                .then(
+                    if (glass) Modifier.shadow(
+                        elevation = 22.dp, shape = RoundedCornerShape(cornerRadius), clip = false,
+                        ambientColor = Color.Black, spotColor = Color.Black
+                    ) else Modifier
+                )
                 .clip(RoundedCornerShape(cornerRadius))
                 .clickable {
                     if (page == pagerState.currentPage) {

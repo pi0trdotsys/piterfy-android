@@ -131,6 +131,7 @@ public class PlayerBottomSheetFragment extends Fragment {
     private boolean canvasTv;          // telewizor ma wlasne tlo
     private boolean canvasSheetOpen;   // panel rozwiniety lub w trakcie przeciagania
     private boolean canvasPlaying;
+    private boolean glassBackdrop;     // Liquid Glass: rozmyta okładka jako tło (gdy nie ma Canvasa)
     private String canvasSongId;       // null dla radia i podcastow
     private final android.content.SharedPreferences.OnSharedPreferenceChangeListener canvasPrefsListener =
             (prefs, key) -> { if (com.eddyizm.tempus.ui.components.PiterfyPlaybackPreferences.CANVAS_KEY.equals(key)) updateCanvas(); };
@@ -140,6 +141,7 @@ public class PlayerBottomSheetFragment extends Fragment {
         canvasSheetOpen = state != com.google.android.material.bottomsheet.BottomSheetBehavior.STATE_COLLAPSED
                 && state != com.google.android.material.bottomsheet.BottomSheetBehavior.STATE_HIDDEN;
         updateCanvasRunning();
+        com.eddyizm.tempus.ui.components.PiterfyGlassPlayer.onSheetState(state);  // Liquid Glass: wejście karty, oddychanie okładki
     }
 
     private void updateCanvasRunning() {
@@ -164,8 +166,12 @@ public class PlayerBottomSheetFragment extends Fragment {
         canvasActive = !canvasTv && canvasSongId != null && !com.eddyizm.tempus.lan.LanRemoteSession.isActive()
                 && com.eddyizm.tempus.ui.components.PiterfyPlaybackPreferences.isCanvasEnabled(requireContext());
         int visibility = canvasActive ? View.VISIBLE : View.GONE;
+        boolean wasGlassBackdrop = glassBackdrop;
+        glassBackdrop = !canvasActive && !canvasTv && com.eddyizm.tempus.ui.components.PiterfyGlass.plan(requireContext()).getEnabled();
         bind.playerCanvasView.setVisibility(visibility);
-        bind.playerCanvasScrim.setVisibility(visibility);
+        bind.playerGlassBackdrop.setVisibility(glassBackdrop ? View.VISIBLE : View.GONE);
+        bind.playerCanvasScrim.setVisibility(canvasActive || glassBackdrop ? View.VISIBLE : View.GONE);
+        if (glassBackdrop && !wasGlassBackdrop) com.eddyizm.tempus.ui.components.PiterfyGlassPlayer.styleBackdrop(bind.playerGlassBackdrop);
         if (canvasActive) {
             bind.playerCanvasView.setScene(canvasSongId,
                     com.eddyizm.tempus.util.PiterfyCanvasScene.INSTANCE.hexOf(ambient, com.eddyizm.tempus.util.PiterfyAmbient.DEFAULT));
@@ -191,8 +197,8 @@ public class PlayerBottomSheetFragment extends Fragment {
                 new android.graphics.drawable.InsetDrawable(card, Math.round(8 * density), Math.round(4 * density), Math.round(8 * density), Math.round(4 * density))}));
 
         View body = bind.getRoot().findViewById(R.id.player_body_layout);  // id z <include> nadpisuje id korzenia
-        if (body != null && canvasActive) {
-            body.setBackgroundColor(android.graphics.Color.TRANSPARENT);  // tlo rysuje PiterfyCanvasView pod spodem
+        if (body != null && (canvasActive || glassBackdrop)) {
+            body.setBackgroundColor(android.graphics.Color.TRANSPARENT);  // tlo rysuje PiterfyCanvasView albo rozmyta okladka (Liquid Glass) pod spodem
         } else if (body != null) {
             body.setBackground(new android.graphics.drawable.GradientDrawable(
                     android.graphics.drawable.GradientDrawable.Orientation.TOP_BOTTOM,
@@ -350,11 +356,16 @@ public class PlayerBottomSheetFragment extends Fragment {
                                 mediaMetadata.extras.getString("coverArtId"), CustomGlideRequest.ResourceType.Radio));
                 request = RadioCoverArtDownloader.applyLocalFileSignature(request, mediaMetadata.artworkUri);
                 request.into(bind.playerHeaderLayout.playerHeaderMediaCoverImage);
+                if (glassBackdrop) com.eddyizm.tempus.ui.components.PiterfyGlassPlayer.loadBackdrop(bind.playerGlassBackdrop, mediaMetadata.artworkUri);
             } else {
                 CustomGlideRequest.Builder
                         .from(requireContext(), mediaMetadata.extras.getString("coverArtId"), CustomGlideRequest.ResourceType.Song)
                         .build()
                         .into(bind.playerHeaderLayout.playerHeaderMediaCoverImage);
+                if (glassBackdrop) {
+                    String glassCover = mediaMetadata.extras.getString("coverArtId");
+                    if (glassCover != null) com.eddyizm.tempus.ui.components.PiterfyGlassPlayer.loadBackdrop(bind.playerGlassBackdrop, CustomGlideRequest.createUrl(glassCover, 360));
+                }
             }
         }
     }

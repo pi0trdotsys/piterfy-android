@@ -136,7 +136,12 @@ public class PlayerLyricsFragment extends Fragment {
             int from = text.length();
             String value = lines.get(i).getValue().trim();
             text.append(value.isEmpty() ? "♪" : value).append("\n\n");
-            if (i == active) activeStart = from;
+            if (i == active) {
+                activeStart = from;
+                // Piterfy: Liquid Glass — aktywna linijka na szklanej pigułce (span akapitu: od początku linii do jej końca z \n)
+                android.text.style.LineBackgroundSpan glass = com.eddyizm.tempus.ui.components.PiterfyGlassPlayer.lyricLineBackground(requireContext());
+                if (glass != null) text.setSpan(glass, from, text.length() - 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            }
             text.setSpan(new ClickableSpan() {
                 @Override public void onClick(@NonNull View view) {
                     if (LanRemoteSession.isActive()) LanRemoteSession.command("seek", seek);

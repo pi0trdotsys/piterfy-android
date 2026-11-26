@@ -80,7 +80,7 @@ object PiterfyGlass {
 
     /** Rysuje pod szkłem hosta rozmytą zawartość [source] i odświeża ją przy przewijaniu i zmianie układu. */
     @JvmStatic
-    fun bindBlur(host: View, source: View, drawable: PiterfyGlassDrawable) {
+    fun bindBlur(host: View, source: View?, drawable: PiterfyGlassDrawable) {
         drawable.blurHost = host
         drawable.blurSource = source
         val listener = ViewTreeObserver.OnScrollChangedListener { host.invalidate() }

@@ -29,17 +29,29 @@ import kotlin.math.abs
  * Błąd rozmycia wyłącza je i zostaje samo półprzezroczyste szkło.
  */
 class PiterfyGlassDrawable(
-    private val surfaceColor: Int,
+    initialColor: Int,
     private val radiusPx: Float,
     private val plan: PiterfyGlassPlan.Plan,
     private val density: Float,
     private val topCornersOnly: Boolean = false,
 ) : Drawable() {
+    /** Kolor wypełnienia (np. akcent z okładki w widoku odtwarzacza); zmiana odświeża rysunek. */
+    var surfaceColor: Int = initialColor
+        set(value) { if (field != value) { field = value; invalidateSelf() } }
+
     /** Widok, którego zawartość rozmywamy pod szkłem (rodzeństwo hosta, nigdy jego przodek), i widok, któremu to tło służy. */
     var blurSource: View? = null
+    /** Dla szkła, którego źródło zmienia się w czasie (Canvas albo rozmyta okładka za kartą odtwarzacza). */
+    var blurSourceProvider: (() -> View?)? = null
     var blurHost: View? = null
     /** Prostokąt zaznaczonej pozycji (we współrzędnych hosta) albo null — rysowany jako „pigułka”, płynnie przesuwana. */
     var pillProvider: (() -> RectF?)? = null
+
+    /** Źródło się nie zmienia samo (rozmyta okładka): rozmycie nagrywamy ponownie tylko po zmianie układu albo [invalidateBlur]. */
+    var blurStatic = false
+    private var blurKey = 0L
+    private var blurDirty = true
+    fun invalidateBlur() { blurDirty = true; invalidateSelf() }
 
     private var userAlpha = 255
     private var renderNode: RenderNode? = null
@@ -96,24 +108,32 @@ class PiterfyGlassDrawable(
 
     @RequiresApi(Build.VERSION_CODES.S)
     private fun drawBackdropBlur(canvas: Canvas) {
-        val src = blurSource ?: return
+        val src = blurSource ?: blurSourceProvider?.invoke() ?: return
         val host = blurHost ?: return
         if (!canvas.isHardwareAccelerated || !src.isAttachedToWindow || !host.isAttachedToWindow) return
         try {
             val node = renderNode ?: RenderNode("pf-glass-blur").also { renderNode = it }
             val radius = (plan.blurDp * density).coerceAtLeast(1f)
-            node.setPosition(0, 0, bounds.width(), bounds.height())
-            node.setRenderEffect(RenderEffect.createBlurEffect(radius, radius, Shader.TileMode.CLAMP))
             val hostLoc = IntArray(2)
             val srcLoc = IntArray(2)
             host.getLocationInWindow(hostLoc)
             src.getLocationInWindow(srcLoc)
-            val rc = node.beginRecording()
-            try {
-                rc.translate((srcLoc[0] - hostLoc[0] - bounds.left).toFloat(), (srcLoc[1] - hostLoc[1] - bounds.top).toFloat())
-                src.draw(rc)
-            } finally {
-                node.endRecording()
+            val dx = srcLoc[0] - hostLoc[0] - bounds.left
+            val dy = srcLoc[1] - hostLoc[1] - bounds.top
+            val key = ((dx.toLong() and 0xFFFF) shl 48) xor ((dy.toLong() and 0xFFFF) shl 32) xor
+                ((bounds.width().toLong() and 0xFFFF) shl 16) xor (bounds.height().toLong() and 0xFFFF)
+            if (!blurStatic || blurDirty || key != blurKey) {
+                node.setPosition(0, 0, bounds.width(), bounds.height())
+                node.setRenderEffect(RenderEffect.createBlurEffect(radius, radius, Shader.TileMode.CLAMP))
+                val rc = node.beginRecording()
+                try {
+                    rc.translate(dx.toFloat(), dy.toFloat())
+                    src.draw(rc)
+                } finally {
+                    node.endRecording()
+                }
+                blurKey = key
+                blurDirty = false
             }
             canvas.save()
             canvas.translate(bounds.left.toFloat(), bounds.top.toFloat())

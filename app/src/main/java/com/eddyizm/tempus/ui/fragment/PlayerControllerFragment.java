@@ -126,6 +126,8 @@ public class PlayerControllerFragment extends Fragment {
 
     private MediaService.LocalBinder mediaServiceBinder;
     private boolean isServiceBound = false;
+    // Piterfy: Liquid Glass — szklana karta sterowania w pelnym odtwarzaczu (null, gdy szklo wylaczone albo telewizor)
+    private com.eddyizm.tempus.ui.components.PiterfyGlassPlayer.Handle glassPlayer;
 
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -139,6 +141,10 @@ public class PlayerControllerFragment extends Fragment {
 
         init();
         initTvPlayer();
+        android.view.View glassRoot = view.findViewById(R.id.now_playing_media_controller_layout);
+        if (glassRoot instanceof ViewGroup) {
+            glassPlayer = com.eddyizm.tempus.ui.components.PiterfyGlassPlayer.install(getViewLifecycleOwner(), (ViewGroup) glassRoot);
+        }
         remotePlayer = new com.eddyizm.tempus.lan.LanPlayerAdapter();
         com.eddyizm.tempus.lan.LanRemoteSession.state().observe(getViewLifecycleOwner(), state -> refreshPlaybackDestination());
         com.eddyizm.tempus.lan.LanRemoteSession.queueState().observe(getViewLifecycleOwner(), queue -> refreshPlaybackDestination());
@@ -184,6 +190,7 @@ public class PlayerControllerFragment extends Fragment {
         if (qualityClient != null) qualityClient.close();
         qualityClient = null;
         outputMonitor = null;
+        glassPlayer = null;
         super.onDestroyView();
         if (bind != null) bind.nowPlayingMediaControllerView.setPlayer(null);
         if (remotePlayer != null) remotePlayer.release();
@@ -520,6 +527,11 @@ public class PlayerControllerFragment extends Fragment {
             @Override
             public void onTracksChanged(@NonNull Tracks tracks) {
                 setMediaFormatFromFileReturnedByServer();
+            }
+
+            @Override
+            public void onIsPlayingChanged(boolean isPlaying) {
+                if (glassPlayer != null) glassPlayer.onPlaying(isPlaying);
             }
 
             @Override
@@ -1056,6 +1068,7 @@ public class PlayerControllerFragment extends Fragment {
                         playerBottomSheetFragment.setPlayerControllerVerticalPagerDraggableState(true);
                     }
                     updateLyricsButtonTint(false);
+                    if (glassPlayer != null) glassPlayer.setPage(0);
                 } else if (position == 1) {
                     activity.setBottomSheetDraggableState(true);
                     playerMediaCoverViewPager.setUserInputEnabled(true);
@@ -1064,6 +1077,7 @@ public class PlayerControllerFragment extends Fragment {
                         playerBottomSheetFragment.setPlayerControllerVerticalPagerDraggableState(false);
                     }
                     updateLyricsButtonTint(true);
+                    if (glassPlayer != null) glassPlayer.setPage(1);
                 }
             }
         });
