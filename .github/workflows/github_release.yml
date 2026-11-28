@@ -65,6 +65,10 @@ jobs:
           node --check connect/web/artist-core.js
           node --check connect/web/artist.js
           node --test connect/web/prefs-core.test.cjs connect/web/continue-core.test.cjs connect/web/speed-core.test.cjs connect/web/artist-core.test.cjs
+          node --check connect/web/compat-core.js
+          node --check connect/web/lite-core.js
+          node --check connect/web/lite.js
+          node --test connect/web/compat-core.test.cjs connect/web/lite-core.test.cjs connect/web/lite-boot.test.cjs connect/web/safari15-compat.test.cjs
           python3 -m unittest discover -s connect/stack/discover -p 'test_*.py'
           node --test connect/web/media-kind-core.test.cjs
           node --test connect/web/offline-core.test.cjs connect/web/offline-sw.test.cjs

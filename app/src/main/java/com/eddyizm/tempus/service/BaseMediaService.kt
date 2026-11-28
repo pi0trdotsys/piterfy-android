@@ -350,9 +350,19 @@ open class BaseMediaService : MediaLibraryService(), MediaManager.QueueTarget {
                 }
             }
 
+            // Piterfy: id utworu sprzed przejścia (listener nie dostaje poprzedniego), do decyzji o powtarzaniu jednego utworu
+            private var repeatLastItemId: String? = null
+
             override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
                 Log.d(TAG, "onMediaItemTransition" + player.currentMediaItemIndex)
+                val previousItemId = repeatLastItemId
+                repeatLastItemId = mediaItem?.mediaId
                 if (mediaItem == null) return
+                // Piterfy: powtarzanie jednego utworu trwa do ręcznej zmiany utworu (następny, poprzedni, wybór z kolejki)
+                if (PiterfyRepeatPlan.shouldTurnOff(player.repeatMode, reason, previousItemId, mediaItem.mediaId)) {
+                    player.repeatMode = Player.REPEAT_MODE_OFF
+                    Preferences.setRepeatMode(Player.REPEAT_MODE_OFF)
+                }
                 ReplayGainUtil.applyGain(player, mediaItem)
 
                 // --- Add for AA : Constants.AA_START_INDEX if présent ---

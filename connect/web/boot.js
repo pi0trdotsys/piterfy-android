@@ -11,11 +11,54 @@
   var root = document.documentElement;
   if (window.__pfBootDone || root.hasAttribute("data-pf-boot")) return;
 
-  // Liquid Glass włączony przy poprzedniej wizycie: glass.css (blokuje rysowanie) i ustawienia dochodzą jeszcze w <head>,
-  // żeby pierwsza klatka była już szklana, a nie dopiero po załadowaniu piterfy.js.
   var self = document.currentScript, bootVersion = ((self && self.src.match(/[?&]v=([^&]+)/)) || [])[1] || "";
+
+  // Zgodność ze starym Safari (iPad mini 4 i inne z Safari 15): brakujące funkcje (AbortSignal.timeout, Object.hasOwn, Array.at,
+  // crypto.randomUUID) dopisuje compat-core.js, ładowany synchronicznie przed resztą — tylko gdy czegoś brakuje. Bez tego pierwszy
+  // fetch z AbortSignal.timeout w którymkolwiek module rzuca wyjątek.
   try {
-    var glass = JSON.parse(localStorage.getItem("pf-glass") || "{}");
+    if ((window.AbortSignal && !AbortSignal.timeout) || !Object.hasOwn || !Array.prototype.at || !Array.prototype.findLast ||
+        (window.crypto && !window.crypto.randomUUID)) {
+      document.write('<script src="/piterfy-ui/compat-core.js?v=' + bootVersion + '"><\/script>' +
+        '<script>window.PiterfyCompat&&PiterfyCompat.install(window)<\/script>');
+    }
+  } catch (e) { /* bez zgodności: moduły i tak łapią własne błędy */ }
+
+  // Tryb Lite (słabe urządzenia): ?lite=1 / ?lite=0 w adresie (także po #) albo zapisane pf-lite=1. Ta sama reguła co PiterfyLiteCore.resolve
+  // (test lite-boot.test.cjs sprawdza zgodność). Atrybut data-pf-lite na <html> włącza lite.css i pomija ciężkie moduły.
+  var lite = false;
+  try {
+    var liteParam = function (query) {
+      var m = /(?:^|[?&])lite=([^&#]*)/i.exec(query || "");
+      if (!m) return null;
+      var v = m[1];
+      try { v = decodeURIComponent(v); } catch (e1) { /* surowy */ }
+      v = v.trim().toLowerCase();
+      return /^(1|true|on|tak|yes)$/.test(v) ? true : /^(0|false|off|nie|no)$/.test(v) ? false : null;
+    };
+    var liteHash = location.hash || "";
+    var liteUrl = liteParam(location.search);
+    if (liteUrl === null && liteHash.indexOf("?") >= 0) liteUrl = liteParam(liteHash.slice(liteHash.indexOf("?")));
+    if (liteUrl !== null) {
+      try { localStorage.setItem("pf-lite", liteUrl ? "1" : "0"); } catch (e2) { /* bez zapisu: tylko ta wizyta */ }
+      // parametr jest poleceniem, nie stanem: po zapisaniu znika z adresu, żeby późniejsze wyłączenie w „Wygląd” nie wracało po odświeżeniu
+      try {
+        var stripLite = function (text) { return text.replace(/([?&])lite=[^&#]*&?/i, "$1").replace(/[?&]$/, ""); };
+        if (window.history && history.replaceState) history.replaceState(history.state, "", location.pathname + stripLite(location.search) + stripLite(location.hash));
+      } catch (e3) { /* adres zostaje, jak był */ }
+    }
+    lite = liteUrl !== null ? liteUrl : localStorage.getItem("pf-lite") === "1";
+    if (lite) {
+      root.setAttribute("data-pf-lite", "1");
+      root.setAttribute("data-pf-motion", "reduced");
+      document.write('<link rel="stylesheet" id="pf-lite-css" href="/piterfy-ui/lite.css?v=' + bootVersion + '">');
+    }
+  } catch (e) { lite = false; }
+
+  // Liquid Glass włączony przy poprzedniej wizycie: glass.css (blokuje rysowanie) i ustawienia dochodzą jeszcze w <head>,
+  // żeby pierwsza klatka była już szklana, a nie dopiero po załadowaniu piterfy.js. W trybie Lite szkła nie ma (rozmycia zacinają).
+  try {
+    var glass = lite ? null : JSON.parse(localStorage.getItem("pf-glass") || "{}");
     if (glass && glass.on) {
       document.write('<link rel="stylesheet" id="pf-glass-css" href="/piterfy-ui/glass.css?v=' + bootVersion + '">' +
         '<script src="/piterfy-ui/glass-core.js?v=' + bootVersion + '"><\/script>' +
@@ -46,12 +89,12 @@
   // Szybkość odczuwalna (speed.js: podręczne dane i kolory okładek) musi owinąć fetch, zanim strona startowa zacznie pytać o dane,
   // więc ładujemy ją tutaj — bez tego pierwsze zapytania wyprzedzałyby skrypt dołączany przez piterfy.js.
   try {
-    if (localStorage.getItem("pf-speed") !== "0") {
+    if (!lite && localStorage.getItem("pf-speed") !== "0") {
       document.write('<script src="/piterfy-ui/speed-core.js?v=' + bootVersion + '"><\/script><script src="/piterfy-ui/speed.js?v=' + bootVersion + '"><\/script>');
     }
   } catch (e) { /* piterfy.js dołączy speed.js później */ }
 
-  var MIN_MS = 1500, MAX_MS = 4000, OUT_MS = 800; // MIN_MS = długość intro (gra raz, nic się nie zapętla)
+  var MIN_MS = lite ? 0 : 1500, MAX_MS = 4000, OUT_MS = lite ? 0 : 800; // MIN_MS = długość intro (gra raz, nic się nie zapętla); Lite: bez intro
   var t0 = performance.now();
   // Navidrome po pierwszym uruchomieniu (nowy service worker) przeładowuje stronę sam. Drugie wejście w ciągu kilku sekund
   // w tej samej karcie nie odtwarza intro od nowa (wyglądało to jak dwa paski ładowania) — zasłona od razu stoi w stanie
@@ -108,6 +151,11 @@
     '.pf-bt.skip:not(.out) .pf-bt-core,.pf-bt.skip:not(.out) .pf-bt-track{animation:none}' +
     '';
 
+  if (lite) { // statyczna, prosta zasłona: czarne tło i napis — bez animacji, rozmyć i filtrów
+    css = 'html[data-pf-boot]{background:#000!important}html[data-pf-boot] #root{opacity:0}html[data-pf-boot=out] #root{opacity:1}' +
+      '.pf-bt{position:fixed;left:0;top:0;right:0;bottom:0;z-index:2147483647;background:#000;display:flex;align-items:center;justify-content:center;' +
+      'color:rgba(255,255,255,.82);font:700 16px/1 -apple-system,system-ui,sans-serif;letter-spacing:.34em}';
+  }
   var style = document.createElement("style");
   style.id = "pf-boot-css";
   style.textContent = css;
@@ -130,6 +178,7 @@
     '<div class="pf-bt-word">' + word + "</div>" +
     '<div class="pf-bt-track"><i></i></div>';
 
+  if (lite) veil.innerHTML = "piterfy";
   if (repeat) veil.classList.add("skip");
   root.setAttribute("data-pf-boot", "1");
   root.appendChild(veil);

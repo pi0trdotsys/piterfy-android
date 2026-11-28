@@ -18,185 +18,232 @@ html:not([data-pf-light]) {
   --pf-muted: #b3b3b3;
   --pf-accent: #1db954;
   --pf-radius: 10px;
-
   background: var(--pf-bg) !important;
   color-scheme: dark;
-
   /* bez koloru tekstu — po kolorze ustawionym przez motyw Navidrome piterfy.js rozpoznaje jasny motyw */
-  & body {
-    background: var(--pf-bg) !important;
-    font-family: Figtree, system-ui, sans-serif !important;
-  }
-  & .MuiTypography-root,
-  & .MuiButton-root,
-  & .MuiTableCell-root,
-  & .MuiMenuItem-root,
-  & .MuiInputBase-root,
-  & .MuiChip-root,
-  & .MuiTab-root,
-  & .react-jinke-music-player-main,
-  & .audio-lists-panel {
-    font-family: Figtree, system-ui, sans-serif !important;
-  }
-  & ::selection { background: rgba(29, 185, 84, 0.4); }
-  & * { scrollbar-width: thin; scrollbar-color: rgba(255, 255, 255, 0.25) transparent; }
-  & ::-webkit-scrollbar { width: 12px; height: 12px; }
-  & ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.22) padding-box; border: 3px solid transparent; border-radius: 999px; }
-  & ::-webkit-scrollbar-thumb:hover { background-color: rgba(255, 255, 255, 0.4); }
+}
 
-  /* ── układ: czarne tło i zaokrąglone panele z odstępami ── */
-  & .layout { background: var(--pf-bg) !important; }
-  & header.MuiAppBar-root {
-    background: var(--pf-bg) !important;
-    box-shadow: none !important;
-    color: var(--pf-text) !important;
-  }
-  & #react-admin-title,
-  & #react-admin-title * {
-    font-weight: 800 !important;
-    letter-spacing: -0.2px;
-  }
-  & .MuiDrawer-docked .MuiDrawer-paper,
-  & .MuiDrawer-modal .MuiDrawer-paper {
-    background: var(--pf-panel) !important;
-    border: 0 !important;
-  }
-  & .MuiDrawer-docked .MuiDrawer-paper {
-    border-radius: var(--pf-radius);
-    margin-left: 8px;
-  }
-  & #main-content {
-    border-radius: var(--pf-radius);
-    margin: 0 8px 8px;
-    min-width: 0;
-    overflow-x: auto;  /* szeroka tabela przewija się w panelu, a nie rozpycha całą stronę */
-    background: linear-gradient(180deg, var(--pf-tint, #1c3b2b) 0, var(--pf-panel) 320px) !important;
-  }
-
-  /* menu (i nasza pozycja „Start”): szare, aktywne białe na ciemniejszym tle */
-  & .pf-brand { color: var(--pf-text); }
-  & .pf-start { color: var(--pf-muted); opacity: 1; transition: color 0.15s, background 0.15s; }
-  & .pf-start:hover { color: var(--pf-text); }
-  & .pf-start[aria-current="page"] { color: var(--pf-text); background: #232323; }
-  & .MuiDrawer-paper a.MuiMenuItem-root {
-    color: var(--pf-muted) !important;
-    font-weight: 700 !important;
-    border-radius: 6px;
-    margin: 2px 8px;
-    transition: color 0.15s, background 0.15s;
-  }
-  & .MuiDrawer-paper a.MuiMenuItem-root:hover { color: var(--pf-text) !important; background: transparent !important; }
-  & .MuiDrawer-paper a.MuiMenuItem-root[aria-current="page"] { color: var(--pf-text) !important; background: #232323 !important; }
-  & .MuiDrawer-paper .MuiListItemIcon-root { color: inherit !important; }
-
-  /* ── okna i menu ── */
-  & .MuiPopover-paper,
-  & .MuiMenu-paper,
-  & .MuiDialog-paper,
-  & .MuiAutocomplete-paper {
-    background: var(--pf-card-hover) !important;
-    border-radius: 8px !important;
-    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6) !important;
-  }
-  & .MuiSnackbarContent-root { background: #2e77d0 !important; border-radius: 8px !important; }
-
-  /* ── siatka albumów (karty robi motyw bazowy) ── */
-  & #main-content .MuiGridListTile-tile a[href^="#/album/"] img {
-    border-radius: 6px;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
-  }
-  & #main-content .MuiGridListTile-tile a[href^="#/artist/"] { color: var(--pf-muted) !important; }
-  & #main-content .MuiGridListTile-tile a[href^="#/artist/"]:hover { color: var(--pf-text) !important; }
-
-  /* ── nagłówek albumu / wykonawcy / playlisty w kolorach okładki (pf-hero dodaje piterfy.js) ── */
-  & #main-content .MuiCard-root.pf-hero {
-    position: relative;
-    overflow: hidden;
-    isolation: isolate;
-    background: transparent !important;
-    box-shadow: none !important;
-  }
-  & #main-content .MuiCard-root.pf-hero::before {
-    content: "";
-    position: absolute;
-    inset: -120px;
-    z-index: -2;
-    background: var(--pf-hero) center / cover no-repeat;
-    filter: blur(80px) saturate(1.4);
-    opacity: 0.6;
-  }
-  & #main-content .MuiCard-root.pf-hero::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    z-index: -1;
-    background: linear-gradient(180deg, rgba(18, 18, 18, 0) 0%, rgba(18, 18, 18, 0.55) 70%, var(--pf-panel) 100%);
-  }
-  & #main-content .MuiCard-root.pf-hero img {
-    border-radius: 4px;
-    box-shadow: 0 8px 40px rgba(0, 0, 0, 0.6);
-  }
-  & #main-content .MuiCard-root.pf-hero .MuiTypography-h5,
-  & #main-content .MuiCard-root.pf-hero .MuiTypography-h6 {
-    font: 800 clamp(30px, 5.4vw, 76px) / 1.02 Figtree, sans-serif !important;
-    letter-spacing: -0.04em !important;
-  }
-
-  /* ── tabele utworów: bez linii, zaokrąglone podświetlenie wiersza ── */
-  & #main-content tbody .MuiTableCell-root { border-bottom-color: transparent !important; }
-  & #main-content tbody tr.MuiTableRow-root:hover { background: rgba(255, 255, 255, 0.08) !important; }
-  & #main-content tbody tr.MuiTableRow-root td:first-child { border-radius: 6px 0 0 6px; }
-  & #main-content tbody tr.MuiTableRow-root td:last-child { border-radius: 0 6px 6px 0; }
-  & #main-content td.column-title { color: var(--pf-text) !important; font-weight: 500; }
-
-  /* ── odtwarzacz: czarny pasek, biały przycisk, pasek postępu biały → zielony po najechaniu ── */
-  & .react-jinke-music-player-main .music-player-panel {
-    background: var(--pf-bg) !important;
-    border-top: 0 !important;
-    box-shadow: none !important;
-    color: var(--pf-text) !important;
-  }
-  & .react-jinke-music-player-main .img-content {
-    border-radius: 4px !important;
-    animation: none !important;
-    box-shadow: none !important;
-  }
-  & .react-jinke-music-player-main .rc-slider-rail { background: #4d4d4d !important; }
-  & .react-jinke-music-player-main .rc-slider-track { background: var(--pf-text) !important; }
-  & .react-jinke-music-player-main .rc-slider:hover .rc-slider-track { background: var(--pf-accent) !important; }
-  & .react-jinke-music-player-main .rc-slider-handle {
-    background: var(--pf-text) !important;
-    border: 0 !important;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5) !important;
-    opacity: 0;
-    transition: opacity 0.15s;
-  }
-  & .react-jinke-music-player-main .rc-slider:hover .rc-slider-handle { opacity: 1; }
-  /* Ikona odtwarzania to białe kółko z wyciętym trójkątem (pauza: z wyciętymi kreskami) — przez wycięcie widać
+html:not([data-pf-light]) body {
+  background: var(--pf-bg) !important;
+  font-family: Figtree, system-ui, sans-serif !important;
+}
+html:not([data-pf-light]) .MuiTypography-root,
+html:not([data-pf-light]) .MuiButton-root,
+html:not([data-pf-light]) .MuiTableCell-root,
+html:not([data-pf-light]) .MuiMenuItem-root,
+html:not([data-pf-light]) .MuiInputBase-root,
+html:not([data-pf-light]) .MuiChip-root,
+html:not([data-pf-light]) .MuiTab-root,
+html:not([data-pf-light]) .react-jinke-music-player-main,
+html:not([data-pf-light]) .audio-lists-panel {
+  font-family: Figtree, system-ui, sans-serif !important;
+}
+html:not([data-pf-light]) ::selection {
+  background: rgba(29, 185, 84, 0.4);
+}
+html:not([data-pf-light]) * {
+  scrollbar-width: thin; scrollbar-color: rgba(255, 255, 255, 0.25) transparent;
+}
+html:not([data-pf-light]) ::-webkit-scrollbar {
+  width: 12px; height: 12px;
+}
+html:not([data-pf-light]) ::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.22) padding-box; border: 3px solid transparent; border-radius: 999px;
+}
+html:not([data-pf-light]) ::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(255, 255, 255, 0.4);
+}
+/* ── układ: czarne tło i zaokrąglone panele z odstępami ── */
+html:not([data-pf-light]) .layout {
+  background: var(--pf-bg) !important;
+}
+html:not([data-pf-light]) header.MuiAppBar-root {
+  background: var(--pf-bg) !important;
+  box-shadow: none !important;
+  color: var(--pf-text) !important;
+}
+html:not([data-pf-light]) #react-admin-title,
+html:not([data-pf-light]) #react-admin-title * {
+  font-weight: 800 !important;
+  letter-spacing: -0.2px;
+}
+html:not([data-pf-light]) .MuiDrawer-docked .MuiDrawer-paper,
+html:not([data-pf-light]) .MuiDrawer-modal .MuiDrawer-paper {
+  background: var(--pf-panel) !important;
+  border: 0 !important;
+}
+html:not([data-pf-light]) .MuiDrawer-docked .MuiDrawer-paper {
+  border-radius: var(--pf-radius);
+  margin-left: 8px;
+}
+html:not([data-pf-light]) #main-content {
+  border-radius: var(--pf-radius);
+  margin: 0 8px 8px;
+  min-width: 0;
+  overflow-x: auto;  /* szeroka tabela przewija się w panelu, a nie rozpycha całą stronę */
+  background: linear-gradient(180deg, var(--pf-tint, #1c3b2b) 0, var(--pf-panel) 320px) !important;
+}
+/* menu (i nasza pozycja „Start”): szare, aktywne białe na ciemniejszym tle */
+html:not([data-pf-light]) .pf-brand {
+  color: var(--pf-text);
+}
+html:not([data-pf-light]) .pf-start {
+  color: var(--pf-muted); opacity: 1; transition: color 0.15s, background 0.15s;
+}
+html:not([data-pf-light]) .pf-start:hover {
+  color: var(--pf-text);
+}
+html:not([data-pf-light]) .pf-start[aria-current="page"] {
+  color: var(--pf-text); background: #232323;
+}
+html:not([data-pf-light]) .MuiDrawer-paper a.MuiMenuItem-root {
+  color: var(--pf-muted) !important;
+  font-weight: 700 !important;
+  border-radius: 6px;
+  margin: 2px 8px;
+  transition: color 0.15s, background 0.15s;
+}
+html:not([data-pf-light]) .MuiDrawer-paper a.MuiMenuItem-root:hover {
+  color: var(--pf-text) !important; background: transparent !important;
+}
+html:not([data-pf-light]) .MuiDrawer-paper a.MuiMenuItem-root[aria-current="page"] {
+  color: var(--pf-text) !important; background: #232323 !important;
+}
+html:not([data-pf-light]) .MuiDrawer-paper .MuiListItemIcon-root {
+  color: inherit !important;
+}
+/* ── okna i menu ── */
+html:not([data-pf-light]) .MuiPopover-paper,
+html:not([data-pf-light]) .MuiMenu-paper,
+html:not([data-pf-light]) .MuiDialog-paper,
+html:not([data-pf-light]) .MuiAutocomplete-paper {
+  background: var(--pf-card-hover) !important;
+  border-radius: 8px !important;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6) !important;
+}
+html:not([data-pf-light]) .MuiSnackbarContent-root {
+  background: #2e77d0 !important; border-radius: 8px !important;
+}
+/* ── siatka albumów (karty robi motyw bazowy) ── */
+html:not([data-pf-light]) #main-content .MuiGridListTile-tile a[href^="#/album/"] img {
+  border-radius: 6px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+}
+html:not([data-pf-light]) #main-content .MuiGridListTile-tile a[href^="#/artist/"] {
+  color: var(--pf-muted) !important;
+}
+html:not([data-pf-light]) #main-content .MuiGridListTile-tile a[href^="#/artist/"]:hover {
+  color: var(--pf-text) !important;
+}
+/* ── nagłówek albumu / wykonawcy / playlisty w kolorach okładki (pf-hero dodaje piterfy.js) ── */
+html:not([data-pf-light]) #main-content .MuiCard-root.pf-hero {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+html:not([data-pf-light]) #main-content .MuiCard-root.pf-hero::before {
+  content: "";
+  position: absolute;
+  inset: -120px;
+  z-index: -2;
+  background: var(--pf-hero) center / cover no-repeat;
+  filter: blur(80px) saturate(1.4);
+  opacity: 0.6;
+}
+html:not([data-pf-light]) #main-content .MuiCard-root.pf-hero::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(180deg, rgba(18, 18, 18, 0) 0%, rgba(18, 18, 18, 0.55) 70%, var(--pf-panel) 100%);
+}
+html:not([data-pf-light]) #main-content .MuiCard-root.pf-hero img {
+  border-radius: 4px;
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.6);
+}
+html:not([data-pf-light]) #main-content .MuiCard-root.pf-hero .MuiTypography-h5,
+html:not([data-pf-light]) #main-content .MuiCard-root.pf-hero .MuiTypography-h6 {
+  font: 800 clamp(30px, 5.4vw, 76px) / 1.02 Figtree, sans-serif !important;
+  letter-spacing: -0.04em !important;
+}
+/* ── tabele utworów: bez linii, zaokrąglone podświetlenie wiersza ── */
+html:not([data-pf-light]) #main-content tbody .MuiTableCell-root {
+  border-bottom-color: transparent !important;
+}
+html:not([data-pf-light]) #main-content tbody tr.MuiTableRow-root:hover {
+  background: rgba(255, 255, 255, 0.08) !important;
+}
+html:not([data-pf-light]) #main-content tbody tr.MuiTableRow-root td:first-child {
+  border-radius: 6px 0 0 6px;
+}
+html:not([data-pf-light]) #main-content tbody tr.MuiTableRow-root td:last-child {
+  border-radius: 0 6px 6px 0;
+}
+html:not([data-pf-light]) #main-content td.column-title {
+  color: var(--pf-text) !important; font-weight: 500;
+}
+/* ── odtwarzacz: czarny pasek, biały przycisk, pasek postępu biały → zielony po najechaniu ── */
+html:not([data-pf-light]) .react-jinke-music-player-main .music-player-panel {
+  background: var(--pf-bg) !important;
+  border-top: 0 !important;
+  box-shadow: none !important;
+  color: var(--pf-text) !important;
+}
+html:not([data-pf-light]) .react-jinke-music-player-main .img-content {
+  border-radius: 4px !important;
+  animation: none !important;
+  box-shadow: none !important;
+}
+html:not([data-pf-light]) .react-jinke-music-player-main .rc-slider-rail {
+  background: #4d4d4d !important;
+}
+html:not([data-pf-light]) .react-jinke-music-player-main .rc-slider-track {
+  background: var(--pf-text) !important;
+}
+html:not([data-pf-light]) .react-jinke-music-player-main .rc-slider:hover .rc-slider-track {
+  background: var(--pf-accent) !important;
+}
+html:not([data-pf-light]) .react-jinke-music-player-main .rc-slider-handle {
+  background: var(--pf-text) !important;
+  border: 0 !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5) !important;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+html:not([data-pf-light]) .react-jinke-music-player-main .rc-slider:hover .rc-slider-handle {
+  opacity: 1;
+}
+/* Ikona odtwarzania to białe kółko z wyciętym trójkątem (pauza: z wyciętymi kreskami) — przez wycięcie widać
      czarny pasek, więc pod ikoną nie może być żadnego tła (wcześniej białe tło zlewało się z kółkiem). */
-  & .react-jinke-music-player-main .play-btn svg {
-    font-size: 40px !important;
-    color: var(--pf-text) !important;
-    fill: var(--pf-text) !important;
-    background: transparent !important;
-    outline: 0 !important;
-    transition: transform 0.15s;
-  }
-  & .react-jinke-music-player-main .play-btn svg:hover { transform: scale(1.06); color: var(--pf-text) !important; }
-  & .react-jinke-music-player-main .audio-title .songTitle { font-weight: 600; }
-  & .audio-lists-panel { background: var(--pf-panel) !important; border-radius: var(--pf-radius) var(--pf-radius) 0 0; }
-  & .audio-lists-panel-content .audio-item.playing,
-  & .audio-lists-panel-content .audio-item.playing svg { color: var(--pf-accent) !important; }
-  & .audio-lists-panel-content .audio-item:hover { background: rgba(255, 255, 255, 0.08) !important; }
-
-  /* strona startowa w kolorach Noir: zielona poświata u góry jak w Spotify */
-  &[data-pf-route="start"] #main-content {
-    background: linear-gradient(180deg, var(--pf-tint-2, #1f4a33) 0, var(--pf-tint, #15291e) 180px, var(--pf-panel) 420px) !important;
-  }
-
-  @media not all {
-    & *, & *::before, & *::after { transition: none !important; animation: none !important; }
-  }
+html:not([data-pf-light]) .react-jinke-music-player-main .play-btn svg {
+  font-size: 40px !important;
+  color: var(--pf-text) !important;
+  fill: var(--pf-text) !important;
+  background: transparent !important;
+  outline: 0 !important;
+  transition: transform 0.15s;
+}
+html:not([data-pf-light]) .react-jinke-music-player-main .play-btn svg:hover {
+  transform: scale(1.06); color: var(--pf-text) !important;
+}
+html:not([data-pf-light]) .react-jinke-music-player-main .audio-title .songTitle {
+  font-weight: 600;
+}
+html:not([data-pf-light]) .audio-lists-panel {
+  background: var(--pf-panel) !important; border-radius: var(--pf-radius) var(--pf-radius) 0 0;
+}
+html:not([data-pf-light]) .audio-lists-panel-content .audio-item.playing,
+html:not([data-pf-light]) .audio-lists-panel-content .audio-item.playing svg {
+  color: var(--pf-accent) !important;
+}
+html:not([data-pf-light]) .audio-lists-panel-content .audio-item:hover {
+  background: rgba(255, 255, 255, 0.08) !important;
+}
+/* strona startowa w kolorach Noir: zielona poświata u góry jak w Spotify */
+html:not([data-pf-light])[data-pf-route="start"] #main-content {
+  background: linear-gradient(180deg, var(--pf-tint-2, #1f4a33) 0, var(--pf-tint, #15291e) 180px, var(--pf-panel) 420px) !important;
 }
 
 /* ───── Poniżej elementy, które piterfy.js dokłada zawsze — więc działają też w jasnym motywie. ───── */

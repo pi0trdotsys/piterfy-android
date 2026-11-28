@@ -53,7 +53,7 @@
   }
 
   function reset() {
-    Object.keys(core.KEYS).forEach((name) => { if (name !== "calm") { try { localStorage.removeItem(core.KEYS[name]); } catch (e) { /* ignore */ } } });
+    Object.keys(core.KEYS).forEach((name) => { if (name !== "calm" && name !== "lite") { try { localStorage.removeItem(core.KEYS[name]); } catch (e) { /* ignore */ } } });
     try { localStorage.removeItem(core.KEYS.calm); } catch (e) { /* ignore */ }
     state = core.read(localStorage);
     root.removeAttribute("data-pf-motion");
@@ -165,6 +165,13 @@
     if (!dialog) return;
     ensureStyles();
     el("h3", "Odczucia i układ", dialog);
+    // Tryb Lite (lite.js, lite.css): prosty wygląd i duże przyciski dla słabych urządzeń; zmiana odświeża stronę, bo ciężkie moduły się nie ładują
+    toggle(dialog, "Tryb Lite — dla słabych urządzeń", "Prosty wygląd, duże przyciski sterowania muzyką, bez rozmyć i animacji. Strona odświeży się po zmianie.",
+      core.readLite(localStorage) === true || root.hasAttribute("data-pf-lite"), (on) => {
+        core.writeLite(localStorage, on);
+        announce();
+        setTimeout(() => { try { location.reload(); } catch (e) { /* ręczne odświeżenie */ } }, 250);
+      });
     segmented(dialog, "Ruch", "Jak w systemie, zawsze pełny albo ograniczony (część widoków zmienia się po odświeżeniu)",
       [["system", "System"], ["full", "Pełny"], ["reduced", "Ograniczony"]], state.motion, (value) => set({ motion: value }));
     const haptics = toggle(dialog, "Wibracje", canVibrate() ? "Delikatne „kliknięcia” przy odtwarzaniu, polubieniu i kolejce" : "Działają na telefonie z Androidem — to urządzenie nie wibruje",

@@ -267,6 +267,11 @@ In **Settings → UI → Piterfy appearance** switch on **Liquid Glass** and set
 - **Speed:** covers show their colour while loading, the home page paints from the last known data and refreshes in the background (web: `pf-swr=0` turns the data cache off).
 - **Artist page:** a larger hero with a gradient from the cover colour that collapses on scroll, "Popularne z Twojej biblioteki" and a discography timeline by year that marks new releases from the radar.
 
+**Tryb Lite (web) and repeat one**
+
+- **Tryb Lite (strona):** for old or slow devices such as the iPad mini 4. Turn it on in "Wygląd Piterfy" → "Tryb Lite — dla słabych urządzeń", or open the site with `?lite=1` (`?lite=0` turns it off). Lite uses a flat interface without blur, shadows or animations, a lighter home page and a big player: a bar with a large play button and a full-screen "Teraz gra" with large prev/play/next, a seek bar, shuffle, repeat, like and queue buttons. On a device that looks slow (Safari older than 16, 2 CPU cores or 2 GB of memory) the page offers Lite once; it never switches on by itself. The page also works on Safari 15 without Lite.
+- **Repeat one:** repeating a single track now lasts until you change the track yourself (next, previous, picking another track in the queue, from Android Auto, the notification or the widget); then repeat goes back to off. Letting the same track loop does not turn it off.
+
 **Server status card, radio, release radar and lyrics translation**
 
 - **Stan serwera:** the Server tab in Statistics starts with a status card (green, amber or red) listing alarms and items: the music disk (mounted, writable, free space), when discover last ran, Last.fm and Deezer errors and the backup status. When the status turns red (for example the USB disk is unmounted), the server also sends an email and a Telegram message, a reminder every 6 hours while it lasts and a note when it recovers (`HEALTH_NOTIFY`, `TELEGRAM_BOT_TOKEN`/`TELEGRAM_CHAT_ID`, `DISCOVER_MAIL_TO`).

@@ -95,6 +95,7 @@
   position: fixed; left: 50%; bottom: calc(112px + env(safe-area-inset-bottom, 0px)); z-index: 100002;
   width: max-content; max-width: min(520px, calc(100vw - 24px)); box-sizing: border-box;
   display: flex; align-items: center; gap: 6px; padding: 6px 6px 6px 18px; border-radius: 999px;
+  background: #1e1e1e; /* zapas dla przeglądarek bez color-mix (Safari < 16.2) */
   background: color-mix(in srgb, #1c1c1c 92%, var(--pf-now-accent-safe, #1db954)); color: #f4f4f4;
   border: 1px solid rgba(255, 255, 255, 0.12); box-shadow: 0 14px 34px rgba(0, 0, 0, 0.5);
   font: 600 14px/1.35 Figtree, system-ui, sans-serif;
@@ -119,6 +120,7 @@
 .pf-seek-hint {
   position: fixed; z-index: 2147483000; width: 84px; height: 84px; margin: -42px 0 0 -42px; border-radius: 50%; pointer-events: none;
   display: flex; align-items: center; justify-content: center; font: 800 15px/1 Figtree, system-ui, sans-serif;
+  background: rgba(0, 0, 0, 0.55);
   background: color-mix(in srgb, #000 55%, transparent); color: #fff; backdrop-filter: blur(6px);
   animation: pf-seek-hint 0.6s var(--pf-ease-out) forwards;
 }

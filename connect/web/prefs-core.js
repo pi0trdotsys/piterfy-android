@@ -6,6 +6,7 @@
  *   pf-oled      "1" | "0"                         prawdziwa czerń (panele i karty bez szarości)
  *   pf-density   "comfortable" | "compact"         gęstość list i kart
  *   pf-textsize  85–130                            rozmiar tekstu w procentach (domyślnie 100)
+ *   pf-lite      "1" | "0" | brak                  tryb Lite dla słabych urządzeń (osobno od reszty: readLite/writeLite, logika w lite-core.js)
  * Wszystko poza wibracjami i ruchem jest nakładane na <html> (atrybuty data-pf-* i zmienna --pf-text-scale), a rysuje to appearance.css.
  *
  * Ruch: stary przełącznik pf-calm=1 (czytają go lyrics, morph, stats…) zostaje źródłem prawdy dla reszty modułów, więc wybór
@@ -17,7 +18,7 @@
 })(typeof window !== "undefined" ? window : globalThis, () => {
   "use strict";
 
-  const KEYS = { haptics: "pf-haptics", motion: "pf-motion", oled: "pf-oled", density: "pf-density", textsize: "pf-textsize", calm: "pf-calm" };
+  const KEYS = { haptics: "pf-haptics", motion: "pf-motion", oled: "pf-oled", density: "pf-density", textsize: "pf-textsize", calm: "pf-calm", lite: "pf-lite" };
   const MOTIONS = ["system", "full", "reduced"];
   const DENSITIES = ["comfortable", "compact"];
   const TEXT_MIN = 85, TEXT_MAX = 130, TEXT_STEP = 5;
@@ -61,6 +62,24 @@
     if (has("density")) set(KEYS.density, next.density);
     if (has("textsize")) set(KEYS.textsize, next.textsize);
     return next;
+  }
+
+  /** Tryb Lite: true (włączony), false (wyłączony) albo null (nie wybrano — decyduje podpowiedź przy słabym urządzeniu). */
+  function readLite(storage) {
+    let v = null;
+    try { v = storage ? storage.getItem(KEYS.lite) : null; } catch (e) { return null; }
+    return v === "1" ? true : v === "0" ? false : null;
+  }
+
+  /** Zapisuje wybór trybu Lite (true / false) albo go usuwa (null); zwraca wartość po zapisie. */
+  function writeLite(storage, value) {
+    try {
+      if (!storage) return null;
+      if (value === true) storage.setItem(KEYS.lite, "1");
+      else if (value === false) storage.setItem(KEYS.lite, "0");
+      else storage.removeItem(KEYS.lite);
+    } catch (e) { /* bez zapisu działa do odświeżenia */ }
+    return readLite(storage);
   }
 
   /** Czy cokolwiek z wyglądu odbiega od domyślnego — wtedy boot.js doładowuje ten plik jeszcze przed pierwszym rysunkiem. */
@@ -108,5 +127,5 @@
     return p;
   }
 
-  return { KEYS, DEFAULTS, MOTIONS, DENSITIES, TEXT_MIN, TEXT_MAX, TEXT_STEP, normalize, normalizeTextSize, read, write, needsEarlyApply, textScale, calmFlag, isCalm, attributes, apply };
+  return { KEYS, DEFAULTS, MOTIONS, DENSITIES, TEXT_MIN, TEXT_MAX, TEXT_STEP, normalize, normalizeTextSize, read, write, readLite, writeLite, needsEarlyApply, textScale, calmFlag, isCalm, attributes, apply };
 });

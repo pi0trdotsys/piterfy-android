@@ -778,7 +778,23 @@
     radioRequest({ action: "stop" }).catch(() => {});
   }
 
+  // Powtarzanie jednego utworu trwa do ręcznej zmiany utworu: zwykłe powtórzenie zostawia ten sam wpis kolejki (uuid),
+  // a następny, poprzedni albo wybór z kolejki zmienia go, więc wtedy wracamy do trybu „po kolei” (powtarzanie wyłączone).
+  let repeatSeen = null;
+  function repeatOneReset() {
+    const store = reduxStore();
+    const player = store && store.getState().player;
+    const uuid = player && player.current && player.current.uuid;
+    if (!uuid) return;
+    const before = repeatSeen;
+    repeatSeen = uuid;
+    if (before && before !== uuid && player.mode === "singleLoop") {
+      store.dispatch({ type: "PLAYER_SET_MODE", data: { mode: "order" } });
+    }
+  }
+
   function smartPlay() {
+    repeatOneReset();
     smartButton();
     repeatButton();
     recommendedMark();
@@ -1064,7 +1080,9 @@
   }
 
   function cover(id, size) {
-    return id ? "/rest/getCoverArt?" + subsonicParams({ id: id, size: size || 300 }) : "";
+    // tryb Lite: mniejsze okładki (mniej pikseli do pobrania i zdekodowania na słabym urządzeniu)
+    const wanted = root.hasAttribute("data-pf-lite") ? Math.min(size || 300, 160) : size || 300;
+    return id ? "/rest/getCoverArt?" + subsonicParams({ id: id, size: wanted }) : "";
   }
 
   // ── podcasty: rozpoznawanie, żeby nigdy nie mieszały się z muzyką ──
@@ -1221,6 +1239,7 @@
   }
 
   function section(title, more, cards, kicker, rowClass) {
+    if (root.hasAttribute("data-pf-lite")) cards = cards.slice(0, 6);  // tryb Lite: mniej kart i obrazków na półkę
     if (!cards.length) return "";
     return '<section class="pf-sec"><div class="pf-sec-head"><div>' +
       (kicker ? '<span class="pf-sec-kicker">' + esc(kicker) + "</span>" : "") + "<h2>" + esc(title) + "</h2></div>" +
@@ -1430,7 +1449,7 @@
   let revealer = null;
   let revealAlive = false;
   function revealSections(box) {
-    if (!("IntersectionObserver" in window) || (() => { try { return localStorage.getItem("pf-calm") === "1"; } catch (e) { return false; } })()) return;
+    if (!("IntersectionObserver" in window) || root.hasAttribute("data-pf-lite") || (() => { try { return localStorage.getItem("pf-calm") === "1"; } catch (e) { return false; } })()) return;
     if (!revealer) {
       revealer = new IntersectionObserver((entries) => {
         revealAlive = true;
@@ -1640,7 +1659,7 @@
 })();
 
 // piterfy-miniplayer-loader
-;(() => { const s = document.createElement('script'); s.src = '/piterfy-ui/miniplayer.js?v=20261022-205640'; document.head.appendChild(s); })();
+;(() => { if (document.documentElement.hasAttribute('data-pf-lite')) return; const s = document.createElement('script'); s.src = '/piterfy-ui/miniplayer.js?v=20261022-205640'; document.head.appendChild(s); })();
 
 
 
@@ -1696,6 +1715,7 @@
 
 // piterfy-crossfade-loader
 ;(() => {
+  if (document.documentElement.hasAttribute('data-pf-lite')) return;  // tryb Lite: bez płynnego przejścia (dodatkowy graf Web Audio obciąża słabe urządzenia)
   const core = document.createElement('script');
   core.src = '/piterfy-ui/crossfade-core.js?v=20261104-204610';
   core.onload = () => { const ui = document.createElement('script'); ui.src = '/piterfy-ui/crossfade.js?v=20261104-204610'; document.head.appendChild(ui); };
@@ -1716,6 +1736,7 @@
 
 // piterfy-canvas-loader
 ;(() => {
+  if (document.documentElement.hasAttribute('data-pf-lite')) return;  // tryb Lite: bez scen canvas
   const m = document.currentScript && document.currentScript.src.match(/[?&]v=([^&]+)/);
   const v = "?v=" + (m ? m[1] : "1");
   const core = document.createElement('script');
@@ -1727,6 +1748,7 @@
 
 // piterfy-morph-loader
 ;(() => {
+  if (document.documentElement.hasAttribute('data-pf-lite')) return;  // tryb Lite: bez przejść morph (View Transitions)
   const m = document.currentScript && document.currentScript.src.match(/[?&]v=([^&]+)/);
   const el = document.createElement('script');
   el.src = '/piterfy-ui/morph.js?v=' + (m ? m[1] : '1');
@@ -1738,7 +1760,7 @@
 ;(() => {
   const m = document.currentScript && document.currentScript.src.match(/[?&]v=([^&]+)/);
   const v = "?v=" + (m ? m[1] : "1");
-  ["radio.js", "radar.js"].forEach((name) => { const el = document.createElement('script'); el.src = '/piterfy-ui/' + name + v; document.head.appendChild(el); });
+  (document.documentElement.hasAttribute('data-pf-lite') ? ["radio.js"] : ["radio.js", "radar.js"]).forEach((name) => { const el = document.createElement('script'); el.src = '/piterfy-ui/' + name + v; document.head.appendChild(el); });
 })();
 // piterfy-extras-loader-end
 
@@ -1747,15 +1769,17 @@
   const m = document.currentScript && document.currentScript.src.match(/[?&]v=([^&]+)/);
   const v = "?v=" + (m ? m[1] : "1");
   const load = (name, next) => { const el = document.createElement('script'); el.src = '/piterfy-ui/' + name + v; if (next) el.onload = next; document.head.appendChild(el); };
-  if (!window.PiterfySpeed) load('speed-core.js', () => load('speed.js'));  // szybkość odczuwalna (okładki, stale-while-revalidate); boot.js zwykle ładuje ją wcześniej
+  const lite = document.documentElement.hasAttribute('data-pf-lite');  // tryb Lite: bez speed.js (owijanie fetch, kolory okładek) i strony wykonawcy z paralaksą
+  if (!lite && !window.PiterfySpeed) load('speed-core.js', () => load('speed.js'));  // szybkość odczuwalna (okładki, stale-while-revalidate); boot.js zwykle ładuje ją wcześniej
   if (window.PiterfyPrefsCore) load('appearance.js'); else load('prefs-core.js', () => load('appearance.js'));  // „Wygląd”: podgląd i ustawienia (boot.js mógł już załadować rdzeń)
   load('continue-core.js', () => load('continue.js'));  // „Kontynuuj” i pora dnia na stronie startowej
-  load('artist-core.js', () => load('artist.js'));  // strona wykonawcy: nagłówek, popularne, oś czasu
+  if (!lite) load('artist-core.js', () => load('artist.js'));  // strona wykonawcy: nagłówek, popularne, oś czasu
 })();
 // piterfy-browse-loader-end
 
 // piterfy-glass-loader
 ;(() => {
+  if (document.documentElement.hasAttribute('data-pf-lite')) return;  // tryb Lite: bez Liquid Glass
   const m = document.currentScript && document.currentScript.src.match(/[?&]v=([^&]+)/);
   const v = "?v=" + (m ? m[1] : "1");
   const load = (src, next) => { const s = document.createElement('script'); s.src = '/piterfy-ui/' + src + v; if (next) s.onload = next; document.head.appendChild(s); };
@@ -1767,6 +1791,7 @@
 
 // piterfy-feel-loader
 ;(() => {
+  if (document.documentElement.hasAttribute('data-pf-lite')) return;  // tryb Lite: bez haptyki, gestów, fali dźwięku i „Cofnij” (boot.js dołączył już motion.css)
   const m = document.currentScript && document.currentScript.src.match(/[?&]v=([^&]+)/);
   const v = "?v=" + (m ? m[1] : "1");
   if (!document.getElementById('pf-motion-css')) { const link = document.createElement('link'); link.rel = 'stylesheet'; link.id = 'pf-motion-css'; link.href = '/piterfy-ui/motion.css' + v; document.head.appendChild(link); }
@@ -1774,6 +1799,17 @@
   Promise.all(['feel-core.js', 'undo-core.js', 'gesture-core.js', 'wave-core.js'].map(load)).then(() => ['feel.js', 'gestures.js', 'wave.js'].forEach(load));
 })();
 // piterfy-feel-loader-end
+
+// piterfy-lite-loader
+;(() => {
+  const m = document.currentScript && document.currentScript.src.match(/[?&]v=([^&]+)/);
+  const v = "?v=" + (m ? m[1] : "1");
+  const load = (name, next) => { const el = document.createElement('script'); el.src = '/piterfy-ui/' + name + v; if (next) el.onload = next; document.head.appendChild(el); };
+  const lite = document.documentElement.hasAttribute('data-pf-lite');
+  if (lite && !document.getElementById('pf-lite-css')) { const link = document.createElement('link'); link.rel = 'stylesheet'; link.id = 'pf-lite-css'; link.href = '/piterfy-ui/lite.css' + v; document.head.appendChild(link); }
+  load('lite-core.js', () => load('lite.js'));  // Lite: duży odtwarzacz i odchudzenie strony; pełna wersja: jednorazowa podpowiedź na słabym urządzeniu
+})();
+// piterfy-lite-loader-end
 
 // piterfy-library-loader
 ;(() => { const s = document.createElement('script'); s.src = '/piterfy-ui/library.js?v=20261104-204612'; document.head.appendChild(s); })();

@@ -85,3 +85,22 @@ test("apply sets and removes attributes and the text scale variable", () => {
   assert.equal(attrs.size, 0);
   assert.equal(props.size, 0);
 });
+
+test("tryb Lite jest osobnym kluczem: true / false / brak, niewidocznym w pozostałych ustawieniach", () => {
+  const map = new Map();
+  const s = { getItem: (k) => (map.has(k) ? map.get(k) : null), setItem: (k, v) => map.set(k, String(v)), removeItem: (k) => map.delete(k) };
+  assert.equal(core.readLite(s), null);
+  assert.equal(core.writeLite(s, true), true);
+  assert.equal(map.get("pf-lite"), "1");
+  assert.equal(core.writeLite(s, false), false);
+  assert.equal(map.get("pf-lite"), "0");
+  assert.equal(core.writeLite(s, null), null);
+  assert.equal(map.has("pf-lite"), false);
+  assert.equal(core.KEYS.lite, "pf-lite");
+  assert.deepEqual(core.read(s), core.DEFAULTS, "Lite nie zmienia reszty ustawień");
+  map.set("pf-lite", "cokolwiek");
+  assert.equal(core.readLite(s), null);
+  assert.equal(core.readLite(null), null);
+  assert.equal(core.readLite({ getItem() { throw new Error("zablokowane"); } }), null);
+  assert.equal(core.writeLite(null, true), null);
+});

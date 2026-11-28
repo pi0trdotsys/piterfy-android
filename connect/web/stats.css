@@ -141,7 +141,7 @@ html[data-pf-light] .pf-st-periods button[aria-selected="true"] { color: #fff; }
 .pf-st-badge { display: inline-flex; align-items: center; padding: 5px 12px; border-radius: 999px; font: 800 12px/1 Figtree, system-ui, sans-serif; letter-spacing: 0.06em; text-transform: uppercase; color: #0b1a10; background: var(--pf-hl); }
 .pf-st-alerts { margin: 0 0 16px; padding: 0; list-style: none; display: grid; gap: 8px; }
 .pf-st-alert { display: flex; gap: 12px; align-items: flex-start; padding: 12px 14px; border-radius: 12px; background: var(--pf-h-surface); border-left: 4px solid #fbbf24; }
-.pf-st-alert.crit { border-left-color: #ff6b6b; background: color-mix(in srgb, #ff6b6b 12%, var(--pf-h-surface)); }
+.pf-st-alert.crit { border-left-color: #ff6b6b; background: rgba(255, 107, 107, 0.12); background: color-mix(in srgb, #ff6b6b 12%, var(--pf-h-surface)); }
 .pf-st-alert.ok { border-left-color: #4ade80; }
 .pf-st-alert-icon { flex: none; display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 50%; font: 800 13px/1 Figtree, system-ui, sans-serif; color: #0b1a10; background: #fbbf24; }
 .pf-st-alert.crit .pf-st-alert-icon { background: #ff6b6b; }

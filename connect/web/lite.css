@@ -1,0 +1,199 @@
+/* Piterfy — tryb Lite (słabe urządzenia, np. iPad mini 4 z Safari 15): wszystko pod html[data-pf-lite], ładowane tylko w tym trybie
+ * (boot.js dopisuje ten arkusz, gdy pf-lite=1). Zasady: żadnych rozmyć, cieni, gradientów, filtrów i animacji, płaskie ciemne powierzchnie,
+ * systemowy krój pisma, dotyk co najmniej 44 px, a odtwarzacz z DUŻYMI przyciskami (dolny pasek + pełny ekran „Teraz gra”, lite.js).
+ * Bez nowoczesnych funkcji CSS (zagnieżdżanie, color-mix, dvh, @container): wszystko ma działać w Safari 15. */
+
+html[data-pf-lite] { --pf-lite-bar: 88px; }
+
+/* ── 1. bez efektów ── */
+html[data-pf-lite] *,
+html[data-pf-lite] *::before,
+html[data-pf-lite] *::after {
+  transition: none !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
+  will-change: auto !important;
+  filter: none !important;
+  scroll-behavior: auto !important;
+  -webkit-tap-highlight-color: transparent;
+}
+/* animacje wyłączone poza kręcącymi się wskaźnikami ładowania (bez nich nie widać, że coś się dzieje) */
+html[data-pf-lite] :not(.MuiCircularProgress-root):not(.MuiCircularProgress-svg):not(.MuiCircularProgress-circle):not(.MuiLinearProgress-bar):not(.MuiLinearProgress-root),
+html[data-pf-lite] :not(.MuiCircularProgress-root):not(.MuiCircularProgress-svg):not(.MuiCircularProgress-circle)::before,
+html[data-pf-lite] :not(.MuiCircularProgress-root):not(.MuiCircularProgress-svg):not(.MuiCircularProgress-circle)::after {
+  animation: none !important;
+}
+html[data-pf-lite] :focus-visible { outline: 3px solid #ffffff !important; outline-offset: 2px; }
+
+/* ── 2. krój pisma systemowy (Figtree z Google Fonts nie jest pobierany) ── */
+html[data-pf-lite][data-pf-lite] body,
+html[data-pf-lite][data-pf-lite] body * {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
+}
+
+/* ── 3. płaskie powierzchnie zamiast poświat i gradientów ── */
+html[data-pf-lite] .pf-home-head::before,
+html[data-pf-lite] .pf-home-head::after,
+html[data-pf-lite] .pf-card-art::after,
+html[data-pf-lite] .pf-sec-head h2::after,
+html[data-pf-lite] #main-content .MuiCard-root.pf-hero::before,
+html[data-pf-lite] #main-content .MuiCard-root.pf-hero::after,
+html[data-pf-lite] .pf-pv-blob { display: none !important; }
+html[data-pf-lite] .pf-pv-stage { background: #222222 !important; background-image: none !important; }
+html[data-pf-lite] .pf-reveal { opacity: 1 !important; transform: none !important; }
+html[data-pf-lite]:not([data-pf-light])[data-pf-route="start"] body #main-content,
+html[data-pf-lite][data-pf-cover]:not([data-pf-light]) body #main-content,
+html[data-pf-lite][data-pf-cover]:not([data-pf-light])[data-pf-route=start] body #main-content,
+html[data-pf-lite]:not([data-pf-light])[data-pf-route="start"] #main-content { background: var(--pf-panel, #121212) !important; background-image: none !important; }
+html[data-pf-lite] .pf-banner { background: #1b2a21 !important; }
+html[data-pf-lite] .pf-skeleton,
+html[data-pf-lite] .pf-skel { background: #222222 !important; background-image: none !important; }
+html[data-pf-lite] .pf-login-scene { background: #133824 !important; }
+html[data-pf-lite] .pf-ap-dialog::backdrop,
+html[data-pf-lite] dialog::backdrop { background: rgba(0, 0, 0, 0.75) !important; }
+html[data-pf-lite] header.MuiAppBar-root { background: #000000 !important; }
+
+/* ── 4. listy lżejsze dla układu i malowania ── */
+html[data-pf-lite] .pf-card,
+html[data-pf-lite] .pf-tile,
+html[data-pf-lite] .audio-lists-panel .audio-item { contain: content; }
+html[data-pf-lite] img { image-rendering: auto; }
+html[data-pf-lite] #main-content tbody tr.MuiTableRow-root { height: 56px; }
+
+/* ── 5. dotyk: co najmniej 44 px ── */
+html[data-pf-lite] .MuiIconButton-root,
+html[data-pf-lite] .MuiButton-root,
+html[data-pf-lite] .MuiTab-root,
+html[data-pf-lite] .MuiMenuItem-root,
+html[data-pf-lite] .MuiListItem-button,
+html[data-pf-lite] .MuiCheckbox-root,
+html[data-pf-lite] .MuiSwitch-root,
+html[data-pf-lite] button,
+html[data-pf-lite] [role="button"] { min-width: 44px; min-height: 44px; }
+html[data-pf-lite] .MuiMenuItem-root,
+html[data-pf-lite] .MuiListItem-button { min-height: 52px; }
+html[data-pf-lite] .pf-start { min-height: 48px; }
+html[data-pf-lite] .pf-sec-head a,
+html[data-pf-lite] .pf-chips a { display: inline-flex; align-items: center; min-height: 44px; padding-left: 8px; padding-right: 8px; }
+
+/* ── 6. natywny odtwarzacz Navidrome ──
+ * Gdy lite.js zbudował własny, natywny panel zostaje w DOM (steruje nim własnymi przyciskami), ale poza ekranem — nie pochłania dotyku
+ * ani malowania. Gdy lite.js się nie załaduje (brak data-pf-lite-player), natywny panel dostaje powiększone sterowanie. */
+html[data-pf-lite-player] .react-jinke-music-player-main .music-player-panel,
+html[data-pf-lite-player] .react-jinke-music-player-mobile {
+  position: fixed !important; left: -10000px !important; top: 0 !important; width: 760px !important; height: 100px !important;
+  opacity: 0 !important; pointer-events: none !important; transform: none !important; overflow: hidden !important;
+}
+html[data-pf-lite-active] #main-content { padding-bottom: calc(var(--pf-lite-bar) + 24px + env(safe-area-inset-bottom)) !important; }
+html[data-pf-lite-player] .audio-lists-panel {
+  bottom: calc(var(--pf-lite-bar) + env(safe-area-inset-bottom)) !important;
+  max-height: calc(100% - var(--pf-lite-bar) - 16px) !important;
+}
+html[data-pf-lite] .audio-lists-panel .audio-item { min-height: 60px; padding-top: 6px; padding-bottom: 6px; font-size: 17px; }
+html[data-pf-lite] .audio-lists-panel [class*="btn"],
+html[data-pf-lite] .audio-lists-panel [class*="close"],
+html[data-pf-lite] .audio-lists-panel [class*="delete"] {
+  min-width: 48px; min-height: 48px; display: inline-flex; align-items: center; justify-content: center;
+}
+html[data-pf-lite]:not([data-pf-lite-player]) .react-jinke-music-player-main .music-player-panel { min-height: 132px; }
+html[data-pf-lite]:not([data-pf-lite-player]) .react-jinke-music-player-main .player-content .group { min-width: 56px; min-height: 56px; }
+html[data-pf-lite]:not([data-pf-lite-player]) .react-jinke-music-player-main .player-content .group svg { width: 34px; height: 34px; }
+html[data-pf-lite]:not([data-pf-lite-player]) .react-jinke-music-player-main .prev-audio,
+html[data-pf-lite]:not([data-pf-lite-player]) .react-jinke-music-player-main .next-audio { min-width: 72px; min-height: 72px; }
+html[data-pf-lite]:not([data-pf-lite-player]) .react-jinke-music-player-main .play-btn { min-width: 96px; min-height: 96px; }
+html[data-pf-lite]:not([data-pf-lite-player]) .react-jinke-music-player-main .play-btn svg { width: 64px; height: 64px; }
+html[data-pf-lite]:not([data-pf-lite-player]) .react-jinke-music-player-main .rc-slider { min-height: 44px; }
+
+/* ── 7. własny odtwarzacz Lite ── */
+.pf-lite-np[hidden] { display: none; }
+.pf-lite-np {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 2147482000; color: #ffffff;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+.pf-lite-np button { font-family: inherit; -webkit-appearance: none; appearance: none; cursor: pointer; }
+
+/* dolny pasek */
+.pf-lite-bar {
+  position: relative; display: flex; align-items: center; gap: 12px; height: var(--pf-lite-bar); box-sizing: content-box;
+  padding: 0 14px env(safe-area-inset-bottom); background: #161616; border-top: 1px solid #2b2b2b;
+}
+.pf-lite-bar-progress {
+  position: absolute; left: 0; top: 0; width: 100%; height: 4px; background: #1db954; transform-origin: 0 50%; transform: scaleX(0);
+}
+.pf-lite-expand {
+  display: flex; align-items: center; gap: 14px; flex: 1; min-width: 0; height: var(--pf-lite-bar); padding: 0; border: 0; background: none; color: inherit; text-align: left;
+}
+.pf-lite-cover, .pf-lite-art { background-color: #2a2a2a; background-position: center; background-size: cover; background-repeat: no-repeat; }
+.pf-lite-cover { flex: 0 0 auto; width: 64px; height: 64px; border-radius: 8px; }
+.pf-lite-meta { display: flex; flex-direction: column; min-width: 0; gap: 3px; }
+.pf-lite-title { display: block; font-weight: 700; font-size: 19px; line-height: 1.2; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pf-lite-artist { display: block; font-size: 15px; color: #b3b3b3; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pf-lite-play {
+  display: flex; align-items: center; justify-content: center; flex: 0 0 auto; border: 0; border-radius: 50%; background: #ffffff; color: #000000; padding: 0;
+}
+.pf-lite-play svg { width: 54%; height: 54%; }
+.pf-lite-play-bar { width: 72px; height: 72px; }
+.pf-lite-play:active { background: #d9d9d9; }
+
+/* pełny ekran „Teraz gra” */
+.pf-lite-np[data-open="1"] .pf-lite-bar { display: none; }
+.pf-lite-np[data-open="0"] .pf-lite-sheet { display: none; }
+.pf-lite-np[data-open="1"] { top: 0; }
+.pf-lite-sheet {
+  position: absolute; left: 0; top: 0; right: 0; bottom: 0; display: flex; flex-direction: column; align-items: center; gap: 18px; overflow-y: auto;
+  -webkit-overflow-scrolling: touch; padding: calc(8px + env(safe-area-inset-top)) 24px calc(24px + env(safe-area-inset-bottom)); background: #101010; box-sizing: border-box;
+}
+.pf-lite-close { align-self: flex-start; width: 60px; height: 60px; border: 0; border-radius: 50%; background: #262626; color: #ffffff; display: flex; align-items: center; justify-content: center; padding: 0; flex: 0 0 auto; }
+.pf-lite-close svg { width: 50%; height: 50%; }
+.pf-lite-art { width: 70vw; height: 70vw; max-width: 46vh; max-height: 46vh; border-radius: 12px; flex: 0 0 auto; }
+.pf-lite-info { text-align: center; max-width: 100%; display: flex; flex-direction: column; gap: 6px; }
+.pf-lite-info .pf-lite-title { font-size: 28px; white-space: normal; }
+.pf-lite-info .pf-lite-artist { font-size: 21px; white-space: normal; }
+
+.pf-lite-seek { display: flex; align-items: center; gap: 12px; width: 100%; max-width: 680px; }
+.pf-lite-time { flex: 0 0 auto; min-width: 56px; font-size: 17px; text-align: center; color: #d0d0d0; font-variant-numeric: tabular-nums; }
+.pf-lite-slider { position: relative; flex: 1; height: 60px; touch-action: none; cursor: pointer; }
+.pf-lite-rail, .pf-lite-fill { position: absolute; left: 0; right: 0; top: 26px; height: 8px; border-radius: 4px; }
+.pf-lite-rail { background: #4a4a4a; }
+.pf-lite-fill { background: #1db954; transform-origin: 0 50%; transform: scaleX(0); }
+.pf-lite-slider::after { content: ""; position: absolute; top: 18px; left: calc(var(--p, 0) * 100%); width: 24px; height: 24px; margin-left: -12px; border-radius: 50%; background: #ffffff; }
+
+.pf-lite-main { display: flex; align-items: center; justify-content: center; gap: 30px; }
+.pf-lite-btn { display: flex; align-items: center; justify-content: center; border: 0; border-radius: 50%; background: #262626; color: #ffffff; padding: 0; position: relative; flex: 0 0 auto; }
+.pf-lite-btn svg { width: 46%; height: 46%; }
+.pf-lite-btn:active { background: #3d3d3d; }
+.pf-lite-prev, .pf-lite-next { width: 80px; height: 80px; }
+.pf-lite-play-big { width: 108px; height: 108px; }
+.pf-lite-sub { display: flex; align-items: center; justify-content: center; gap: 22px; }
+.pf-lite-small { width: 60px; height: 60px; }
+.pf-lite-btn.pf-on { color: #1db954; }
+.pf-lite-btn.pf-on svg path[fill="none"] { stroke: #1db954; }
+.pf-lite-like.pf-on svg path { fill: #1db954; }
+.pf-lite-one { display: none; position: absolute; right: 12px; bottom: 10px; font-size: 14px; line-height: 1; color: #1db954; }
+.pf-lite-repeat.pf-one .pf-lite-one { display: block; }
+.pf-lite-vol { display: flex; align-items: center; gap: 14px; width: 100%; max-width: 480px; font-size: 16px; color: #d0d0d0; }
+.pf-lite-vol input { flex: 1; height: 44px; }
+.pf-lite-off { min-height: 48px; padding: 0 22px; border: 1px solid #444444; border-radius: 24px; background: none; color: #b3b3b3; font-size: 15px; flex: 0 0 auto; }
+
+/* poziomo (iPad 1024×768): okładka po lewej, sterowanie po prawej */
+@media (orientation: landscape) and (min-width: 700px) {
+  .pf-lite-sheet { display: grid; grid-template-columns: auto minmax(0, 1fr); align-content: center; justify-items: center; align-items: center; column-gap: 44px; row-gap: 14px; padding-left: 40px; padding-right: 40px; }
+  .pf-lite-np[data-open="0"] .pf-lite-sheet { display: none; }
+  .pf-lite-close { grid-column: 1 / -1; grid-row: 1; justify-self: start; }
+  .pf-lite-art { grid-column: 1; grid-row: 2 / span 6; width: 54vh; height: 54vh; max-width: 44vw; max-height: 44vw; }
+  .pf-lite-info, .pf-lite-seek, .pf-lite-main, .pf-lite-sub, .pf-lite-vol, .pf-lite-off { grid-column: 2; }
+  .pf-lite-info { grid-row: 2; }
+  .pf-lite-seek { grid-row: 3; }
+  .pf-lite-main { grid-row: 4; }
+  .pf-lite-sub { grid-row: 5; }
+  .pf-lite-vol { grid-row: 6; }
+  .pf-lite-off { grid-row: 7; justify-self: start; }
+  .pf-lite-info .pf-lite-title { font-size: 30px; }
+}
+@media (max-height: 560px) {
+  .pf-lite-art { max-width: 30vh; max-height: 30vh; }
+  .pf-lite-play-big { width: 88px; height: 88px; }
+  .pf-lite-prev, .pf-lite-next { width: 68px; height: 68px; }
+}
