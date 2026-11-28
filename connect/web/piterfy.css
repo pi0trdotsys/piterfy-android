@@ -978,7 +978,7 @@ html[data-pf-light] .pf-chips a[aria-current="page"] { color: #ffffff; }
 @keyframes pf-toast-out { to { opacity: 0; transform: translate(-50%, 10px); } }
 @keyframes pf-shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
 
-.pf-tile, .pf-card { animation: pf-rise 0.55s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+.pf-tile, .pf-card { animation: pf-rise var(--pf-dur-slow, 550ms) var(--pf-ease-out, cubic-bezier(0.2, 0.7, 0.2, 1)) both; }
 .pf-tile:nth-child(2), .pf-card:nth-child(2) { animation-delay: 45ms; }
 .pf-tile:nth-child(3), .pf-card:nth-child(3) { animation-delay: 90ms; }
 .pf-tile:nth-child(4), .pf-card:nth-child(4) { animation-delay: 135ms; }
@@ -993,8 +993,8 @@ html[data-pf-light] .pf-chips a[aria-current="page"] { color: #ffffff; }
 .pf-card { transition: background 0.25s, transform 0.2s; }
 .pf-tile { transition: background 0.2s, transform 0.15s; }
 .pf-card:active, .pf-tile:active { transform: scale(0.985); }
-.pf-card-art { transition: transform 0.3s cubic-bezier(0.2, 0.7, 0.2, 1), box-shadow 0.3s; }
-.pf-card-art img { transition: transform 0.6s cubic-bezier(0.2, 0.7, 0.2, 1); }
+.pf-card-art { transition: transform var(--pf-dur-normal, 300ms) var(--pf-ease-out, cubic-bezier(0.2, 0.7, 0.2, 1)), box-shadow 0.3s; }
+.pf-card-art img { transition: transform 0.6s var(--pf-ease-out, cubic-bezier(0.2, 0.7, 0.2, 1)); }
 .pf-play:active { transform: scale(0.94) !important; }
 @media (hover: hover) {
   .pf-card:hover .pf-card-art { transform: translateY(-4px); box-shadow: 0 16px 32px rgba(0, 0, 0, 0.55); }
@@ -1012,10 +1012,10 @@ html[data-pf-playing="1"]:not([data-pf-light]) .react-jinke-music-player-main .i
 .react-jinke-music-player-main .pf-smart.pf-on svg { filter: drop-shadow(0 0 6px rgba(30, 215, 96, 0.55)); }
 .react-jinke-music-player-main .pf-smart.pf-pop svg { animation: pf-pop 0.5s ease-out; }
 .react-jinke-music-player-main .pf-smart.pf-on::after { animation: pf-dot 2.4s ease-in-out infinite; }
-.pf-rec { animation: pf-rise 0.45s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+.pf-rec { animation: pf-rise 0.45s var(--pf-ease-out, cubic-bezier(0.2, 0.7, 0.2, 1)) both; }
 
 /* powiadomienia wjeżdżają od dołu i znikają łagodnie */
-.pf-toast { animation: pf-toast-in 0.35s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+.pf-toast { animation: pf-toast-in 0.35s var(--pf-ease-out, cubic-bezier(0.2, 0.7, 0.2, 1)) both; }
 .pf-toast.pf-toast-out { animation: pf-toast-out 0.3s ease-in forwards; }
 
 /* szkielet ładowania (dla elementów, które czekają na dane) */
@@ -1056,20 +1056,20 @@ html:not([data-pf-light]) .pf-hello {
   background: linear-gradient(92deg, #ffffff 25%, #9bffc4 75%); -webkit-background-clip: text; background-clip: text;
   -webkit-text-fill-color: transparent; color: transparent;
 }
-.pf-chips a { transition: background 0.15s, transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s; }
+.pf-chips a { transition: background 0.15s, transform var(--pf-dur-fast, 200ms) var(--pf-spring, cubic-bezier(0.34, 1.56, 0.64, 1)), box-shadow 0.2s; }
 .pf-chips a:hover { transform: translateY(-2px); }
 .pf-chips a[aria-current="page"] { box-shadow: 0 6px 18px rgba(29, 185, 84, 0.35); }
 
 /* tytuły sekcji z rosnącym zielonym akcentem */
 .pf-sec-head h2 { position: relative; padding-bottom: 8px; }
 .pf-sec-head h2::after { content: ""; position: absolute; left: 0; bottom: 0; height: 3px; width: 0; border-radius: 3px; background: var(--pf-h-green); }
-.pf-sec.pf-in .pf-sec-head h2::after, .pf-sec:not(.pf-reveal) .pf-sec-head h2::after { animation: pf-bar 0.7s 0.15s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+.pf-sec.pf-in .pf-sec-head h2::after, .pf-sec:not(.pf-reveal) .pf-sec-head h2::after { animation: pf-bar 0.7s 0.15s var(--pf-ease-out, cubic-bezier(0.2, 0.7, 0.2, 1)) both; }
 .pf-sec-head > a { transition: color 0.15s, transform 0.2s; }
 .pf-sec-head > a:hover { transform: translateX(3px); }
 
 /* odsłanianie sekcji przy przewijaniu (klasy dokłada piterfy.js) */
 .pf-reveal { opacity: 0; transform: translateY(32px); }
-.pf-reveal.pf-in { opacity: 1; transform: none; transition: opacity 0.6s ease, transform 0.8s cubic-bezier(0.2, 0.7, 0.2, 1); }
+.pf-reveal.pf-in { opacity: 1; transform: none; transition: opacity 0.6s ease, transform var(--pf-dur-dramatic, 800ms) var(--pf-ease-out, cubic-bezier(0.2, 0.7, 0.2, 1)); }
 
 /* karty: wyższe uniesienie, kolorowa poświata, połysk i sprężysty przycisk play */
 .pf-card-art { position: relative; }
@@ -1077,7 +1077,7 @@ html:not([data-pf-light]) .pf-hello {
   content: ""; position: absolute; top: 0; bottom: 0; left: 0; width: 45%; z-index: 1; pointer-events: none;
   background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.28), transparent); transform: translateX(-120%) skewX(-18deg); opacity: 0;
 }
-.pf-card .pf-play { transition: opacity 0.2s, transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.15s; }
+.pf-card .pf-play { transition: opacity 0.2s, transform 0.4s var(--pf-spring, cubic-bezier(0.34, 1.56, 0.64, 1)), background 0.15s; }
 @media (hover: hover) {
   .pf-card:hover .pf-card-art { transform: translateY(-7px) scale(1.015); box-shadow: 0 22px 40px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.06); }
   .pf-card:hover .pf-card-art::after { animation: pf-shine 0.9s ease; }
@@ -1085,7 +1085,7 @@ html:not([data-pf-light]) .pf-hello {
   .pf-tile:hover { box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4); transform: translateY(-2px); }
   .pf-tile:hover .pf-tile-art { transform: scale(1.06); }
 }
-.pf-tile-art { transition: transform 0.3s cubic-bezier(0.2, 0.7, 0.2, 1); }
+.pf-tile-art { transition: transform var(--pf-dur-normal, 300ms) var(--pf-ease-out, cubic-bezier(0.2, 0.7, 0.2, 1)); }
 
 /* okładki miksów: gradient, wielki podpis i znak w rogu */
 .pf-card-art[data-pf-art^="mix-"] .pf-card-label {
@@ -1095,7 +1095,7 @@ html:not([data-pf-light]) .pf-hello {
 }
 .pf-card-art[data-pf-art^="mix-"]::before {
   position: absolute; right: 10px; bottom: 6px; z-index: 0; font-size: 64px; line-height: 1; opacity: 0.9; filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.35));
-  transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition: transform 0.4s var(--pf-spring, cubic-bezier(0.34, 1.56, 0.64, 1));
 }
 .pf-card:hover .pf-card-art[data-pf-art^="mix-"]::before { transform: scale(1.18) rotate(-8deg); }
 .pf-card-art[data-pf-art="mix-happy"] { background: linear-gradient(135deg, #ffb800, #ff5e62); background-size: 220% 220%; }
@@ -1188,7 +1188,7 @@ html:not([data-pf-light]) body .react-jinke-music-player-main .music-player-pane
 .pf-ap-note { margin: 10px 2px 0; color: #b3b3b3; font-size: 13px; }
 .pf-ap-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px; }
 .pf-ap-card { display: flex; flex-direction: column; gap: 14px; padding: 12px; border: 2px solid rgba(255, 255, 255, 0.1); border-radius: 14px; background: var(--c0); color: var(--ct);
-  font: inherit; text-align: left; cursor: pointer; transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), border-color 0.15s; }
+  font: inherit; text-align: left; cursor: pointer; transition: transform var(--pf-dur-fast, 200ms) var(--pf-spring, cubic-bezier(0.34, 1.56, 0.64, 1)), border-color 0.15s; }
 .pf-ap-card:hover { transform: translateY(-3px); }
 .pf-ap-card.pf-sel, .pf-ap-icon.pf-sel { border-color: #1db954; box-shadow: 0 0 0 3px rgba(29, 185, 84, 0.25); }
 .pf-ap-chips { display: flex; gap: 6px; }
@@ -1198,7 +1198,7 @@ html:not([data-pf-light]) body .react-jinke-music-player-main .music-player-pane
 .pf-ap-card b { font-size: 12.5px; }
 .pf-ap-icons { grid-template-columns: repeat(auto-fill, minmax(86px, 1fr)); }
 .pf-ap-icon { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 8px; border: 2px solid transparent; border-radius: 14px; background: transparent; color: inherit;
-  font: inherit; cursor: pointer; transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1); }
+  font: inherit; cursor: pointer; transition: transform var(--pf-dur-fast, 200ms) var(--pf-spring, cubic-bezier(0.34, 1.56, 0.64, 1)); }
 .pf-ap-icon:hover { transform: translateY(-3px) scale(1.04); }
 .pf-ap-icon img { width: 64px; height: 64px; }
 .pf-ap-icon b { font-size: 12px; font-weight: 600; }
@@ -1308,7 +1308,8 @@ html[data-pf-theme="birthday"] body .react-jinke-music-player-main .music-player
 
 /* ═════ Kolory z okładki w całym interfejsie (library.js ustawia --pf-now-accent z grającej okładki; glass.js włącza data-pf-cover) ═════ */
 @property --pf-now-accent { syntax: "<color>"; inherits: true; initial-value: #1db954; }
-html { transition: --pf-now-accent 0.9s ease; }  /* płynna zmiana koloru przy zmianie utworu */
+/* płynna zmiana koloru przy zmianie utworu; --pf-now-accent-safe i --pf-on-accent liczy feel.js (strażnik kontrastu), czasy z motion.css */
+html { transition: --pf-now-accent var(--pf-dur-color, 600ms) var(--pf-ease-inout, ease), --pf-now-accent-safe var(--pf-dur-color, 600ms) var(--pf-ease-inout, ease), --pf-on-accent var(--pf-dur-color, 600ms) var(--pf-ease-inout, ease); }
 html[data-pf-cover]:not([data-pf-light]) body #main-content {
   background: linear-gradient(180deg, color-mix(in srgb, var(--pf-now-accent) 40%, var(--pf-tint, #1c3b2b)) 0, var(--pf-panel) 340px) !important;
 }
@@ -1320,10 +1321,10 @@ html[data-pf-cover]:not([data-pf-light]) body .react-jinke-music-player-main .mu
 }
 
 /* przejścia z morfem okładki (morph.js, View Transitions API) */
-::view-transition-old(root), ::view-transition-new(root) { animation-duration: 0.38s; animation-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1); }
+::view-transition-old(root), ::view-transition-new(root) { animation-duration: 0.38s; animation-timing-function: var(--pf-ease-standard, cubic-bezier(0.2, 0.8, 0.2, 1)); }
 ::view-transition-old(root) { animation-name: pf-vt-out; }
 ::view-transition-new(root) { animation-name: pf-vt-in; }
 @keyframes pf-vt-out { to { opacity: 0; transform: scale(0.985); } }
 @keyframes pf-vt-in { from { opacity: 0; transform: translateY(10px) scale(1.01); } }
-::view-transition-group(pf-cover) { animation-duration: 0.55s; animation-timing-function: cubic-bezier(0.34, 1.25, 0.5, 1); }
+::view-transition-group(pf-cover) { animation-duration: 0.55s; animation-timing-function: var(--pf-spring-soft, cubic-bezier(0.34, 1.25, 0.5, 1)); }
 ::view-transition-old(pf-cover), ::view-transition-new(pf-cover) { height: 100%; object-fit: cover; animation-duration: 0.55s; }

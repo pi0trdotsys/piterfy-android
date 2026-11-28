@@ -65,6 +65,7 @@ import com.eddyizm.tempus.util.ExternalAudioReader;
 import com.eddyizm.tempus.util.ExternalAudioWriter;
 import com.eddyizm.tempus.util.MappingUtil;
 import com.eddyizm.tempus.util.MusicUtil;
+import com.eddyizm.tempus.util.PiterfyHomePlan;
 import com.eddyizm.tempus.util.Preferences;
 import com.eddyizm.tempus.util.TileSizeManager;
 import com.eddyizm.tempus.util.UIUtil;
@@ -1283,10 +1284,19 @@ public class HomeTabMusicFragment extends Fragment implements ClickCallback {
             desired.add(bind.homeSyncStarredArtistsCard);
         }
 
+        // Piterfy: układ z okna „Zmień układ” jest święty; pora dnia przesuwa sekcje tylko w nigdy niezmienianym układzie domyślnym
+        List<String> savedLayout = new ArrayList<>();
+        List<String> visibleIds = new ArrayList<>();
         for (HomeSector sector : homeViewModel.getHomeSectorList()) {
-            if (!sector.isVisible()) continue;
+            savedLayout.add(sector.getId());
+            if (sector.isVisible()) visibleIds.add(sector.getId());
+        }
+        List<String> orderedIds = PiterfyHomePlan.orderSectors(visibleIds,
+                PiterfyHomePlan.part(java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY)),
+                com.eddyizm.tempus.appearance.PiterfyAppearance.homeSmartEnabled(), savedLayout);
 
-            switch (sector.getId()) {
+        for (String sectorId : orderedIds) {
+            switch (sectorId) {
                 case Constants.HOME_SECTOR_DISCOVERY:
                     desired.add(bind.homeDiscoverSector);
                     break;

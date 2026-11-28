@@ -3,9 +3,34 @@ package com.eddyizm.tempus.ui.components
 import android.graphics.Bitmap
 import android.graphics.drawable.Drawable
 import android.net.Uri
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.text.BasicText
+import androidx.compose.foundation.layout.padding
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.positionChange
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.semantics.CustomAccessibilityAction
+import androidx.compose.ui.semantics.customActions
+import androidx.compose.ui.semantics.onClick
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.unit.sp
+import com.eddyizm.tempus.util.PiterfyGesturePlan
+import com.eddyizm.tempus.util.PiterfyHaptics
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.collectIsDraggedAsState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
@@ -52,12 +77,20 @@ fun NowPlayingArtworkPager(
     radioArtworkUri: Uri? = null,
     radioCoverArtId: String? = null,
     onPageSelected: (Int) -> Unit = {},
-    onCoverClick: () -> Unit = {}
+    onCoverClick: () -> Unit = {},
+    onDoubleTapSeek: (PiterfyGesturePlan.Zone) -> Unit = {}
 ) {
     val currentQueue by rememberUpdatedState(queue)
     val currentTrackIndex by rememberUpdatedState(currentIndex)
     val currentOnPageSelected by rememberUpdatedState(onPageSelected)
     val currentOnCoverClick by rememberUpdatedState(onCoverClick)
+    val currentOnDoubleTapSeek by rememberUpdatedState(onDoubleTapSeek)
+    val view = LocalView.current
+    val density = LocalDensity.current
+    val scope = rememberCoroutineScope()
+    val edge = remember { Animatable(0f) }           // przesunięcie „gumą” przy próbie wyjścia poza koniec kolejki
+    var flash by remember { mutableStateOf<SeekFlash?>(null) }
+    var flashCount by remember { mutableStateOf(0) }
 
     val count = if (isRadio || queue.isEmpty()) 1 else queue.size
     val safeIndex = if (isRadio) 0 else currentIndex.coerceIn(0, (count - 1).coerceAtLeast(0))
@@ -91,6 +124,7 @@ fun NowPlayingArtworkPager(
         snapshotFlow { pagerState.settledPage }.collect { settledPage ->
             if (userSwiped && !isRadio && settledPage in currentQueue.indices && settledPage != currentTrackIndex) {
                 userSwiped = false
+                PiterfyHaptics.click(view)   // okładka „zatrzasnęła się” na nowym utworze
                 currentOnPageSelected(settledPage)
             }
         }
@@ -105,6 +139,45 @@ fun NowPlayingArtworkPager(
     // Liquid Glass: okladka z miekkim, glebokim cieniem (jak w odtwarzaczu iOS)
     val glass = remember { com.eddyizm.tempus.appearance.PiterfyAppearance.glassEnabled() }
 
+    // Piterfy: opór „gumy” na końcach kolejki + podwójne stuknięcie po bokach okładki = przewiń o 10 s
+    val slopPx = with(density) { PiterfyGesturePlan.DRAG_SLOP_DP.dp.toPx() }
+    val bumpPx = with(density) { PiterfyGesturePlan.EDGE_BUMP_DP.dp.toPx() }
+    val rubberMaxPx = with(density) { PiterfyGesturePlan.RUBBER_MAX_DP.dp.toPx() }
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .pointerInput(isRadio, count) {
+                if (isRadio) return@pointerInput
+                awaitPointerEventScope {
+                    while (true) {
+                        val down = awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
+                        var dx = 0f
+                        var dy = 0f
+                        var bumped = false
+                        var horizontal = false
+                        while (true) {
+                            val event = awaitPointerEvent(PointerEventPass.Initial)
+                            val change = event.changes.firstOrNull { it.id == down.id } ?: break
+                            if (!change.pressed) break
+                            val delta = change.positionChange()
+                            dx += delta.x
+                            dy += delta.y
+                            if (!horizontal && PiterfyGesturePlan.axisLock(dx, dy, slopPx) == PiterfyGesturePlan.Axis.HORIZONTAL) horizontal = true
+                            if (!horizontal) continue
+                            val past = PiterfyGesturePlan.pastEdge(pagerState.currentPage, count, dx, 1f)
+                            val shift = if (past) PiterfyGesturePlan.rubberBand(dx, rubberMaxPx) else 0f
+                            scope.launch { edge.snapTo(shift) }
+                            if (past && !bumped && PiterfyGesturePlan.pastEdge(pagerState.currentPage, count, dx, bumpPx)) {
+                                bumped = true
+                                PiterfyHaptics.reject(view)
+                            }
+                        }
+                        scope.launch { edge.animateTo(0f, spring(dampingRatio = 0.5f, stiffness = Spring.StiffnessMedium)) }
+                    }
+                }
+            }
+            .graphicsLayer { translationX = edge.value }
+    ) {
     HorizontalPager(
         state = pagerState,
         modifier = Modifier.fillMaxSize(),
@@ -134,10 +207,29 @@ fun NowPlayingArtworkPager(
                     ) else Modifier
                 )
                 .clip(RoundedCornerShape(cornerRadius))
-                .clickable {
-                    if (page == pagerState.currentPage) {
-                        onCoverClick()
-                    }
+                .pointerInput(page, isRadio) {
+                    detectTapGestures(
+                        onTap = { if (page == pagerState.currentPage) currentOnCoverClick() },
+                        onDoubleTap = { offset ->
+                            if (page != pagerState.currentPage || isRadio) return@detectTapGestures
+                            val zone = PiterfyGesturePlan.zoneOf(offset.x, size.width.toFloat())
+                            if (zone == PiterfyGesturePlan.Zone.CENTER) {
+                                currentOnCoverClick()
+                            } else {
+                                PiterfyHaptics.confirm(view)
+                                flashCount += 1
+                                flash = SeekFlash(zone, flashCount)
+                                currentOnDoubleTapSeek(zone)
+                            }
+                        }
+                    )
+                }
+                .semantics {
+                    onClick { if (page == pagerState.currentPage) { currentOnCoverClick(); true } else false }
+                    if (!isRadio) customActions = listOf(
+                        CustomAccessibilityAction(view.context.getString(R.string.piterfy_seek_back_ten)) { currentOnDoubleTapSeek(PiterfyGesturePlan.Zone.LEFT); true },
+                        CustomAccessibilityAction(view.context.getString(R.string.piterfy_seek_forward_ten)) { currentOnDoubleTapSeek(PiterfyGesturePlan.Zone.RIGHT); true }
+                    )
                 },
             contentAlignment = Alignment.Center
         ) {
@@ -149,7 +241,34 @@ fun NowPlayingArtworkPager(
             }
         }
     }
+    flash?.let { shown ->
+        LaunchedEffect(shown) {
+            delay(650)
+            if (flash === shown) flash = null
+        }
+    }
+    val flashAlpha by animateFloatAsState(if (flash != null) 1f else 0f, tween(if (flash != null) 90 else 260), label = "seekFlash")
+    val lastZone = remember { mutableStateOf(PiterfyGesturePlan.Zone.RIGHT) }
+    flash?.let { lastZone.value = it.zone }
+    if (flashAlpha > 0.01f) {
+        val label = PiterfyGesturePlan.seekLabel(lastZone.value)
+        if (label != null) {
+            Box(
+                modifier = Modifier
+                    .align(if (lastZone.value == PiterfyGesturePlan.Zone.LEFT) Alignment.CenterStart else Alignment.CenterEnd)
+                    .padding(horizontal = 28.dp)
+                    .graphicsLayer { alpha = flashAlpha; scaleX = 0.85f + 0.15f * flashAlpha; scaleY = 0.85f + 0.15f * flashAlpha }
+                    .background(Color(0x99000000), CircleShape)
+                    .padding(horizontal = 14.dp, vertical = 10.dp)
+            ) {
+                BasicText(label, style = TextStyle(color = Color.White, fontSize = 15.sp))
+            }
+        }
+    }
+    }  // koniec Box z gumą na końcach kolejki
 }
+
+private data class SeekFlash(val zone: PiterfyGesturePlan.Zone, val id: Int)
 
 @Composable
 private fun SongArtwork(

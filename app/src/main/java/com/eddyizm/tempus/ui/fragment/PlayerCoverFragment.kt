@@ -37,6 +37,7 @@ import com.eddyizm.tempus.util.Constants
 import com.eddyizm.tempus.util.DownloadUtil
 import com.eddyizm.tempus.util.ExternalAudioWriter
 import com.eddyizm.tempus.util.MappingUtil
+import com.eddyizm.tempus.util.PiterfyGesturePlan
 import com.eddyizm.tempus.util.Preferences
 import com.eddyizm.tempus.viewmodel.PlayerBottomSheetViewModel
 import com.google.android.material.snackbar.Snackbar
@@ -96,7 +97,8 @@ class PlayerCoverFragment : Fragment() {
                     },
                     onCoverClick = {
                         toggleOverlayVisibility(true)
-                    }
+                    },
+                    onDoubleTapSeek = { zone -> seekBy(zone) }
                 )
             }
         }
@@ -242,6 +244,14 @@ class PlayerCoverFragment : Fragment() {
                 }
             }
         }
+    }
+
+    /** Podwójne stuknięcie w lewą/prawą część okładki: przewiń o 10 s (nie dla radia, strumieni na żywo i zdalnego odtwarzacza). */
+    private fun seekBy(zone: PiterfyGesturePlan.Zone) {
+        if (LanRemoteSession.isActive() || isRadioStation) return
+        val browser = mediaBrowser ?: return
+        if (browser.isCurrentMediaItemLive) return
+        browser.seekTo(PiterfyGesturePlan.seekTarget(browser.currentPosition, browser.duration, zone))
     }
 
     private fun initializeBrowser() {

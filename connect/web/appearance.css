@@ -1,0 +1,115 @@
+/* Piterfy — „Wygląd”: ustawienia odczuć i układu (appearance.js, prefs-core.js) oraz podgląd na żywo w oknie „Wygląd Piterfy”.
+ * Atrybuty na <html>: data-pf-oled, data-pf-density, data-pf-text (+ zmienna --pf-text-scale), data-pf-motion. Arkusz ładuje się
+ * przed piterfy.css (ten dopisuje się na końcu <body>), więc selektory dostają :root, żeby wygrać z równymi im regułami. */
+
+/* ── prawdziwa czerń ── */
+:root[data-pf-oled]:not([data-pf-light]) { --pf-bg: #000; --pf-panel: #000; --pf-card: #0a0a0a; --pf-card-hover: #161616; --pf-tint: #000; --pf-tint-2: #000; }
+:root[data-pf-oled]:not([data-pf-light]) #main-content,
+:root[data-pf-oled]:not([data-pf-light])[data-pf-route="start"] #main-content { background: #000 !important; }
+:root[data-pf-oled]:not([data-pf-light]) .MuiDrawer-docked .MuiDrawer-paper { background: #000 !important; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08); }
+:root[data-pf-oled]:not([data-pf-light]) .layout, :root[data-pf-oled]:not([data-pf-light]) body { background: #000 !important; }
+:root[data-pf-oled]:not([data-pf-light]) body .react-jinke-music-player-main .music-player-panel { background: #000 !important; box-shadow: 0 -1px 0 rgba(255, 255, 255, 0.08) !important; }
+:root[data-pf-oled]:not([data-pf-light]) .audio-lists-panel { background: #000 !important; }
+
+/* ── rozmiar tekstu: rem-owy tekst Material UI skaluje korzeń, nasze teksty w px skaluje zoom na samych napisach ── */
+:root[data-pf-text] { font-size: calc(100% * var(--pf-text-scale, 1)); }
+:root[data-pf-text] :is(.pf-hello, .pf-sec-head h2, .pf-sec-kicker, .pf-sec-head > a, .pf-card-title, .pf-card-sub, .pf-tile-name, .pf-chips a,
+  .pf-song-title, .pf-song-artist, .pf-song-album, .pf-song-time, .pf-page-meta, .pf-empty, .pf-btn-play span, .pf-btn-ghost span,
+  .pf-banner-title, .pf-banner-stats, .pf-radar-meta, .pf-radar-note, .pf-hello-sub, .pf-ap-head h2, .pf-ap-title, .pf-ap-album, .pf-ap-meta, .pf-ap-time,
+  .pf-tl-label, .pf-tl-title, .pf-tl-sub) { zoom: var(--pf-text-scale, 1); }
+
+/* ── gęstość ── */
+:root[data-pf-density="compact"] .pf-song { height: 44px; gap: 8px; }
+:root[data-pf-density="compact"] .pf-song-main img { width: 32px; height: 32px; }
+:root[data-pf-density="compact"] .pf-sec { margin-top: 22px; }
+:root[data-pf-density="compact"] .pf-tile { height: 48px; }
+:root[data-pf-density="compact"] .pf-tile-art { width: 48px; height: 48px; }
+:root[data-pf-density="compact"] .pf-card { padding: 8px; }
+:root[data-pf-density="compact"] .pf-card-art { margin-bottom: 6px; }
+:root[data-pf-density="compact"] #main-content td.MuiTableCell-root { padding-top: 4px; padding-bottom: 4px; }
+@media (min-width: 601px) {
+  :root[data-pf-density="compact"] .pf-row,
+  :root[data-pf-density="compact"] .pf-grid { grid-template-columns: repeat(auto-fill, minmax(136px, 1fr)); }
+}
+
+/* ── ruch ograniczony (wybór „Ograniczony” albo „System” przy włączonym w systemie „ogranicz ruch”) ── */
+:root[data-pf-motion="reduced"] *, :root[data-pf-motion="reduced"] *::before, :root[data-pf-motion="reduced"] *::after {
+  animation-duration: 0.01ms !important; animation-delay: 0s !important; animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important; transition-delay: 0s !important; scroll-behavior: auto !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  :root[data-pf-motion="system"] *, :root[data-pf-motion="system"] *::before, :root[data-pf-motion="system"] *::after {
+    animation-duration: 0.01ms !important; animation-delay: 0s !important; animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important; transition-delay: 0s !important; scroll-behavior: auto !important;
+  }
+}
+
+/* ═════ okno „Wygląd Piterfy”: szerzej, podgląd przyklejony u góry, nowe kontrolki ═════ */
+.pf-ap-dialog { width: min(760px, calc(100vw - 32px)); }
+.pf-ap-dialog h2 { position: relative; }
+.pf-pr-toggle, .pf-pr-seg { margin-top: 10px; }
+.pf-pr-seg { justify-content: space-between; flex-wrap: wrap; }
+.pf-pr-seg > span:first-child { flex: 1 1 220px; min-width: 0; }
+.pf-pr-muted { opacity: 0.6; }
+.pf-pr-group { display: inline-flex; padding: 3px; border-radius: 999px; background: rgba(255, 255, 255, 0.07); gap: 2px; flex: none; }
+.pf-pr-opt { padding: 7px 14px; border: 0; border-radius: 999px; background: transparent; color: #b3b3b3; font: 700 13px/1 Figtree, system-ui, sans-serif; cursor: pointer;
+  transition: background var(--pf-dur-fast, 160ms) var(--pf-ease-out, ease), color var(--pf-dur-fast, 160ms) var(--pf-ease-out, ease); }
+.pf-pr-opt:hover { color: #fff; }
+.pf-pr-opt.pf-sel { background: #fff; color: #000; }
+.pf-pr-opt:focus-visible, .pf-pv-btn:focus-visible { outline: 2px solid #1db954; outline-offset: 2px; }
+.pf-pr-range { margin-top: 10px; }
+.pf-pr-reset { margin-top: 14px; }
+
+/* ── podgląd na żywo ── */
+.pf-pv { margin: 0 0 14px; }
+@media (min-height: 760px) { .pf-pv { position: sticky; top: -22px; z-index: 3; padding-top: 22px; margin-top: -8px; background: linear-gradient(#121212 80%, transparent); } }
+.pf-pv-stage { position: relative; display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 14px; align-items: center; padding: 16px; border-radius: 16px; overflow: hidden;
+  background: linear-gradient(135deg, #3a1c71, #d76d77 55%, #ffaf7b); }
+.pf-pv-blob { position: absolute; border-radius: 50%; filter: blur(26px); opacity: 0.7; pointer-events: none; }
+.pf-pv-blob-a { width: 120px; height: 120px; left: -20px; top: -30px; background: #1db954; }
+.pf-pv-blob-b { width: 140px; height: 140px; right: -30px; bottom: -50px; background: #5b8def; }
+.pf-pv-card { position: relative; display: grid; grid-template-columns: 56px 1fr auto; gap: 4px 12px; align-items: center; padding: 14px; border-radius: 16px;
+  background: var(--pf-panel, #121212); color: #fff; font-family: Figtree, system-ui, sans-serif; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35); }
+html[data-pf-glass] .pf-pv-card, html[data-pf-glass] .pf-pv-list {
+  background: color-mix(in srgb, var(--pf-panel, #121212) var(--pf-glass-fill-strong, 60%), transparent);
+  -webkit-backdrop-filter: blur(var(--pf-glass-blur, 20px)) saturate(var(--pf-glass-sat, 1.4)); backdrop-filter: blur(var(--pf-glass-blur, 20px)) saturate(var(--pf-glass-sat, 1.4));
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, var(--pf-glass-edge, 0.2)), 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+.pf-pv-art { grid-row: span 2; width: 56px; height: 56px; border-radius: 8px; background: linear-gradient(135deg, #00b4d8, #7b2ff7); box-shadow: 0 6px 16px rgba(0, 0, 0, 0.45); }
+.pf-pv-meta { display: flex; flex-direction: column; min-width: 0; }
+.pf-pv-title { font-size: calc(15px * var(--pf-text-scale, 1)); }
+.pf-pv-artist { font-size: calc(12.5px * var(--pf-text-scale, 1)); color: var(--pf-muted, #b3b3b3); }
+.pf-pv-eq { display: inline-flex; gap: 2px; align-items: flex-end; height: 16px; }
+.pf-pv-eq i { width: 3px; height: 100%; border-radius: 2px; background: var(--pf-accent, #1db954); transform-origin: 50% 100%; animation: pf-pv-eq 0.9s ease-in-out infinite alternate; }
+.pf-pv-eq i:nth-child(2) { animation-delay: -0.3s; } .pf-pv-eq i:nth-child(3) { animation-delay: -0.6s; } .pf-pv-eq i:nth-child(4) { animation-delay: -0.15s; }
+@keyframes pf-pv-eq { from { transform: scaleY(0.25); } to { transform: scaleY(1); } }
+.pf-pv[data-playing="0"] .pf-pv-eq i, .pf-pv[data-calm="1"] .pf-pv-eq i { animation-play-state: paused; transform: scaleY(0.5); }
+.pf-pv-lyric { grid-column: 1 / -1; margin: 6px 0 2px; font: 700 calc(15px * var(--pf-text-scale, 1)) / 1.3 Figtree, system-ui, sans-serif; color: rgba(255, 255, 255, 0.45); }
+.pf-pv-sung { color: #fff; }
+.pf-pv-bar { grid-column: 1 / -1; height: 4px; border-radius: 2px; background: rgba(255, 255, 255, 0.18); overflow: hidden; }
+.pf-pv-bar i { display: block; width: 38%; height: 100%; background: #fff; border-radius: 2px; }
+.pf-pv-times { grid-column: 1 / -1; display: flex; justify-content: space-between; font-size: calc(11px * var(--pf-text-scale, 1)); color: var(--pf-muted, #b3b3b3); font-variant-numeric: tabular-nums; }
+.pf-pv-ctl { grid-column: 1 / -1; display: flex; justify-content: center; align-items: center; gap: 14px; margin-top: 2px; }
+.pf-pv-btn { display: grid; place-items: center; width: 34px; height: 34px; padding: 0; border: 0; border-radius: 50%; background: transparent; color: #fff; cursor: pointer;
+  transition: transform var(--pf-dur-fast, 160ms) var(--pf-ease-spring, cubic-bezier(0.34, 1.56, 0.64, 1)); }
+.pf-pv-btn svg { width: 18px; height: 18px; }
+.pf-pv-btn:active { transform: scale(0.88); }
+.pf-pv-play { width: 42px; height: 42px; background: #fff; color: #000; }
+.pf-pv-play svg { width: 22px; height: 22px; }
+.pf-pv-list { margin: 0; padding: 6px; list-style: none; border-radius: 14px; background: var(--pf-panel, #121212); color: #fff; font-family: Figtree, system-ui, sans-serif; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3); }
+.pf-pv-list li { display: grid; grid-template-columns: 34px 1fr auto; gap: 10px; align-items: center; height: 50px; padding: 0 8px; border-radius: 8px; }
+:root[data-pf-density="compact"] .pf-pv-list li { height: 38px; }
+.pf-pv-list li:nth-child(2) { background: rgba(255, 255, 255, 0.08); }
+.pf-pv-cover { width: 34px; height: 34px; border-radius: 5px; background: linear-gradient(135deg, #ff6b35, #f7c59f); }
+.pf-pv-list li:nth-child(2) .pf-pv-cover { background: linear-gradient(135deg, #06d6a0, #073b4c); }
+.pf-pv-list li:nth-child(3) .pf-pv-cover { background: linear-gradient(135deg, #e63946, #1d3557); }
+:root[data-pf-density="compact"] .pf-pv-cover { width: 26px; height: 26px; }
+.pf-pv-text { display: flex; flex-direction: column; min-width: 0; line-height: 1.25; }
+.pf-pv-text b { font-size: calc(13px * var(--pf-text-scale, 1)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pf-pv-text small { font-size: calc(11.5px * var(--pf-text-scale, 1)); color: var(--pf-muted, #b3b3b3); }
+.pf-pv-list em { font-style: normal; font-size: calc(11.5px * var(--pf-text-scale, 1)); color: var(--pf-muted, #b3b3b3); font-variant-numeric: tabular-nums; }
+.pf-pv-caption { margin: 8px 2px 0; color: #b3b3b3; font-size: 12px; }
+@media (max-width: 620px) {
+  .pf-pv-stage { grid-template-columns: 1fr; }
+  .pf-pv-list li:nth-child(3) { display: none; }
+}

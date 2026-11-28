@@ -221,8 +221,17 @@ public class PlayerQueueFragment extends Fragment implements ClickCallback {
                 List<Child> items=playerSongQueueAdapter.getItems();
                 items.add(toPosition,items.remove(fromPosition));
                 recyclerView.getAdapter().notifyItemMoved(fromPosition, toPosition);
+                com.eddyizm.tempus.util.PiterfyHaptics.tick(viewHolder.itemView);   // każde przeskoczenie o jedno miejsce „zatrzaskuje się”
 
                 return true;
+            }
+
+            @Override
+            public void onSelectedChanged(RecyclerView.ViewHolder viewHolder, int actionState) {
+                super.onSelectedChanged(viewHolder, actionState);
+                if (viewHolder != null && actionState == ItemTouchHelper.ACTION_STATE_DRAG) {
+                    com.eddyizm.tempus.util.PiterfyHaptics.heavy(viewHolder.itemView);   // chwycenie utworu do przeciągania
+                }
             }
 
             @Override
@@ -231,6 +240,7 @@ public class PlayerQueueFragment extends Fragment implements ClickCallback {
 
                 if (originalPosition != -1 && fromPosition != -1 && toPosition != -1) {
                     MediaManager.swap(mediaBrowserListenableFuture, playerSongQueueAdapter.getItems(), originalPosition, toPosition);
+                    com.eddyizm.tempus.util.PiterfyHaptics.confirm(viewHolder.itemView);   // upuszczenie na nowym miejscu
                 }
 
                 originalPosition = -1;
@@ -258,7 +268,7 @@ public class PlayerQueueFragment extends Fragment implements ClickCallback {
         MediaManager.getCurrentIndex(mediaBrowserListenableFuture,new com.eddyizm.tempus.interfaces.MediaIndexCallback(){ @Override public void onRecovery(int current){
             if(bind==null||index>=playerSongQueueAdapter.getItems().size()||playerSongQueueAdapter.getItem(index)!=song)return;
             List<Child> items=playerSongQueueAdapter.getItems();
-            if(index==current){playerSongQueueAdapter.notifyDataSetChanged();Toast.makeText(requireContext(),"Bieżący utwór pozostaje w kolejce. Wybierz następny utwór, aby go usunąć.",Toast.LENGTH_SHORT).show();return;}
+            if(index==current){com.eddyizm.tempus.util.PiterfyHaptics.reject(bind.getRoot());playerSongQueueAdapter.notifyDataSetChanged();Toast.makeText(requireContext(),"Bieżący utwór pozostaje w kolejce. Wybierz następny utwór, aby go usunąć.",Toast.LENGTH_SHORT).show();return;}
             if(action.equals("next")){
                 int target=index<current?current:current+1;
                 if(target<0||target>=items.size())return;
@@ -270,8 +280,8 @@ public class PlayerQueueFragment extends Fragment implements ClickCallback {
             }
             List<String> expected=items.stream().map(Child::getId).collect(Collectors.toCollection(ArrayList::new));expected.remove(index);
             MediaManager.remove(mediaBrowserListenableFuture,items,index);playerSongQueueAdapter.notifyDataSetChanged();
-            if(!remote)com.google.android.material.snackbar.Snackbar.make(bind.getRoot(),"Usunięto: "+song.getTitle(),com.google.android.material.snackbar.Snackbar.LENGTH_LONG)
-                .setAction("Cofnij",v->MediaManager.restoreQueueItem(mediaBrowserListenableFuture,song,index,expected,()->{if(bind!=null)Toast.makeText(requireContext(),"Kolejka zmieniła się. Nie przywrócono starego układu.",Toast.LENGTH_SHORT).show();})).show();
+            if(!remote)com.eddyizm.tempus.ui.components.PiterfyUndo.show(bind.getRoot(),"Usunięto: "+song.getTitle(),
+                ()->MediaManager.restoreQueueItem(mediaBrowserListenableFuture,song,index,expected,()->{if(bind!=null)Toast.makeText(requireContext(),"Kolejka zmieniła się. Nie przywrócono starego układu.",Toast.LENGTH_SHORT).show();}));
         }});
     }
 
@@ -417,8 +427,27 @@ public class PlayerQueueFragment extends Fragment implements ClickCallback {
                         ? com.eddyizm.tempus.lan.LanRemoteSession.current().getIndex() : mediaBrowser.getCurrentMediaItemIndex()) + 1;
                 int endPosition = playerSongQueueAdapter.getItems().size();
 
+                // Piterfy: zanim lista się skurczy, zapamiętujemy usuwane utwory i to, jak kolejka ma wyglądać po usunięciu
+                // (cofnięcie wstawi je z powrotem tylko wtedy, gdy kolejka nadal wygląda tak samo)
+                boolean remote = com.eddyizm.tempus.lan.LanRemoteSession.isActive();
+                List<Child> before = playerSongQueueAdapter.getItems();
+                boolean anything = endPosition > startPosition && startPosition >= 0;
+                List<Child> removed = anything ? new ArrayList<>(before.subList(startPosition, endPosition)) : new ArrayList<>();
+                List<String> expected = new ArrayList<>();
+                if (anything) for (int i = 0; i < startPosition; i++) expected.add(before.get(i).getId());
+                final int restoreAt = startPosition;
+
                 MediaManager.removeRange(mediaBrowserListenableFuture, playerSongQueueAdapter.getItems(), startPosition, endPosition);
                 bind.playerQueueRecyclerView.getAdapter().notifyItemRangeRemoved(startPosition, endPosition - startPosition);
+
+                if (anything && !remote) {
+                    com.eddyizm.tempus.util.PiterfyHaptics.heavy(bind.getRoot());
+                    com.eddyizm.tempus.ui.components.PiterfyUndo.show(bind.getRoot(),
+                            getResources().getQuantityString(R.plurals.piterfy_queue_cleared, removed.size(), removed.size()),
+                            () -> MediaManager.restoreQueueRange(mediaBrowserListenableFuture, removed, restoreAt, expected, () -> {
+                                if (bind != null) Toast.makeText(requireContext(), R.string.piterfy_queue_undo_stale, Toast.LENGTH_SHORT).show();
+                            }));
+                }
 
             } catch (Exception e) {
                 Log.e(TAG, "Error clearing queue", e);

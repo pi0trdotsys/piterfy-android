@@ -360,6 +360,7 @@ public class PlaylistPageFragment extends Fragment implements ClickCallback {
      * zostaje dotychczasowe tlo.
      */
     private void applyHeaderColor(Playlist playlist, String coverId) {
+        if (!com.eddyizm.tempus.appearance.PiterfyAppearance.coverColorsEnabled()) return;  // ustawienie Wyglądu: kolory z okładek
         com.eddyizm.tempus.ui.components.PiterfyGeneratedArt.Kind kind =
                 com.eddyizm.tempus.ui.components.PiterfyGeneratedArt.kindOf(playlist.getComment());
         java.util.function.IntConsumer apply = color -> {

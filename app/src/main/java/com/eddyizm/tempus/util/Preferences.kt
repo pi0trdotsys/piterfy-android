@@ -150,7 +150,7 @@ object Preferences {
     // MB of JSON churn per operation (see capResumePoints).
     private const val MAX_RESUME_POINTS = 200
 
-    data class ResumePoint(
+    data class ResumePoint @JvmOverloads constructor(
         val id: String,
         val position: Long,
         val title: String?,
@@ -162,13 +162,17 @@ object Preferences {
         // same resumability it had when the point was saved (see isResumable in MediaManager).
         val type: String?,
         val timestamp: Long,
+        // Piterfy: długość utworu/odcinka (ms) do pierścienia postępu na półce „Kontynuuj”; 0 = nieznana (starsze zapisy)
+        val durationMs: Long = 0L,
     )
 
-    @JvmStatic
-    fun saveResumePoint(id: String, position: Long, title: String?, album: String?, artist: String?, albumId: String?, coverArtId: String?, type: String?) {
+    @JvmStatic @JvmOverloads
+    fun saveResumePoint(id: String, position: Long, title: String?, album: String?, artist: String?, albumId: String?, coverArtId: String?, type: String?, durationMs: Long = 0L) {
         if (id.isNullOrBlank() || position <= 0L) return
         val pts = getResumePoints()
-        pts[id] = ResumePoint(id, position, title, album, artist, albumId, coverArtId, type, System.currentTimeMillis())
+        // starszy zapis tego samego utworu zna długość, której bieżące wywołanie mogło nie podać
+        val knownDuration = if (durationMs > 0L) durationMs else pts[id]?.durationMs ?: 0L
+        pts[id] = ResumePoint(id, position, title, album, artist, albumId, coverArtId, type, System.currentTimeMillis(), knownDuration)
         writeResumePoints(pts)
     }
 
@@ -182,7 +186,8 @@ object Preferences {
             // Don't let a stale value (e.g. an old server bookmark synced in) clobber a
             // locally-written resume point that is newer. Fresher server entries still win.
             if (existing == null || incoming.timestamp >= existing.timestamp) {
-                pts[id] = incoming
+                // serwerowa zakładka może nie znać długości; wtedy zostaje ta, którą już mamy (pierścień postępu)
+                pts[id] = if (incoming.durationMs <= 0L && existing != null) incoming.copy(durationMs = existing.durationMs) else incoming
             } else if (incoming.type == Constants.MEDIA_TYPE_PODCAST && existing.type != Constants.MEDIA_TYPE_PODCAST) {
                 // Piterfy: authoritative library genre fixes older bookmark types without losing a newer local position.
                 pts[id] = existing.copy(type = Constants.MEDIA_TYPE_PODCAST)

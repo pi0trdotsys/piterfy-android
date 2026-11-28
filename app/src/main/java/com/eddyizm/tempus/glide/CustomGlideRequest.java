@@ -12,11 +12,15 @@ import androidx.appcompat.content.res.AppCompatResources;
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.RequestBuilder;
 import com.bumptech.glide.RequestManager;
+import com.bumptech.glide.load.DataSource;
 import com.bumptech.glide.load.engine.DiskCacheStrategy;
+import com.bumptech.glide.load.engine.GlideException;
 import com.bumptech.glide.load.resource.bitmap.CenterCrop;
 import com.bumptech.glide.load.resource.bitmap.RoundedCorners;
 import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions;
+import com.bumptech.glide.request.RequestListener;
 import com.bumptech.glide.request.RequestOptions;
+import com.bumptech.glide.request.target.Target;
 import com.bumptech.glide.request.target.CustomTarget;
 import com.bumptech.glide.signature.ObjectKey;
 import com.eddyizm.tempus.App;
@@ -48,12 +52,21 @@ public class CustomGlideRequest {
 
     public static RequestOptions createRequestOptions(Context context, String item, ResourceType type) {
         return new RequestOptions()
-                .placeholder(new ColorDrawable(SurfaceColors.SURFACE_5.getColor(context)))
+                .placeholder(coverPlaceholder(context, item))
                 .fallback(getPlaceholder(context, type))
                 .error(getPlaceholder(context, type))
                 .diskCacheStrategy(DEFAULT_DISK_CACHE_STRATEGY)
                 .signature(new ObjectKey(item != null ? item : 0))
                 .transform(new CenterCrop(), new RoundedCorners(CustomGlideRequest.CORNER_RADIUS));
+    }
+
+    /**
+     * Piterfy: placeholder w odcieniu okładki (kolor zapamiętany z poprzedniej wizyty), a gdy go nie znamy, szary kafel jak dotąd.
+     * Dzięki temu lista nie pokazuje pustych kwadratów, które po chwili „wskakują” w okładkę.
+     */
+    private static Drawable coverPlaceholder(Context context, @Nullable String coverId) {
+        int surface = SurfaceColors.SURFACE_5.getColor(context);
+        return com.eddyizm.tempus.util.PiterfyCoverColors.placeholder(context, coverId, surface, new ColorDrawable(surface));
     }
 
     @Nullable
@@ -127,10 +140,14 @@ public class CustomGlideRequest {
 
     public static class Builder {
         private final RequestManager requestManager;
+        private final Context appContext;
+        private final String coverId;
         private String item;
 
         private Builder(Context context, String item, ResourceType type) {
             this.requestManager = Glide.with(context);
+            this.appContext = context.getApplicationContext();
+            this.coverId = item;
 
             if (item != null) {
                 this.item = createUrl(item, Preferences.getImageSize());
@@ -146,7 +163,20 @@ public class CustomGlideRequest {
         public RequestBuilder<Drawable> build() {
             RequestBuilder<Drawable> builder = requestManager
                     .load(item)
-                    .transition(DrawableTransitionOptions.withCrossFade());
+                    .transition(DrawableTransitionOptions.withCrossFade())
+                    .listener(new RequestListener<Drawable>() {
+                        @Override
+                        public boolean onLoadFailed(@Nullable GlideException e, Object model, Target<Drawable> target, boolean isFirstResource) {
+                            return false;
+                        }
+
+                        @Override
+                        public boolean onResourceReady(Drawable resource, Object model, Target<Drawable> target, DataSource dataSource, boolean isFirstResource) {
+                            // Piterfy: uczy się koloru okładki dla placeholderów (raz na okładkę)
+                            com.eddyizm.tempus.util.PiterfyCoverColors.learn(appContext, coverId, resource);
+                            return false;
+                        }
+                    });
             if (Preferences.isDataSavingMode()) {
                 builder = builder.onlyRetrieveFromCache(true);
             }

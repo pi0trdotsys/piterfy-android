@@ -1,0 +1,147 @@
+/* Piterfy — system ruchu i „czucia”: jeden zestaw czasów i krzywych dla całego interfejsu, sprężyste naciśnięcia, wybuch serca,
+ * toast „Cofnij”, gesty i fala dźwięku. Ładowany bardzo wcześnie (boot.js), żeby tokeny istniały przed pierwszym rysunkiem.
+ *
+ * Tokeny (używaj ich zamiast „gołych” 0.3s / cubic-bezier w nowych stylach):
+ *   --pf-dur-instant 100ms · --pf-dur-fast 200ms · --pf-dur-normal 300ms · --pf-dur-slow 550ms · --pf-dur-dramatic 800ms
+ *   --pf-dur-color 600ms (zmiana koloru z okładki między utworami)
+ *   --pf-ease-standard / -out / -in / -inout oraz sprężyny --pf-spring (mocna) i --pf-spring-soft (łagodna)
+ * Wartości odpowiadają temu, co Piterfy już wcześniej stosował, więc przejście na tokeny nic nie zmienia na wyglądzie.
+ *
+ * Ograniczony ruch: feel.js ustawia <html data-pf-motion="reduced"> (wybór „Ruch” w Wyglądzie, pf-motion w localStorage; bez
+ * wyboru ruch jest pełny — Piterfy celowo nie słucha systemowego „ogranicz ruch”, patrz piterfy.css). Wtedy czasy
+ * zapadają się do ~0, sprężyny stają się zwykłymi krzywymi, a „oddychanie” fali i wybuchy znikają. */
+
+@property --pf-now-accent-safe { syntax: "<color>"; inherits: true; initial-value: #1db954; }
+@property --pf-on-accent { syntax: "<color>"; inherits: true; initial-value: #000000; }
+
+:root {
+  --pf-dur-instant: 100ms;
+  --pf-dur-fast: 200ms;
+  --pf-dur-normal: 300ms;
+  --pf-dur-slow: 550ms;
+  --pf-dur-dramatic: 800ms;
+  --pf-dur-color: 600ms;
+  --pf-ease-standard: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --pf-ease-out: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --pf-ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --pf-ease-inout: cubic-bezier(0.65, 0, 0.35, 1);
+  --pf-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --pf-spring-soft: cubic-bezier(0.34, 1.25, 0.5, 1);
+  --pf-press-scale: 0.93;
+}
+
+:root[data-pf-motion="reduced"] {
+  --pf-dur-instant: 1ms;
+  --pf-dur-fast: 1ms;
+  --pf-dur-normal: 1ms;
+  --pf-dur-slow: 1ms;
+  --pf-dur-dramatic: 1ms;
+  --pf-dur-color: 1ms;
+  --pf-ease-standard: linear;
+  --pf-ease-out: linear;
+  --pf-ease-in: linear;
+  --pf-ease-inout: linear;
+  --pf-spring: linear;
+  --pf-spring-soft: linear;
+  --pf-press-scale: 1;
+}
+:root[data-pf-motion="reduced"]::view-transition-group(*),
+:root[data-pf-motion="reduced"]::view-transition-old(*),
+:root[data-pf-motion="reduced"]::view-transition-new(*) { animation-duration: 1ms !important; }
+:root[data-pf-motion="reduced"] *,
+:root[data-pf-motion="reduced"] *::before,
+:root[data-pf-motion="reduced"] *::after {
+  animation-duration: 1ms !important;
+  animation-delay: 0ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 1ms !important;
+  transition-delay: 0ms !important;
+  scroll-behavior: auto !important;
+}
+
+/* ── sprężyste naciśnięcie: właściwość `scale` (nie `transform`), więc nie koliduje z istniejącymi przekształceniami ni z ich
+ * przejściami. Palec w dół = natychmiastowe „zapadnięcie”, palec w górę = feel.js dodaje .pf-release i element wraca z odbiciem. ── */
+:is(:is(.react-jinke-music-player, .react-jinke-music-player-main, .react-jinke-music-player-mobile) :is(button, [role="button"], .prev-audio, .next-audio, .play-btn, .loop-btn, .audio-lists-btn, .reload-btn, .destroy-btn, .group),
+    .pf-mobile-bar button, .pf-library-button, .pf-undo button, .pf-chips a):active { scale: var(--pf-press-scale); }
+:is(:is(.react-jinke-music-player, .react-jinke-music-player-main, .react-jinke-music-player-mobile) :is(button, [role="button"], .prev-audio, .next-audio, .play-btn, .loop-btn, .audio-lists-btn, .reload-btn, .destroy-btn, .group),
+    .pf-mobile-bar button, .pf-library-button, .pf-undo button, .pf-chips a).pf-release { animation: pf-release var(--pf-dur-normal) var(--pf-spring); }
+@keyframes pf-release { from { scale: var(--pf-press-scale); } to { scale: 1; } }
+
+/* ── kolejka (okno „Twoja kolejka”): uchwyt przenoszenia i wiersz podniesiony palcem ── */
+.pf-queue-row { position: relative; touch-action: pan-y; }
+.pf-queue-handle { position: absolute; right: 0; top: 8px; padding: 10px 12px; color: var(--pf-muted, #aab9af); font-size: 18px; line-height: 1; letter-spacing: -3px; cursor: grab; touch-action: none; user-select: none; }
+.pf-queue-row.pf-queue-lifted { z-index: 2; background: var(--pf-raised, #202922); box-shadow: 0 14px 30px rgba(0, 0, 0, 0.45); border-radius: 14px; scale: 1.015; transition: none; }
+.pf-queue-row:not(.pf-queue-lifted) { transition: translate var(--pf-dur-fast) var(--pf-ease-out); }
+
+/* ── wybuch serca przy polubieniu ── */
+.pf-burst { position: fixed; z-index: 2147483000; width: 0; height: 0; pointer-events: none; }
+.pf-burst i {
+  position: absolute; left: -4px; top: -4px; width: 8px; height: 8px; border-radius: 50%;
+  background: var(--pf-now-accent-safe, #1db954);
+  animation: pf-burst-dot var(--pf-dur-slow) var(--pf-ease-out) forwards;
+  transform: rotate(var(--a)) translateY(0) scale(1);
+}
+.pf-burst b {
+  position: absolute; left: -16px; top: -16px; width: 32px; height: 32px; border-radius: 50%;
+  border: 2px solid var(--pf-now-accent-safe, #1db954);
+  animation: pf-burst-ring var(--pf-dur-slow) var(--pf-ease-out) forwards;
+}
+@keyframes pf-burst-dot { to { transform: rotate(var(--a)) translateY(-26px) scale(0.2); opacity: 0; } }
+@keyframes pf-burst-ring { from { transform: scale(0.4); opacity: 0.9; } to { transform: scale(1.7); opacity: 0; } }
+:root[data-pf-motion="reduced"] .pf-burst { display: none; }
+
+/* ── toast „Cofnij” (kolejka, usunięcia) ── */
+.pf-undo {
+  position: fixed; left: 50%; bottom: calc(112px + env(safe-area-inset-bottom, 0px)); z-index: 100002;
+  width: max-content; max-width: min(520px, calc(100vw - 24px)); box-sizing: border-box;
+  display: flex; align-items: center; gap: 6px; padding: 6px 6px 6px 18px; border-radius: 999px;
+  background: color-mix(in srgb, #1c1c1c 92%, var(--pf-now-accent-safe, #1db954)); color: #f4f4f4;
+  border: 1px solid rgba(255, 255, 255, 0.12); box-shadow: 0 14px 34px rgba(0, 0, 0, 0.5);
+  font: 600 14px/1.35 Figtree, system-ui, sans-serif;
+  inset: auto auto calc(112px + env(safe-area-inset-bottom, 0px)) 50%; margin: 0; overflow: visible;   /* wygląd [popover] z UA wyzerowany */
+  transform: translateX(-50%);
+  animation: pf-undo-in var(--pf-dur-normal) var(--pf-spring) both;
+}
+.pf-undo.pf-undo-out { animation: pf-undo-out var(--pf-dur-fast) var(--pf-ease-in) forwards; }
+.pf-undo > span { overflow-wrap: anywhere; padding-block: 6px; }
+.pf-undo button {
+  flex: none; min-height: 40px; padding: 0 16px; border: 0; border-radius: 999px; cursor: pointer;
+  background: var(--pf-now-accent-safe, #1db954); color: var(--pf-on-accent, #000);
+  font: 750 13px/1 Figtree, system-ui, sans-serif; letter-spacing: 0.2px;
+}
+.pf-undo button:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+.pf-undo .pf-undo-x { background: transparent; color: #cfd8d2; min-width: 40px; padding: 0; font-size: 18px; }
+.pf-mobile-bar ~ .pf-undo, body:has(.pf-mobile-bar:not([hidden])) .pf-undo { bottom: calc(150px + env(safe-area-inset-bottom, 0px)); }
+@keyframes pf-undo-in { from { opacity: 0; transform: translate(-50%, 16px) scale(0.94); } to { opacity: 1; transform: translate(-50%, 0) scale(1); } }
+@keyframes pf-undo-out { to { opacity: 0; transform: translate(-50%, 10px) scale(0.97); } }
+
+/* ── gesty: podpowiedź podwójnego tapnięcia i okładka pod palcem ── */
+.pf-seek-hint {
+  position: fixed; z-index: 2147483000; width: 84px; height: 84px; margin: -42px 0 0 -42px; border-radius: 50%; pointer-events: none;
+  display: flex; align-items: center; justify-content: center; font: 800 15px/1 Figtree, system-ui, sans-serif;
+  background: color-mix(in srgb, #000 55%, transparent); color: #fff; backdrop-filter: blur(6px);
+  animation: pf-seek-hint 0.6s var(--pf-ease-out) forwards;
+}
+@keyframes pf-seek-hint { 0% { opacity: 0; transform: scale(0.6); } 25% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: scale(1.12); } }
+.pf-dragging { transition: none !important; will-change: transform; }
+.react-jinke-music-player-mobile.pf-minimising { will-change: transform, opacity; }
+
+/* ── fala dźwięku zamiast kreski postępu ── */
+.pf-wave-host { position: relative; }
+.pf-wave {
+  position: absolute; left: 0; right: 0; top: 50%; width: 100%; height: 36px; margin-top: -18px;
+  pointer-events: none; z-index: 1; opacity: 0; transition: opacity var(--pf-dur-normal) var(--pf-ease-out);
+}
+.pf-wave-host[data-pf-wave="ready"] > .pf-wave { opacity: 1; }
+.pf-wave-host[data-pf-wave="ready"] :is(.rc-slider-rail, .rc-slider-track, .pf-mini-range::-webkit-slider-runnable-track) { opacity: 0 !important; }
+.pf-wave-host[data-pf-wave="ready"] .rc-slider-handle { opacity: 0; transition: opacity var(--pf-dur-fast); }
+.pf-wave-host[data-pf-wave="ready"].pf-scrub .rc-slider-handle { opacity: 1; }
+.pf-wave-bubble {
+  position: absolute; bottom: calc(50% + 24px); left: 0; z-index: 2; pointer-events: none; padding: 5px 10px; border-radius: 999px;
+  transform: translateX(-50%) scale(0.9); opacity: 0; transition: opacity var(--pf-dur-fast), transform var(--pf-dur-fast) var(--pf-spring);
+  background: var(--pf-now-accent-safe, #1db954); color: var(--pf-on-accent, #000);
+  font: 750 12px/1 Figtree, system-ui, sans-serif; font-variant-numeric: tabular-nums; white-space: nowrap;
+}
+.pf-wave-host.pf-scrub > .pf-wave-bubble { opacity: 1; transform: translateX(-50%) scale(1); }
+.pf-mini-track.pf-wave-host[data-pf-wave="ready"] { height: 36px; }
+.pf-mini-track.pf-wave-host[data-pf-wave="ready"] .pf-mini-range { position: relative; z-index: 3; opacity: 0.01; height: 36px; margin: 0; }

@@ -4,7 +4,8 @@ Plik uznaje za gotowy, gdy przez minutę nie zmienił rozmiaru — slskd kopiuje
 niedokończonych pobrań i nie chcemy złapać pliku w połowie kopiowania. Plików, których beets nie
 potrafi zaimportować (np. uszkodzonych), nie próbuje w kółko: odkłada je do /config/failed.
 
-Między importami analizuje widmo nowych plików biblioteki (spectrum.py) — wykrywa fałszywe FLAC-i.
+Między importami analizuje widmo nowych plików biblioteki (spectrum.py) — wykrywa fałszywe FLAC-i. W osobnym wątku liczy też
+fale dźwięku do paska postępu (peaks.py).
 """
 
 import shutil
@@ -40,6 +41,12 @@ def remove_empty_dirs():
         except OSError:
             pass
 
+
+try:
+    import peaks  # fale dźwięku do paska postępu: osobny wątek liczy je na prośbę discovera, potem powoli całą bibliotekę
+    peaks.start_background(log=log)
+except Exception as e:  # fale nie mogą zatrzymać importu muzyki
+    log(f"Fale dźwięku nie wystartowały: {e}")
 
 log("beets: pilnuję /incoming")
 previous = {}

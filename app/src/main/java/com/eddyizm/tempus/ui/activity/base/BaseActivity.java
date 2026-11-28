@@ -39,6 +39,12 @@ public class BaseActivity extends AppCompatActivity {
     private ListenableFuture<MediaBrowser> mediaBrowserListenableFuture;
 
     @Override
+    protected void attachBaseContext(android.content.Context newBase) {
+        // Piterfy: rozmiar tekstu z ustawień Wyglądu (85–130%) obejmuje cały interfejs
+        super.attachBaseContext(com.eddyizm.tempus.util.PiterfyTextScale.wrap(newBase));
+    }
+
+    @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         ThemeHelper.enableThemeSwitch(this);
         themeSignature = generateThemeSignature();

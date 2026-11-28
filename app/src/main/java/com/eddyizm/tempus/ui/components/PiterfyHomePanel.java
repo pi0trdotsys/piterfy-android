@@ -32,6 +32,7 @@ import com.eddyizm.tempus.subsonic.models.Child;
 import com.eddyizm.tempus.subsonic.models.Playlist;
 import com.eddyizm.tempus.util.Constants;
 import com.eddyizm.tempus.util.DownloadUtil;
+import com.eddyizm.tempus.util.PiterfyHomePlan;
 import com.eddyizm.tempus.util.PiterfyMotion;
 import com.eddyizm.tempus.util.PiterfyRadarClient;
 import com.eddyizm.tempus.util.PiterfyRadarModel;
@@ -95,6 +96,11 @@ public final class PiterfyHomePanel extends LinearLayout implements DefaultLifec
         setPadding(dp(12), dp(4), dp(12), dp(16));
         host.getViewLifecycleOwner().getLifecycle().addObserver(this);
 
+        // Piterfy: powitanie zależne od pory dnia (PiterfyHomePlan) nad skrótami
+        TextView greeting = text(getResources().getString(greetingRes(PiterfyHomePlan.part(java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY)))), 26, Color.WHITE, true);
+        greeting.setPadding(dp(4), dp(8), 0, dp(14));
+        if (!com.eddyizm.tempus.appearance.PiterfyAppearance.homeSmartEnabled()) greeting.setVisibility(GONE);
+        addView(greeting);
         MaterialButton dj = new MaterialButton(getContext());
         dj.setText("Piterfy DJ · Twoja audycja"); dj.setAllCaps(false);
         dj.setTypeface(bold); dj.setTextSize(15); dj.setMinHeight(dp(52));
@@ -437,10 +443,26 @@ public final class PiterfyHomePanel extends LinearLayout implements DefaultLifec
         gameSection.setVisibility(list.isEmpty() ? GONE : VISIBLE);
     }
 
+    /** Tekst powitania dla pory dnia. */
+    static int greetingRes(PiterfyHomePlan.Part part) {
+        switch (part) {
+            case MORNING: return R.string.piterfy_greeting_morning;
+            case DAY: return R.string.piterfy_greeting_day;
+            case EVENING: return R.string.piterfy_greeting_evening;
+            default: return R.string.piterfy_greeting_night;
+        }
+    }
+
     private void showMixes(List<Playlist> list) {
         mixShelf.removeAllViews();
         int index = 0;
-        for (Playlist p : list) {
+        // Piterfy: miksy pasujące do pory dnia na początku (rano spokojniejsze, wieczorem i nocą mroczniejsze i taneczne)
+        List<String> mixNames = new ArrayList<>();
+        for (Playlist p : list) mixNames.add(p.getName() == null ? "" : p.getName());
+        List<Playlist> ordered = new ArrayList<>();
+        for (int i : PiterfyHomePlan.orderMixes(mixNames, PiterfyHomePlan.part(java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY)),
+                com.eddyizm.tempus.appearance.PiterfyAppearance.homeSmartEnabled())) ordered.add(list.get(i));
+        for (Playlist p : ordered) {
             View c = card(p, p.getName(), null, PiterfyGeneratedArt.Kind.MIX);
             PiterfyMotion.enter(c, index++);
             mixShelf.addView(c);

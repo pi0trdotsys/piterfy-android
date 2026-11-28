@@ -357,6 +357,11 @@ public class SongHorizontalAdapter extends RecyclerView.Adapter<SongHorizontalAd
 
             this.item = item;
 
+            // Piterfy: gęstość list z ustawień Wyglądu („gęsto” = niższe wiersze)
+            com.eddyizm.tempus.util.PiterfyDensity.songRow(item.getRoot(),
+                    java.util.Arrays.asList(item.songCoverImageView, item.coverArtOverlay, item.trackNumberTextView, item.coverImageSeparator),
+                    item.playPauseIcon);
+
             item.searchResultSongTitleTextView.setSelected(true);
             item.searchResultSongSubtitleTextView.setSelected(true);
 

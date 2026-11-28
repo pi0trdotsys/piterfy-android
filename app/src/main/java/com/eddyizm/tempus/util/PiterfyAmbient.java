@@ -1,6 +1,5 @@
 package com.eddyizm.tempus.util;
 
-import android.animation.ArgbEvaluator;
 import android.animation.ValueAnimator;
 import android.content.Context;
 import android.graphics.Bitmap;
@@ -29,7 +28,6 @@ public final class PiterfyAmbient {
     public static final int SURFACE = 0xFF121212;
     public static final MutableLiveData<Integer> COLOR = new MutableLiveData<>(DEFAULT);
     private static String lastCover;
-    private static final long TRANSITION_MS = 500;
 
     private PiterfyAmbient() {
     }
@@ -144,10 +142,13 @@ public final class PiterfyAmbient {
             if (target == null) return;
             if (running[0] != null) running[0].cancel();
             if (target == current[0]) return;
-            ValueAnimator animator = ValueAnimator.ofObject(new ArgbEvaluator(), current[0], target);
-            animator.setDuration(TRANSITION_MS);
+            // postęp liniowy, łagodzenie i mieszanie robi PiterfyCoverTheme.fade (czysta funkcja: kontrast nie spada w trakcie)
+            final int from = current[0];
+            ValueAnimator animator = ValueAnimator.ofFloat(0f, 1f);
+            animator.setDuration(com.eddyizm.tempus.util.PiterfyCoverTheme.FADE_MS);
+            animator.setInterpolator(new android.view.animation.LinearInterpolator());
             animator.addUpdateListener(a -> {
-                current[0] = (int) a.getAnimatedValue();
+                current[0] = PiterfyCoverTheme.fade(from, target, (float) a.getAnimatedValue());
                 apply.accept(current[0]);
             });
             running[0] = animator;

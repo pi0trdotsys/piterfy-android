@@ -20,7 +20,7 @@ internal abstract class AnimatedChart(context: Context, private val delayMs: Lon
         private set
     private var animator: ValueAnimator? = null
 
-    private fun animationsOn() = Build.VERSION.SDK_INT < Build.VERSION_CODES.O || ValueAnimator.areAnimatorsEnabled()
+    private fun animationsOn() = com.eddyizm.tempus.util.PiterfyMotion.enabled()
 
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()

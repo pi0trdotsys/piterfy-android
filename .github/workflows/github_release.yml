@@ -43,11 +43,28 @@ jobs:
           node --check connect/web/glass-core.js
           node --check connect/web/glass.js
           node --check connect/web/morph.js
+          node --check connect/web/feel-core.js
+          node --check connect/web/feel.js
+          node --check connect/web/gesture-core.js
+          node --check connect/web/gestures.js
+          node --check connect/web/wave-core.js
+          node --check connect/web/wave.js
+          node --check connect/web/undo-core.js
+          node --test connect/web/feel-core.test.cjs connect/web/gesture-core.test.cjs connect/web/wave-core.test.cjs connect/web/undo-core.test.cjs
           node --check connect/web/piterfy.js
           node --check connect/web/radio.js
           node --check connect/web/radio-core.js
           node --check connect/web/radar.js
           node --test connect/web/radio-core.test.cjs connect/web/radar.test.cjs connect/web/lyrics-core.test.cjs
+          node --check connect/web/prefs-core.js
+          node --check connect/web/appearance.js
+          node --check connect/web/continue-core.js
+          node --check connect/web/continue.js
+          node --check connect/web/speed-core.js
+          node --check connect/web/speed.js
+          node --check connect/web/artist-core.js
+          node --check connect/web/artist.js
+          node --test connect/web/prefs-core.test.cjs connect/web/continue-core.test.cjs connect/web/speed-core.test.cjs connect/web/artist-core.test.cjs
           python3 -m unittest discover -s connect/stack/discover -p 'test_*.py'
           node --test connect/web/media-kind-core.test.cjs
           node --test connect/web/offline-core.test.cjs connect/web/offline-sw.test.cjs

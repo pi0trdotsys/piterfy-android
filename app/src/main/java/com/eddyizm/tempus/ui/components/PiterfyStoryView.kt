@@ -42,7 +42,7 @@ class PiterfyStoryView(context: Context) : View(context) {
     private var holding = false
     private val holdRunnable = Runnable { holding = true; listener?.onHold(true) }
 
-    fun animationsOn(): Boolean = Build.VERSION.SDK_INT < Build.VERSION_CODES.O || ValueAnimator.areAnimatorsEnabled()
+    fun animationsOn(): Boolean = com.eddyizm.tempus.util.PiterfyMotion.enabled()
 
     override fun onDraw(canvas: Canvas) {
         val p = period ?: return

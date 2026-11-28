@@ -200,6 +200,7 @@ public class SongBottomSheetDialog extends BottomSheetDialogFragment implements 
         TextView playNext = view.findViewById(R.id.play_next_text_view);
         playNext.setOnClickListener(v -> {
             MediaManager.enqueue(mediaBrowserListenableFuture, song, true);
+            confirmEnqueued(song, true);
             ((MainActivity) requireActivity()).setBottomSheetInPeek(true);
             dismissBottomSheet();
         });
@@ -207,6 +208,7 @@ public class SongBottomSheetDialog extends BottomSheetDialogFragment implements 
         TextView addToQueue = view.findViewById(R.id.add_to_queue_text_view);
         addToQueue.setOnClickListener(v -> {
             MediaManager.enqueue(mediaBrowserListenableFuture, song, false);
+            confirmEnqueued(song, false);
             ((MainActivity) requireActivity()).setBottomSheetInPeek(true);
             dismissBottomSheet();
         });
@@ -480,6 +482,25 @@ public class SongBottomSheetDialog extends BottomSheetDialogFragment implements 
 
     private void initializeMediaBrowser() {
         mediaBrowserListenableFuture = new MediaBrowser.Builder(requireContext(), new SessionToken(requireContext(), new ComponentName(requireContext(), MediaService.class))).buildAsync();
+    }
+
+    /**
+     * Piterfy: potwierdzenie „Zagram następny” / „Dodano na koniec kolejki” z możliwością cofnięcia. Snackbar żyje w oknie
+     * aktywności (dialog zaraz się zamknie), a cofnięcie używa przeglądarki aktywności, nie tej z dialogu.
+     */
+    private void confirmEnqueued(com.eddyizm.tempus.subsonic.models.Child song, boolean next) {
+        if (!(getActivity() instanceof MainActivity)) return;
+        MainActivity activity = (MainActivity) getActivity();
+        ListenableFuture<MediaBrowser> browser = activity.getMediaBrowserListenableFuture();
+        String title = song.getTitle() == null ? "" : song.getTitle();
+        String message = getString(next ? R.string.piterfy_queue_play_next_done : R.string.piterfy_queue_add_done, title);
+        if (com.eddyizm.tempus.lan.LanRemoteSession.isActive() || browser == null) {
+            com.eddyizm.tempus.ui.components.PiterfyUndo.info(activity.bind.getRoot(), message);
+            return;
+        }
+        com.eddyizm.tempus.ui.components.PiterfyUndo.show(activity.bind.getRoot(), message,
+                () -> MediaManager.undoEnqueue(browser, song.getId(), next, () ->
+                        Toast.makeText(activity, R.string.piterfy_queue_undo_stale, Toast.LENGTH_SHORT).show()));
     }
 
     private void releaseMediaBrowser() {

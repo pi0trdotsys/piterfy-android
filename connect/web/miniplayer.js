@@ -116,10 +116,12 @@
     const meta = node('div', 'pf-mini-meta', root);
     const title = node('h1', '', meta), artist = node('p', '', meta);
     const timeline = node('div', 'pf-mini-timeline', root);
-    const range = node('input', 'pf-mini-range', timeline); range.type = 'range'; range.min = '0'; range.step = '0.1'; range.setAttribute('aria-label', 'Pozycja utworu');
+    const track = node('div', 'pf-mini-track', timeline); // wrapper tylko na suwak: na nim siedzi fala (wave.js)
+    const range = node('input', 'pf-mini-range', track); range.type = 'range'; range.min = '0'; range.step = '0.1'; range.setAttribute('aria-label', 'Pozycja utworu');
     range.addEventListener('input', () => { view.seeking = true; update(); });
     range.addEventListener('change', () => { seek(Number(range.value)); view.seeking = false; update(); });
     range.addEventListener('blur', () => { if (view) view.seeking = false; });
+    window.PiterfyWave?.mount?.(track, { range });
     const times = node('div', 'pf-mini-times', timeline), elapsed = node('span', '', times), duration = node('span', '', times);
     const controls = node('div', 'pf-mini-controls', root);
     const previous = button(controls, 'previous', 'Poprzedni utwór', () => control('previous'));

@@ -579,6 +579,40 @@ public class MediaManager {
         }, androidx.core.content.ContextCompat.getMainExecutor(com.eddyizm.tempus.App.getContext()));
     }
 
+    /** Piterfy: cofnięcie „Wyczyść kolejkę” — tylko gdy kolejka jest dokładnie taka, jak tuż po czyszczeniu (PiterfyQueuePlan). */
+    public static void restoreQueueRange(ListenableFuture<MediaBrowser> future, List<Child> songs, int at, List<String> expected, Runnable stale) {
+        if (LanRemoteSession.isActive() || future == null || songs.isEmpty()) { stale.run(); return; }
+        future.addListener(() -> {
+            try {
+                MediaBrowser browser = future.get();
+                List<String> actual = new ArrayList<>();
+                for (int i = 0; i < browser.getMediaItemCount(); i++) actual.add(browser.getMediaItemAt(i).mediaId);
+                if (LanRemoteSession.isActive() || !com.eddyizm.tempus.util.PiterfyQueuePlan.canRestore(actual, expected, at)) { stale.run(); return; }
+                browser.addMediaItems(at, MappingUtil.mapMediaItems(songs));
+                enqueueDatabase(songs, false, at);
+            } catch (Exception e) { stale.run(); }
+        }, androidx.core.content.ContextCompat.getMainExecutor(com.eddyizm.tempus.App.getContext()));
+    }
+
+    /**
+     * Piterfy: cofnięcie „Zagraj następny” / „Dodaj na koniec” dla jednego utworu — usuwa go tylko, jeśli nadal leży tam, gdzie
+     * go wstawiliśmy (zaraz po bieżącym albo na końcu) i nie jest właśnie grany.
+     */
+    public static void undoEnqueue(ListenableFuture<MediaBrowser> future, String songId, boolean next, Runnable stale) {
+        if (LanRemoteSession.isActive() || future == null) { stale.run(); return; }
+        future.addListener(() -> {
+            try {
+                MediaBrowser browser = future.get();
+                List<String> actual = new ArrayList<>();
+                for (int i = 0; i < browser.getMediaItemCount(); i++) actual.add(browser.getMediaItemAt(i).mediaId);
+                int index = com.eddyizm.tempus.util.PiterfyQueuePlan.undoEnqueueIndex(actual, songId, next, browser.getCurrentMediaItemIndex());
+                if (LanRemoteSession.isActive() || index < 0) { stale.run(); return; }
+                browser.removeMediaItem(index);
+                getQueueRepository().deleteRange(index, index + 1);
+            } catch (Exception e) { stale.run(); }
+        }, androidx.core.content.ContextCompat.getMainExecutor(com.eddyizm.tempus.App.getContext()));
+    }
+
     public static void removeRange(ListenableFuture<MediaBrowser> mediaBrowserListenableFuture, List<Child> media, int fromItem, int toItem) {
         if (LanRemoteSession.routeEdit("remove", fromItem, toItem)) return;
         if (mediaBrowserListenableFuture != null) {
@@ -654,7 +688,7 @@ public class MediaManager {
         String artist = metadata.artist != null ? metadata.artist.toString() : null;
         String albumId = metadata.extras != null ? metadata.extras.getString("albumId") : null;
         String coverArtId = metadata.extras != null ? metadata.extras.getString("coverArtId") : null;
-        Preferences.saveResumePoint(mediaItem.mediaId, ms, title, album, artist, albumId, coverArtId, type);
+        Preferences.saveResumePoint(mediaItem.mediaId, ms, title, album, artist, albumId, coverArtId, type, durationMs);
         // Mirror the resume point to the server bookmark so it syncs across devices.
         getQueueRepository().createServerBookmark(mediaItem.mediaId, ms);
     }

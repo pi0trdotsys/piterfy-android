@@ -57,9 +57,9 @@ import kotlin.math.min
 object PiterfyGlassPlayer {
     private var current: WeakReference<Handle>? = null
 
-    /** Kolor akcentu szkła z koloru okładki: rozjaśniony, żeby na ciemnej karcie był wyraźny. */
+    /** Kolor akcentu szkła z koloru okładki: rozjaśniony, żeby na ciemnej karcie był wyraźny, ale z kontrastem białej ikony ≥ 4,5. */
     @JvmStatic
-    fun accentOf(ambient: Int): Int = ColorUtils.blendARGB(ambient, Color.WHITE, 0.32f) or (0xFF shl 24)
+    fun accentOf(ambient: Int): Int = com.eddyizm.tempus.util.PiterfyCoverTheme.readableAccent(ambient)
 
     /** Instalacja na układzie kontrolera odtwarzacza (ConstraintLayout z paskiem postępu i przyciskami); null, gdy szkło wyłączone. */
     @JvmStatic
@@ -215,7 +215,7 @@ object PiterfyGlassPlayer {
             val surface = ColorUtils.blendARGB(PiterfyGlass.surfaceColor(ctx), Color.WHITE, 0.32f)
             transport.forEach { button ->
                 PiterfyGlass.apply(button, 24f, surface)
-                PiterfyGlass.springPress(button, 0.92f)
+                PiterfyGlass.springPress(button, 0.92f, haptic = true)
             }
             play?.let { button ->
                 val glass = PiterfyGlass.drawable(ctx, 36f, false, accent)
@@ -225,11 +225,11 @@ object PiterfyGlassPlayer {
                     button.background = RippleDrawable(ColorStateList.valueOf(0x44FFFFFF), glass, mask)
                 }
                 (button as? ImageView)?.let { ImageViewCompat.setImageTintList(it, ColorStateList.valueOf(Color.WHITE)) }
-                PiterfyGlass.springPress(button, 0.9f)
+                PiterfyGlass.springPress(button, 0.9f, haptic = true)
             }
-            listOfNotNull(favorite, overflow).forEach { PiterfyGlass.springPress(it, 0.9f) }
+            listOfNotNull(favorite, overflow).forEach { PiterfyGlass.springPress(it, 0.9f, haptic = true) }
             listOfNotNull(quick?.let { it as? ViewGroup }).forEach { group ->
-                for (i in 0 until group.childCount) PiterfyGlass.springPress(group.getChildAt(i), 0.9f)
+                for (i in 0 until group.childCount) PiterfyGlass.springPress(group.getChildAt(i), 0.9f, haptic = true)
             }
             (title as? android.widget.TextView)?.setShadowLayer(8 * d, 0f, 2 * d, 0x66000000)
             (artist as? android.widget.TextView)?.setTextColor(0xFFE0E0E0.toInt())
@@ -355,8 +355,11 @@ object PiterfyGlassPlayer {
         private fun trackRect(): RectF? {
             val p = progress ?: return null
             if (p.visibility != View.VISIBLE || p.width == 0) return null
-            val cy = (p.top + p.bottom) / 2f
-            return RectF(p.left + 12 * d, cy - 9 * d, p.right - 12 * d, cy + 9 * d)
+            // pasek z falą ma nad torem miejsce na dymek z czasem, więc jego tor nie leży na środku widoku
+            val wave = p as? PiterfyWaveformTimeBar
+            val cy = if (wave != null) p.top + wave.trackCenterY() else (p.top + p.bottom) / 2f
+            val half = if (wave != null) max(9 * d, wave.trackHalfHeight() + 2 * d) else 9 * d
+            return RectF(p.left + 12 * d, cy - half, p.right - 12 * d, cy + half)
         }
 
         private fun dockRect(): RectF? {

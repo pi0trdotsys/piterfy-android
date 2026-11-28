@@ -23,6 +23,34 @@
     }
   } catch (e) { /* bez szkła przy pierwszym rysunku; glass.js i tak je zastosuje */ }
 
+  // Tokeny ruchu (motion.css) i tryb ograniczonego ruchu jeszcze przed pierwszym rysunkiem; ta sama reguła co
+  // PiterfyFeelCore.resolveMotion: bez wyboru ruch jest pełny (Piterfy nie słucha systemowego „ogranicz ruch”), „system” słucha,
+  // dawne pf-calm=1 ogranicza. feel.js przejmuje to i utrzymuje na żywo.
+  try {
+    var pm = localStorage.getItem("pf-motion"), calm = localStorage.getItem("pf-calm") === "1";
+    var reducedMotion = pm === "reduced" || (pm === "system" && window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches) ||
+      (pm !== "full" && pm !== "system" && calm);
+    if (reducedMotion) root.setAttribute("data-pf-motion", "reduced");
+    document.write('<link rel="stylesheet" id="pf-motion-css" href="/piterfy-ui/motion.css?v=' + bootVersion + '">');
+  } catch (e) { /* bez tokenów przy pierwszym rysunku; feel.js je doładuje */ }
+
+  // Wygląd (prawdziwa czerń, gęstość list, rozmiar tekstu z „Wygląd Piterfy”): prefs-core.js tylko gdy coś odbiega od domyślnego.
+  try {
+    if (localStorage.getItem("pf-oled") === "1" || localStorage.getItem("pf-density") === "compact" ||
+        (localStorage.getItem("pf-textsize") || "100") !== "100") {
+      document.write('<script src="/piterfy-ui/prefs-core.js?v=' + bootVersion + '"><\/script>' +
+        '<script>window.PiterfyPrefsCore&&PiterfyPrefsCore.apply(document.documentElement,PiterfyPrefsCore.read(localStorage))<\/script>');
+    }
+  } catch (e) { /* appearance.js zastosuje ustawienia chwilę później */ }
+
+  // Szybkość odczuwalna (speed.js: podręczne dane i kolory okładek) musi owinąć fetch, zanim strona startowa zacznie pytać o dane,
+  // więc ładujemy ją tutaj — bez tego pierwsze zapytania wyprzedzałyby skrypt dołączany przez piterfy.js.
+  try {
+    if (localStorage.getItem("pf-speed") !== "0") {
+      document.write('<script src="/piterfy-ui/speed-core.js?v=' + bootVersion + '"><\/script><script src="/piterfy-ui/speed.js?v=' + bootVersion + '"><\/script>');
+    }
+  } catch (e) { /* piterfy.js dołączy speed.js później */ }
+
   var MIN_MS = 1500, MAX_MS = 4000, OUT_MS = 800; // MIN_MS = długość intro (gra raz, nic się nie zapętla)
   var t0 = performance.now();
   // Navidrome po pierwszym uruchomieniu (nowy service worker) przeładowuje stronę sam. Drugie wejście w ciągu kilku sekund

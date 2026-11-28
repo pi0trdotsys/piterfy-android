@@ -88,6 +88,16 @@ public class ContinueListeningAdapter extends RecyclerView.Adapter<ContinueListe
                     itemView.getContext().getString(R.string.home_continue_listening_resume_at, formatPosition(resumePoint.getPosition()))
             );
 
+            // Piterfy: pierścień postępu na okładce, gdy znamy długość (odcinki, audiobooki, długie utwory)
+            float fraction = com.eddyizm.tempus.util.PiterfyHomePlan.progress(resumePoint.getPosition(), resumePoint.getDurationMs());
+            if (fraction > 0f) {
+                binding.continueListeningProgress.setProgress(fraction);
+                binding.continueListeningProgress.setVisibility(View.VISIBLE);
+                binding.continueListeningProgress.setContentDescription(itemView.getContext().getString(R.string.ux_continue_progress, Math.round(fraction * 100f)));
+            } else {
+                binding.continueListeningProgress.setVisibility(View.GONE);
+            }
+
             // Artwork via the same CustomGlideRequest path the album/artist adapters use
             // (resolves coverArtId to a server getCoverArt URL), else the placeholder.
             if (resumePoint.getCoverArtId() != null) {

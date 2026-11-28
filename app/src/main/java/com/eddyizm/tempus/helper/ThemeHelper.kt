@@ -205,6 +205,8 @@ object ThemeHelper {
     fun themeSignature(): String {
         val accent = if (isDynamicColorAccent()) "DYNAMIC" else getColorAccent()
         val glass = if (PiterfyAppearance.glassEnabled()) "glass${PiterfyAppearance.glassIntensity()}" else "noglass"
-        return "${getTheme()}|${isDarkThemeBlack()}|$accent|${PiterfyAppearance.effectiveThemeId()}|$glass"
+        // tekst, gęstość i ruch też przebudowują ekran po zmianie (ustawienia Wyglądu)
+        val look = "${PiterfyAppearance.textScalePercent()}|${PiterfyAppearance.density()}|${PiterfyAppearance.motionMode()}|${PiterfyAppearance.coverColorsEnabled()}"
+        return "${getTheme()}|${isDarkThemeBlack()}|$accent|${PiterfyAppearance.effectiveThemeId()}|$glass|$look"
     }
 }

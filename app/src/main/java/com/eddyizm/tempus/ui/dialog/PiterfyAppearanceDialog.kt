@@ -1,11 +1,13 @@
 package com.eddyizm.tempus.ui.dialog
 
 import android.app.Dialog
+import android.content.DialogInterface
 import android.graphics.Color
 import android.graphics.drawable.GradientDrawable
 import android.os.Build
 import android.os.Bundle
 import android.view.Gravity
+import android.view.HapticFeedbackConstants
 import android.view.View
 import android.widget.HorizontalScrollView
 import android.widget.ImageView
@@ -19,16 +21,28 @@ import com.eddyizm.tempus.appearance.PiterfyAppIcon
 import com.eddyizm.tempus.appearance.PiterfyAppearance
 import com.eddyizm.tempus.appearance.PiterfyCatalog
 import com.eddyizm.tempus.helper.ThemeHelper
+import com.eddyizm.tempus.ui.components.PiterfyLookPreview
+import com.eddyizm.tempus.util.PiterfyDisplayPlan
+import com.eddyizm.tempus.util.PiterfyMotionPlan
+import com.eddyizm.tempus.util.Preferences
+import com.google.android.material.button.MaterialButton
+import com.google.android.material.button.MaterialButtonToggleGroup
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.materialswitch.MaterialSwitch
 import com.google.android.material.slider.Slider
 
 /**
- * Piterfy: wybór motywu kolorystycznego i ikony aplikacji oraz przełącznik automatycznych zmian w dni okolicznościowe
- * (od 2 dni przed do 2 dni po święcie). Motyw działa od razu, ikona zmienia się, gdy aplikacja schodzi z ekranu.
+ * Piterfy: strona „Wygląd” w jednym miejscu, z podglądem na żywo: motyw kolorystyczny, ikona aplikacji, Liquid Glass,
+ * kolory z okładek, ruch, wibracje, prawdziwa czerń OLED, rozmiar tekstu i gęstość list oraz strona główna wg pory dnia.
+ *
+ * Makieta „Teraz gra” u góry reaguje od razu na każdą zmianę. Ustawienia, które zmieniają cały interfejs (szkło, tekst, gęstość,
+ * ruch, czerń), przebudowują aplikację dopiero po zamknięciu okna, żeby podgląd nie znikał pod palcem; motyw i ikona działają od
+ * razu jak dawniej. Ikona zmienia się, gdy aplikacja schodzi z ekranu.
  */
 class PiterfyAppearanceDialog : DialogFragment() {
     private lateinit var root: LinearLayout
+    private var preview: PiterfyLookPreview? = null
+    private var dirty = false          // coś zmieniło się w ustawieniach obejmujących cały interfejs: przebuduj aplikację po zamknięciu
 
     private fun dp(v: Int) = Math.round(v * resources.displayMetrics.density)
     private fun text(s: CharSequence, sizeSp: Float, bold: Boolean = false, alpha: Float = 1f) = TextView(requireContext()).apply {
@@ -46,50 +60,166 @@ class PiterfyAppearanceDialog : DialogFragment() {
         val scroll = android.widget.ScrollView(requireContext()).apply { addView(root) }
         build()
         return MaterialAlertDialogBuilder(requireActivity())
-            .setTitle(R.string.appearance_title)
+            .setTitle(R.string.ux_appearance_title)
             .setView(scroll)
             .setPositiveButton(R.string.appearance_close, null)
             .create()
+    }
+
+    override fun onDismiss(dialog: DialogInterface) {
+        super.onDismiss(dialog)
+        if (dirty) {
+            dirty = false
+            ThemeHelper.applyNightMode()
+            activity?.recreate()
+        }
+    }
+
+    private fun heading(s: String) = text(s, 14f, bold = true).apply { setPadding(0, dp(20), 0, dp(8)) }
+
+    /** Wiersz „opis + przełącznik”; [onChange] dostaje nowy stan. */
+    private fun switchRow(title: String, summary: String, checked: Boolean, onChange: (Boolean) -> Unit): View {
+        val ctx = requireContext()
+        val row = LinearLayout(ctx).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL; setPadding(0, dp(10), 0, 0) }
+        val labels = LinearLayout(ctx).apply { orientation = LinearLayout.VERTICAL }
+        labels.addView(text(title, 15f, bold = true))
+        labels.addView(text(summary, 12f, alpha = 0.7f))
+        row.addView(labels, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+        row.addView(MaterialSwitch(ctx).apply {
+            isChecked = checked
+            setOnCheckedChangeListener { v, on -> v.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK); onChange(on) }
+        })
+        return row
+    }
+
+    /** Grupa przycisków wyboru jednej z opcji (id → etykieta). */
+    private fun choice(options: List<Pair<String, String>>, selected: String, onPick: (String) -> Unit): View {
+        val ctx = requireContext()
+        val group = MaterialButtonToggleGroup(ctx).apply { isSingleSelection = true; isSelectionRequired = true }
+        val ids = HashMap<Int, String>()
+        options.forEach { (id, label) ->
+            val button = MaterialButton(ctx, null, com.google.android.material.R.attr.materialButtonOutlinedStyle).apply {
+                this.id = View.generateViewId(); text = label; isAllCaps = false
+            }
+            ids[button.id] = id
+            group.addView(button, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+            if (id == selected) group.check(button.id)
+        }
+        group.addOnButtonCheckedListener { _, checkedId, isChecked ->
+            if (isChecked) ids[checkedId]?.let(onPick)
+        }
+        return group.apply { setPadding(0, dp(8), 0, 0) }
+    }
+
+    private fun touchedFullInterface() { dirty = true; updatePreview() }
+
+    private fun updatePreview() {
+        val glass = PiterfyAppearance.glassEnabled()
+        val accent = PiterfyAppearance.effectiveTheme()?.accent?.toInt() ?: 0xFF1DB954.toInt()
+        val systemAnimators = Build.VERSION.SDK_INT < Build.VERSION_CODES.O || android.animation.ValueAnimator.areAnimatorsEnabled()
+        val plan = PiterfyDisplayPlan.preview(
+            glass = glass,
+            intensity = PiterfyAppearance.glassIntensity(),
+            coverColors = PiterfyAppearance.coverColorsEnabled(),
+            trueBlack = Preferences.isDarkThemeBlack(),
+            textScalePercent = PiterfyAppearance.textScalePercent(),
+            density = PiterfyAppearance.density(),
+            motionMode = PiterfyAppearance.motionMode(),
+            systemAnimatorsOn = systemAnimators,
+        )
+        preview?.update(plan, accent, SAMPLE_COVER)
     }
 
     private fun build() {
         root.removeAllViews()
         val ctx = requireContext()
 
+        // podgląd na żywo
+        preview = PiterfyLookPreview(ctx)
+        root.addView(text(getString(R.string.ux_section_preview), 14f, bold = true).apply { setPadding(0, 0, 0, dp(8)) })
+        root.addView(preview, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT))
+
         // automat okolicznościowy
-        val autoRow = LinearLayout(ctx).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
-        val labels = LinearLayout(ctx).apply { orientation = LinearLayout.VERTICAL }
-        labels.addView(text(getString(R.string.appearance_auto), 15f, bold = true))
-        labels.addView(text(getString(R.string.appearance_auto_summary), 12f, alpha = 0.7f))
-        autoRow.addView(labels, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
-        val auto = MaterialSwitch(ctx).apply {
-            isChecked = PiterfyAppearance.autoEnabled()
-            setOnCheckedChangeListener { _, on -> PiterfyAppearance.setAutoEnabled(on); changed() }
-        }
-        autoRow.addView(auto)
-        root.addView(autoRow)
+        root.addView(switchRow(getString(R.string.appearance_auto), getString(R.string.appearance_auto_summary), PiterfyAppearance.autoEnabled()) {
+            PiterfyAppearance.setAutoEnabled(it); changed()
+        }.apply { setPadding(0, dp(18), 0, 0) })
         PiterfyAppearance.summary(ctx).takeIf { it.isNotEmpty() }?.let {
             root.addView(text(it, 12.5f, alpha = 0.85f).apply { setPadding(0, dp(6), 0, 0) })
         }
 
         // Liquid Glass: niezależny od motywu; suwak siły tylko przy włączonym szkle
-        root.addView(glassRow().apply { setPadding(0, dp(18), 0, 0) })
+        root.addView(switchRow(getString(R.string.glass_title), getString(R.string.glass_summary), PiterfyAppearance.glassEnabled()) {
+            PiterfyAppearance.setGlassEnabled(it); touchedFullInterface(); build()
+        }.apply { setPadding(0, dp(18), 0, 0) })
         if (PiterfyAppearance.glassEnabled()) {
             root.addView(text(getString(R.string.glass_intensity), 12.5f, alpha = 0.85f).apply { setPadding(0, dp(10), 0, 0) })
             root.addView(Slider(ctx).apply {
                 valueFrom = 0f; valueTo = 100f; stepSize = 5f
                 value = PiterfyAppearance.glassIntensity().toFloat()
-                // zapis i przebudowa ekranu dopiero po puszczeniu suwaka, a nie przy każdym kroku
-                addOnSliderTouchListener(object : Slider.OnSliderTouchListener {
-                    override fun onStartTrackingTouch(slider: Slider) {}
-                    override fun onStopTrackingTouch(slider: Slider) { PiterfyAppearance.setGlassIntensity(slider.value.toInt()); changed() }
-                })
+                addOnChangeListener { _, v, fromUser ->
+                    if (fromUser) { PiterfyAppearance.setGlassIntensity(v.toInt()); touchedFullInterface() }
+                }
             })
             if (Build.VERSION.SDK_INT < 31) root.addView(text(getString(R.string.glass_note_old_android), 12f, alpha = 0.7f))
         }
 
+        // kolory z okładek
+        root.addView(switchRow(getString(R.string.ux_cover_colors_title), getString(R.string.ux_cover_colors_summary), PiterfyAppearance.coverColorsEnabled()) {
+            PiterfyAppearance.setCoverColorsEnabled(it); touchedFullInterface()
+        })
+
+        // odczucia: ruch i haptyka
+        root.addView(heading(getString(R.string.ux_section_feel)))
+        root.addView(text(getString(R.string.ux_motion_title), 15f, bold = true))
+        root.addView(text(getString(R.string.ux_motion_summary), 12f, alpha = 0.7f))
+        root.addView(choice(
+            listOf(
+                PiterfyMotionPlan.SYSTEM to getString(R.string.ux_motion_system),
+                PiterfyMotionPlan.FULL to getString(R.string.ux_motion_full),
+                PiterfyMotionPlan.REDUCED to getString(R.string.ux_motion_reduced),
+            ),
+            PiterfyAppearance.motionMode(),
+        ) { PiterfyAppearance.setMotionMode(it); touchedFullInterface() })
+        root.addView(switchRow(getString(R.string.ux_haptics_title), getString(R.string.ux_haptics_summary), PiterfyAppearance.hapticsEnabled()) {
+            PiterfyAppearance.setHapticsEnabled(it)
+        })
+
+        // ekran: czerń, rozmiar tekstu, gęstość
+        root.addView(heading(getString(R.string.ux_section_display)))
+        root.addView(switchRow(getString(R.string.ux_oled_title), getString(R.string.ux_oled_summary), Preferences.isDarkThemeBlack()) {
+            Preferences.setDarkThemeBlack(it); touchedFullInterface()
+        })
+        val sizeLabel = text(getString(R.string.ux_text_size, PiterfyAppearance.textScalePercent()), 12.5f, alpha = 0.85f).apply { setPadding(0, dp(14), 0, 0) }
+        root.addView(sizeLabel)
+        root.addView(Slider(ctx).apply {
+            valueFrom = PiterfyDisplayPlan.TEXT_SCALE_MIN.toFloat(); valueTo = PiterfyDisplayPlan.TEXT_SCALE_MAX.toFloat()
+            stepSize = PiterfyDisplayPlan.TEXT_SCALE_STEP.toFloat()
+            value = PiterfyAppearance.textScalePercent().toFloat()
+            addOnChangeListener { _, v, fromUser ->
+                if (fromUser) {
+                    PiterfyAppearance.setTextScalePercent(v.toInt())
+                    sizeLabel.text = getString(R.string.ux_text_size, PiterfyAppearance.textScalePercent())
+                    touchedFullInterface()
+                }
+            }
+        })
+        root.addView(text(getString(R.string.ux_density_title), 15f, bold = true).apply { setPadding(0, dp(10), 0, 0) })
+        root.addView(choice(
+            listOf(
+                PiterfyDisplayPlan.COMFORTABLE to getString(R.string.ux_density_comfortable),
+                PiterfyDisplayPlan.COMPACT to getString(R.string.ux_density_compact),
+            ),
+            PiterfyAppearance.density(),
+        ) { PiterfyAppearance.setDensity(it); touchedFullInterface() })
+
+        // strona główna wg pory dnia
+        root.addView(heading(getString(R.string.ux_section_home)))
+        root.addView(switchRow(getString(R.string.ux_home_smart_title), getString(R.string.ux_home_smart_summary), PiterfyAppearance.homeSmartEnabled()) {
+            PiterfyAppearance.setHomeSmartEnabled(it); dirty = true
+        })
+
         // motywy
-        root.addView(text(getString(R.string.appearance_themes), 14f, bold = true).apply { setPadding(0, dp(18), 0, dp(8)) })
+        root.addView(heading(getString(R.string.appearance_themes)))
         val chosen = PiterfyAppearance.chosenTheme()
         val themeRow = LinearLayout(ctx).apply { orientation = LinearLayout.HORIZONTAL }
         themeRow.addView(themeCard(getString(R.string.appearance_theme_classic), 0xFF000000, 0xFF1DB954, 0xFFA4EDC2, 0xFFFFFFFF, chosen == PiterfyAppearance.CLASSIC) {
@@ -102,7 +232,7 @@ class PiterfyAppearanceDialog : DialogFragment() {
 
         // ikony (adaptacyjne ikony istnieją od API 26)
         if (Build.VERSION.SDK_INT >= 26) {
-            root.addView(text(getString(R.string.appearance_icons), 14f, bold = true).apply { setPadding(0, dp(18), 0, dp(8)) })
+            root.addView(heading(getString(R.string.appearance_icons)))
             val current = PiterfyAppIcon.current(ctx)
             val iconRow = LinearLayout(ctx).apply { orientation = LinearLayout.HORIZONTAL }
             PiterfyCatalog.icons.forEach { icon ->
@@ -111,20 +241,8 @@ class PiterfyAppearanceDialog : DialogFragment() {
             root.addView(HorizontalScrollView(ctx).apply { isHorizontalScrollBarEnabled = false; addView(iconRow) })
             root.addView(text(getString(R.string.appearance_icon_note), 12f, alpha = 0.7f).apply { setPadding(0, dp(8), 0, 0) })
         }
-    }
 
-    private fun glassRow(): View {
-        val ctx = requireContext()
-        val row = LinearLayout(ctx).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
-        val labels = LinearLayout(ctx).apply { orientation = LinearLayout.VERTICAL }
-        labels.addView(text(getString(R.string.glass_title), 15f, bold = true))
-        labels.addView(text(getString(R.string.glass_summary), 12f, alpha = 0.7f))
-        row.addView(labels, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
-        row.addView(MaterialSwitch(ctx).apply {
-            isChecked = PiterfyAppearance.glassEnabled()
-            setOnCheckedChangeListener { _, on -> PiterfyAppearance.setGlassEnabled(on); changed() }
-        })
-        return row
+        updatePreview()
     }
 
     private fun themeCard(name: String, bg: Long, accent: Long, accent2: Long, textColor: Long, selected: Boolean, onClick: () -> Unit): View {
@@ -177,10 +295,15 @@ class PiterfyAppearanceDialog : DialogFragment() {
         changed()
     }
 
-    /** Odświeża okno i stosuje motyw (zmiana sygnatury motywu przebudowuje ekran przy powrocie do aplikacji). */
+    /** Motyw, ikona i automat okolicznościowy działają od razu: stosuje motyw i przebudowuje ekran (po tym nic nie czeka na zamknięcie). */
     private fun changed() {
+        dirty = false
         ThemeHelper.applyNightMode()
         build()
         activity?.recreate()
+    }
+
+    private companion object {
+        const val SAMPLE_COVER = 0xFF3D5A80.toInt()   // kolor „okładki” w makiecie
     }
 }

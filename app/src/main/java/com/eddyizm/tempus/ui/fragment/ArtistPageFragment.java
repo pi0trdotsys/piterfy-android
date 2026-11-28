@@ -2,6 +2,7 @@ package com.eddyizm.tempus.ui.fragment;
 
 import android.content.ComponentName;
 import android.content.Intent;
+import android.graphics.Color;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Bundle;
@@ -99,6 +100,8 @@ public class ArtistPageFragment extends Fragment implements ClickCallback {
         initPlayButtons();
         initTopSongsView();
         initCategorizedAlbumsView();
+        initTimeline();
+        initHero();
         initSimilarArtistsView();
 
         return view;
@@ -206,11 +209,19 @@ public class ArtistPageFragment extends Fragment implements ClickCallback {
                             : null;
                     
                     // Piterfy: tlo strony i panel zwijanego paska w kolorze okladki wykonawcy (jak na stronie albumu)
-                    com.eddyizm.tempus.util.PiterfyAmbient.forCover(requireContext(), primaryId, color -> {
-                        if (bind == null) return;
-                        bind.getRoot().setBackground(com.eddyizm.tempus.util.PiterfyAmbient.pageGradient(color));
-                        bind.collapsingToolbar.setContentScrimColor(com.eddyizm.tempus.util.PiterfyCoverTheme.readableHeader(color));
-                    });
+                    if (com.eddyizm.tempus.appearance.PiterfyAppearance.coverColorsEnabled()) {
+                        com.eddyizm.tempus.util.PiterfyAmbient.forCover(requireContext(), primaryId, color -> {
+                            if (bind == null) return;
+                            bind.getRoot().setBackground(com.eddyizm.tempus.util.PiterfyAmbient.pageGradient(color));
+                            bind.collapsingToolbar.setContentScrimColor(com.eddyizm.tempus.util.PiterfyCoverTheme.readableHeader(color));
+                            // portret wykonawcy wtapia się w kolor okładki (gradient od przezroczystości do koloru strony)
+                            int tint = com.eddyizm.tempus.util.PiterfyCoverTheme.readableHeader(color);
+                            bind.artistHeroGradient.setBackground(new android.graphics.drawable.GradientDrawable(
+                                    android.graphics.drawable.GradientDrawable.Orientation.TOP_BOTTOM,
+                                    new int[]{com.eddyizm.tempus.util.PiterfyCoverTheme.withAlpha(Color.BLACK, 0.35f), 0x00000000,
+                                            com.eddyizm.tempus.util.PiterfyCoverTheme.withAlpha(tint, 0.92f)}));
+                        });
+                    }
 
                     CustomGlideRequest.Builder
                             .from(requireContext(), primaryId, CustomGlideRequest.ResourceType.Artist)
@@ -402,6 +413,69 @@ public class ArtistPageFragment extends Fragment implements ClickCallback {
                 }
             }
         });
+    }
+
+    // ── Piterfy: hero, „popularne” i oś czasu dyskografii ──
+
+    private com.eddyizm.tempus.ui.components.PiterfyArtistTimelineView timelineView;
+    private List<com.eddyizm.tempus.util.PiterfyRadarModel.Album> radarAlbums = new ArrayList<>();
+
+    /** Nagłówek „Popularne z Twojej biblioteki” (sekcja top utworów pochodzi z biblioteki); tłumaczenie mamy po polsku i angielsku. */
+    private void initHero() {
+        String language = getResources().getConfiguration().getLocales().get(0).getLanguage();
+        if ("pl".equals(language) || "en".equals(language)) bind.artistTopSongsTitle.setText(R.string.ux_artist_popular);
+        // przewijanie: gradient portretu lekko blednie, gdy nagłówek się zwija (zostaje paralaksa i zwijany pasek)
+        bind.appbar.addOnOffsetChangedListener((appBar, offset) -> {
+            if (bind == null) return;
+            int range = appBar.getTotalScrollRange();
+            if (range <= 0) return;
+            bind.artistHeroGradient.setAlpha(1f - 0.5f * Math.min(1f, Math.abs(offset) / (float) range));
+        });
+    }
+
+    private void initTimeline() {
+        timelineView = new com.eddyizm.tempus.ui.components.PiterfyArtistTimelineView(requireContext());
+        bind.artistPageTimelineHost.addView(timelineView, new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        com.eddyizm.tempus.util.PiterfyRadarModel.Listing cached = com.eddyizm.tempus.util.PiterfyRadarClient.cached();
+        if (cached != null) radarAlbums = cached.getAlbums();
+        com.eddyizm.tempus.util.PiterfyRadarClient.load(listing -> {
+            if (bind == null) return;
+            radarAlbums = listing.getAlbums();
+            refreshTimeline();
+        }, null);
+        artistPageViewModel.getMapOfAlbums().observe(getViewLifecycleOwner(), albums -> refreshTimeline());
+    }
+
+    /** Składa oś czasu z albumów biblioteki i nowości z radaru; pokazuje ją, gdy jest co pokazać (min. dwie pozycje albo nowość). */
+    private void refreshTimeline() {
+        if (bind == null || timelineView == null) return;
+        java.util.Map<String, List<com.eddyizm.tempus.subsonic.models.AlbumID3>> map = artistPageViewModel.getMapOfAlbums().getValue();
+        java.util.Map<String, com.eddyizm.tempus.subsonic.models.AlbumID3> byId = new java.util.HashMap<>();
+        List<com.eddyizm.tempus.util.PiterfyArtistTimeline.Library> library = new ArrayList<>();
+        if (map != null) {
+            for (List<com.eddyizm.tempus.subsonic.models.AlbumID3> group : map.values()) {
+                for (com.eddyizm.tempus.subsonic.models.AlbumID3 album : group) {
+                    if (album.getId() == null) continue;
+                    byId.put(album.getId(), album);
+                    library.add(new com.eddyizm.tempus.util.PiterfyArtistTimeline.Library(album.getId(),
+                            album.getName() == null ? "" : album.getName(), album.getYear(), album.getCoverArtId()));
+                }
+            }
+        }
+        List<com.eddyizm.tempus.util.PiterfyArtistTimeline.Year> timeline = com.eddyizm.tempus.util.PiterfyArtistTimeline.INSTANCE
+                .build(artistPageViewModel.getArtist().getName(), library, radarAlbums);
+        int entries = 0;
+        for (com.eddyizm.tempus.util.PiterfyArtistTimeline.Year y : timeline) entries += y.getEntries().size();
+        boolean show = entries >= 2 || com.eddyizm.tempus.util.PiterfyArtistTimeline.INSTANCE.newCount(timeline) > 0;
+        bind.artistPageTimelineSector.setVisibility(show ? View.VISIBLE : View.GONE);
+        if (!show) return;
+        timelineView.show(timeline, albumId -> {
+            com.eddyizm.tempus.subsonic.models.AlbumID3 album = byId.get(albumId);
+            if (album == null) return;
+            Bundle bundle = new Bundle();
+            bundle.putParcelable(Constants.ALBUM_OBJECT, album.strippedForNav());
+            onAlbumClick(bundle);
+        }, entry -> Toast.makeText(requireContext(), getString(R.string.ux_artist_new_release_note, entry.getTitle()), Toast.LENGTH_SHORT).show());
     }
 
     private void navigateToAlbumList(String title, List<com.eddyizm.tempus.subsonic.models.AlbumID3> albums) {

@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Piterfy: strona Wygląd, strona główna wg pory dnia, kolory okładek, hero artysty (pakiet A2). -->
+<resources>
+    <string name="ux_appearance_title">Wygląd</string>
+    <string name="ux_section_preview">Podgląd</string>
+    <string name="ux_preview_title">Teraz gra</string>
+    <string name="ux_preview_artist">Piterfy</string>
+    <string name="ux_section_feel">Odczucia</string>
+    <string name="ux_section_display">Ekran</string>
+    <string name="ux_section_home">Strona główna</string>
+    <string name="ux_motion_title">Ruch</string>
+    <string name="ux_motion_summary">Animacje list, okładek i odtwarzacza</string>
+    <string name="ux_motion_system">Systemowy</string>
+    <string name="ux_motion_full">Pełny</string>
+    <string name="ux_motion_reduced">Ograniczony</string>
+    <string name="ux_haptics_title">Wibracje (haptyka)</string>
+    <string name="ux_haptics_summary">Delikatne wibracje przy odtwarzaniu, polubieniu i dodawaniu do kolejki</string>
+    <string name="ux_oled_title">Prawdziwa czerń (OLED)</string>
+    <string name="ux_oled_summary">Czarne powierzchnie w ciemnych motywach</string>
+    <string name="ux_text_size">Rozmiar tekstu: %1$d%%</string>
+    <string name="ux_density_title">Gęstość list</string>
+    <string name="ux_density_comfortable">Wygodnie</string>
+    <string name="ux_density_compact">Gęsto</string>
+    <string name="ux_cover_colors_title">Kolory z okładek</string>
+    <string name="ux_cover_colors_summary">Nagłówki albumów, wykonawców i playlist w kolorze okładki</string>
+    <string name="ux_home_smart_title">Strona główna wg pory dnia</string>
+    <string name="ux_home_smart_summary">Powitanie i półki pasujące do godziny. Twój własny układ zostaje nietknięty</string>
+    <string name="piterfy_greeting_morning">Dzień dobry</string>
+    <string name="piterfy_greeting_day">Miłego dnia</string>
+    <string name="piterfy_greeting_evening">Dobry wieczór</string>
+    <string name="piterfy_greeting_night">Nocne słuchanie</string>
+    <string name="ux_continue_progress">Odsłuchano %1$d%%</string>
+    <string name="ux_artist_popular">Popularne z Twojej biblioteki</string>
+    <string name="ux_artist_timeline">Dyskografia</string>
+    <string name="ux_artist_new_release">Nowość</string>
+    <string name="ux_artist_new_release_note">Nowe wydanie: %1$s</string>
+</resources>

@@ -132,6 +132,7 @@ public class HomeViewModel extends AndroidViewModel {
 
     public LiveData<List<AlbumID3>> getRecentlyReleasedAlbums(LifecycleOwner owner) {
         if (newReleasedAlbum.getValue() == null) {
+            seedLastKnown(newReleasedAlbum, "byYear");
             fetchRecentlyReleasedAlbums(owner);
         }
 
@@ -148,6 +149,7 @@ public class HomeViewModel extends AndroidViewModel {
                 albums.sort(Comparator.comparing(AlbumID3::getCreated,
                         Comparator.nullsFirst(Comparator.naturalOrder())).reversed());
                 newReleasedAlbum.setValue(albums.subList(0, Math.min(20, albums.size())));
+                com.eddyizm.tempus.util.PiterfyLastKnown.saveAlbums("byYear", newReleasedAlbum.getValue());
             }
         });
     }
@@ -218,7 +220,8 @@ public class HomeViewModel extends AndroidViewModel {
 
     public LiveData<List<AlbumID3>> getMostPlayedAlbums(LifecycleOwner owner) {
         if (mostPlayedAlbumSample.getValue() == null) {
-            albumRepository.getAlbums("frequent", 20, null, null).observe(owner, setIfCurrentGeneration(mostPlayedAlbumSample));
+            seedLastKnown(mostPlayedAlbumSample, "frequent");
+            albumRepository.getAlbums("frequent", 20, null, null).observe(owner, rememberAlbums(mostPlayedAlbumSample, "frequent"));
         }
 
         return mostPlayedAlbumSample;
@@ -226,7 +229,8 @@ public class HomeViewModel extends AndroidViewModel {
 
     public LiveData<List<AlbumID3>> getMostRecentlyAddedAlbums(LifecycleOwner owner) {
         if (recentlyAddedAlbumSample.getValue() == null) {
-            albumRepository.getAlbums("newest", 20, null, null).observe(owner, setIfCurrentGeneration(recentlyAddedAlbumSample));
+            seedLastKnown(recentlyAddedAlbumSample, "newest");
+            albumRepository.getAlbums("newest", 20, null, null).observe(owner, rememberAlbums(recentlyAddedAlbumSample, "newest"));
         }
 
         return recentlyAddedAlbumSample;
@@ -234,7 +238,8 @@ public class HomeViewModel extends AndroidViewModel {
 
     public LiveData<List<AlbumID3>> getRecentlyPlayedAlbumList(LifecycleOwner owner) {
         if (recentlyPlayedAlbumSample.getValue() == null) {
-            albumRepository.getAlbums("recent", 20, null, null).observe(owner, setIfCurrentGeneration(recentlyPlayedAlbumSample));
+            seedLastKnown(recentlyPlayedAlbumSample, "recent");
+            albumRepository.getAlbums("recent", 20, null, null).observe(owner, rememberAlbums(recentlyPlayedAlbumSample, "recent"));
         }
 
         return recentlyPlayedAlbumSample;
@@ -364,6 +369,28 @@ public class HomeViewModel extends AndroidViewModel {
     }
 
     /**
+     * Piterfy: pokazuje od razu ostatnio znaną listę albumów (zapisaną przy poprzedniej wizycie), zanim przyjdzie odpowiedź
+     * z serwera; odświeżenie podmienia ją po chwili. Zawsze po tym wołamy normalne pobranie, więc dane się nie starzeją.
+     */
+    private void seedLastKnown(MutableLiveData<List<AlbumID3>> target, String key) {
+        if (target.getValue() != null) return;
+        List<AlbumID3> known = com.eddyizm.tempus.util.PiterfyLastKnown.albums(key);
+        if (known != null) target.setValue(known);
+    }
+
+    /** Jak setIfCurrentGeneration, a dodatkowo zapisuje świeżą listę jako „ostatnio znaną” (tylko z bieżącej biblioteki). */
+    private Observer<List<AlbumID3>> rememberAlbums(MutableLiveData<List<AlbumID3>> target, String key) {
+        int generation = musicFolderGeneration;
+        Observer<List<AlbumID3>> inner = setIfCurrentGeneration(target);
+        return value -> {
+            inner.onChanged(value);
+            if (generation == musicFolderGeneration && value != null) {
+                com.eddyizm.tempus.util.PiterfyLastKnown.saveAlbums(key, target.getValue());
+            }
+        };
+    }
+
+    /**
      * Nothing in the repository layer cancels a request, so a response for the library that was
      * active when it was sent can land after the library has changed and overwrite the new one.
      * Switching twice inside one round trip is enough to leave the wrong library's content under
@@ -421,15 +448,15 @@ public class HomeViewModel extends AndroidViewModel {
     }
 
     public void refreshMostPlayedAlbums(LifecycleOwner owner) {
-        albumRepository.getAlbums("frequent", 20, null, null).observe(owner, setIfCurrentGeneration(mostPlayedAlbumSample));
+        albumRepository.getAlbums("frequent", 20, null, null).observe(owner, rememberAlbums(mostPlayedAlbumSample, "frequent"));
     }
 
     public void refreshMostRecentlyAddedAlbums(LifecycleOwner owner) {
-        albumRepository.getAlbums("newest", 20, null, null).observe(owner, setIfCurrentGeneration(recentlyAddedAlbumSample));
+        albumRepository.getAlbums("newest", 20, null, null).observe(owner, rememberAlbums(recentlyAddedAlbumSample, "newest"));
     }
 
     public void refreshRecentlyPlayedAlbumList(LifecycleOwner owner) {
-        albumRepository.getAlbums("recent", 20, null, null).observe(owner, setIfCurrentGeneration(recentlyPlayedAlbumSample));
+        albumRepository.getAlbums("recent", 20, null, null).observe(owner, rememberAlbums(recentlyPlayedAlbumSample, "recent"));
     }
 
     public void refreshRecentlyReleasedAlbums(LifecycleOwner owner) {

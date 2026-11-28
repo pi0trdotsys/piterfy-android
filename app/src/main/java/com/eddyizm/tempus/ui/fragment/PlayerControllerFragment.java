@@ -145,6 +145,8 @@ public class PlayerControllerFragment extends Fragment {
         if (glassRoot instanceof ViewGroup) {
             glassPlayer = com.eddyizm.tempus.ui.components.PiterfyGlassPlayer.install(getViewLifecycleOwner(), (ViewGroup) glassRoot);
         }
+        if (glassPlayer == null) attachPressHaptics();   // przy Liquid Glass dotyk (i haptykę) obsługuje szklany przycisk
+        setupWaveform();
         remotePlayer = new com.eddyizm.tempus.lan.LanPlayerAdapter();
         com.eddyizm.tempus.lan.LanRemoteSession.state().observe(getViewLifecycleOwner(), state -> refreshPlaybackDestination());
         com.eddyizm.tempus.lan.LanRemoteSession.queueState().observe(getViewLifecycleOwner(), queue -> refreshPlaybackDestination());
@@ -191,6 +193,9 @@ public class PlayerControllerFragment extends Fragment {
         qualityClient = null;
         outputMonitor = null;
         glassPlayer = null;
+        if (peaksRequest != null) { peaksRequest.cancel(); peaksRequest = null; }
+        peaksSongId = null;
+        waveform = null;
         super.onDestroyView();
         if (bind != null) bind.nowPlayingMediaControllerView.setPlayer(null);
         if (remotePlayer != null) remotePlayer.release();
@@ -287,6 +292,51 @@ public class PlayerControllerFragment extends Fragment {
         sleepTimerButton = bind.getRoot().findViewById(R.id.player_sleep_timer_button);
         sleepTimerLabel = bind.getRoot().findViewById(R.id.player_sleep_timer_label);
         checkAndSetRatingContainerVisibility();
+    }
+
+    // ── Piterfy: haptyka przycisków i pasek z falą dźwięku ──
+
+    private com.eddyizm.tempus.ui.components.PiterfyWaveformTimeBar waveform;
+    private com.eddyizm.tempus.util.PiterfyPeaksClient.Request peaksRequest;
+    private String peaksSongId;
+
+    /** Impuls przy samym dotknięciu przycisków sterowania (bez szkła nikt inny nie obsługuje dotyku tych widoków). */
+    private void attachPressHaptics() {
+        int[] ids = {R.id.exo_play_pause, R.id.exo_prev, R.id.exo_next, R.id.exo_shuffle, R.id.exo_repeat_toggle,
+                R.id.exo_rew, R.id.exo_ffwd, R.id.player_overflow_button, R.id.player_open_lyrics_button, R.id.player_open_queue_button};
+        for (int id : ids) {
+            View button = bind.getRoot().findViewById(id);
+            if (button != null) com.eddyizm.tempus.util.PiterfyHaptics.attachPress(button);
+        }
+    }
+
+    /** Pasek postępu z falą (tylko w układzie telefonu); w pozostałych układach zostaje zwykły pasek. */
+    private void setupWaveform() {
+        View bar = bind.getRoot().findViewById(R.id.exo_progress);
+        waveform = bar instanceof com.eddyizm.tempus.ui.components.PiterfyWaveformTimeBar
+                ? (com.eddyizm.tempus.ui.components.PiterfyWaveformTimeBar) bar : null;
+        if (waveform == null) return;
+        // odtworzona część fali w kolorze okładki, rozjaśnionym tak, żeby była widoczna na ciemnej karcie
+        com.eddyizm.tempus.util.PiterfyAmbient.observe(getViewLifecycleOwner(), color -> {
+            if (waveform != null) waveform.setAccent(com.eddyizm.tempus.util.PiterfyCoverTheme.mix(color, 0xFFFFFFFF, 0.5f));
+        });
+    }
+
+    /** Prosi serwer o falę granego utworu; radio, podcasty i brak identyfikatora zostawiają zwykły pasek. */
+    private void updateWaveform(MediaMetadata metadata) {
+        if (waveform == null) return;
+        String type = metadata.extras != null ? metadata.extras.getString("type") : null;
+        String id = metadata.extras != null ? metadata.extras.getString("id") : null;
+        boolean music = id != null && !id.isEmpty() && (type == null || Objects.equals(type, Constants.MEDIA_TYPE_MUSIC));
+        String wanted = music ? id : null;
+        if (Objects.equals(wanted, peaksSongId)) return;
+        peaksSongId = wanted;
+        if (peaksRequest != null) { peaksRequest.cancel(); peaksRequest = null; }
+        waveform.setPeaks(null);
+        if (wanted == null) return;
+        peaksRequest = com.eddyizm.tempus.util.PiterfyPeaksClient.load(wanted, peaks -> {
+            if (waveform != null && Objects.equals(peaksSongId, wanted)) waveform.setPeaks(peaks);
+        });
     }
 
     private void initOverflowButton() {
@@ -524,6 +574,7 @@ public class PlayerControllerFragment extends Fragment {
     }
 
     private void setMediaControllerListener(MediaBrowser mediaBrowser) {
+        if (waveform != null) waveform.setPlaying(mediaBrowser.isPlaying());
         setMediaControllerUI(mediaBrowser);
         setMetadata(mediaBrowser.getMediaMetadata());
         setMediaInfo(mediaBrowser.getMediaMetadata());
@@ -544,6 +595,7 @@ public class PlayerControllerFragment extends Fragment {
             @Override
             public void onIsPlayingChanged(boolean isPlaying) {
                 if (glassPlayer != null) glassPlayer.onPlaying(isPlaying);
+                if (waveform != null) waveform.setPlaying(isPlaying);
             }
 
             @Override
@@ -579,6 +631,7 @@ public class PlayerControllerFragment extends Fragment {
 
     private void setMetadata(MediaMetadata mediaMetadata) {
         if (bind == null || (com.eddyizm.tempus.lan.LanRemoteSession.isActive() && !renderingRemote)) return;
+        updateWaveform(mediaMetadata);
         updateTvMetadata(mediaMetadata);
         String mode = mediaMetadata.extras != null ? mediaMetadata.extras.getString("piterfySource", "") : "";
         if (mode.isEmpty()) mode = com.eddyizm.tempus.service.PiterfyDJSession.sourceLabel(mediaMetadata.extras != null ? mediaMetadata.extras.getString("id") : null);
@@ -1119,8 +1172,17 @@ public class PlayerControllerFragment extends Fragment {
                 buttonFavorite.setEnabled(true);
                 ratingViewModel.setSong(media);
                 buttonFavorite.setChecked(FavoriteRegistry.resolve(FavoriteRegistry.Kind.SONG, media.getId(), media.getStarred() != null));
-                buttonFavorite.setOnClickListener(v -> playerBottomSheetViewModel.setFavorite(requireContext(), media));
-                buttonFavorite.setOnLongClickListener(v -> {
+                buttonFavorite.setOnClickListener(v -> {
+                    playerBottomSheetViewModel.setFavorite(requireContext(), media);
+                    // ToggleButton przełączył się już przed wywołaniem: isChecked() to nowy stan
+                    if (buttonFavorite.isChecked()) {
+                        com.eddyizm.tempus.util.PiterfyHaptics.confirm(v);
+                        com.eddyizm.tempus.ui.components.PiterfyHeartBurst.play(v);
+                    } else {
+                        com.eddyizm.tempus.util.PiterfyHaptics.tick(v);
+                    }
+                });
+                buttonFavorite.setOnLongClickListener(v -> {   // długie przytrzymanie daje haptykę systemową (LONG_PRESS)
                     Bundle bundle = new Bundle();
                     bundle.putParcelable(Constants.TRACK_OBJECT, media);
 
@@ -1143,8 +1205,20 @@ public class PlayerControllerFragment extends Fragment {
                     @Override
                     public void onRatingChanged(RatingBar ratingBar, float rating, boolean fromUser) {
                         if (fromUser) {
+                            Integer before = media.getUserRating();
                             ratingViewModel.rate((int) rating);
                             media.setUserRating((int) rating);
+                            com.eddyizm.tempus.util.PiterfyHaptics.tick(ratingBar);
+                            if ((int) rating == 1 && bind != null) {
+                                // 1★ oznacza „wyrzuć” (sprzątanie na serwerze), więc dajemy chwilę na pomyłkę
+                                com.eddyizm.tempus.ui.components.PiterfyUndo.show(bind.getRoot(), getString(R.string.piterfy_rating_one_hint), () -> {
+                                    int restored = before == null ? 0 : before;
+                                    ratingViewModel.rate(restored);
+                                    media.setUserRating(restored);
+                                    if (songRatingBar != null) songRatingBar.setRating(restored);
+                                    if (bind != null) Toast.makeText(requireContext(), R.string.piterfy_rating_restored, Toast.LENGTH_SHORT).show();
+                                });
+                            }
                         }
                     }
                 });

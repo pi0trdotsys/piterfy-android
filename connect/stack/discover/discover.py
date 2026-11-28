@@ -2165,6 +2165,8 @@ def main():
     import profile_api  # zdjęcia profilowe Piterfy — mały serwer w tle, do którego Caddy kieruje /piterfy-api/
     profile_api.start(NAVIDROME_URL, DATA_DIR / "avatars", log)
     radar.register_routes(profile_api, DATA_DIR, log)  # GET /piterfy-api/radar, POST /piterfy-api/radar/fetch
+    import peaks_api  # fala dźwięku do paska postępu: GET /piterfy-api/peaks/<id> (liczy ją kontener beets)
+    peaks_api.register_routes(profile_api, MUSIC_DIR, log)
     retry_at = 0
     while True:
         state = load_state()

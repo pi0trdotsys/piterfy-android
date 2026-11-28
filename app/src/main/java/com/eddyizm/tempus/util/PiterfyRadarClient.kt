@@ -36,12 +36,13 @@ object PiterfyRadarClient {
     @JvmStatic
     fun cached(): PiterfyRadarModel.Listing? = PiterfyRadarModel.parse(prefs().getString("radar|${PiterfyLibrary.account()}", null))
 
-    private fun origin(): String? = runCatching {
+    internal fun origin(): String? = runCatching {
         (Preferences.getServer() ?: "").toHttpUrl().newBuilder().encodedPath("/").query(null).fragment(null).build().toString().trimEnd('/')
     }.getOrNull()?.takeIf { it.startsWith("https://") }
 
     /** Wywołanie z jednym ponowieniem po 401 (token mógł wygasnąć); zwraca (kod HTTP, treść). */
-    private fun call(origin: String, identity: String, user: String, password: String, build: (Request.Builder) -> Request.Builder): Pair<Int, String> {
+    @Synchronized
+    internal fun call(origin: String, identity: String, user: String, password: String, build: (Request.Builder) -> Request.Builder): Pair<Int, String> {
         var attempt = 0
         while (true) {
             check(PiterfyLibrary.account() == identity)

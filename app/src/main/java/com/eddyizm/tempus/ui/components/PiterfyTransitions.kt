@@ -326,7 +326,7 @@ object PiterfyTransitions {
     private fun containerTransform(context: Context): MaterialContainerTransform = MaterialContainerTransform().apply {
         drawingViewId = R.id.nav_host_fragment
         duration = PiterfyMorphPlan.DURATION_MS
-        interpolator = PathInterpolator(0.2f, 0.9f, 0.25f, 1f)      // szybki start i miękkie wyhamowanie (jak sprężyna bez odbicia)
+        interpolator = com.eddyizm.tempus.util.PiterfyMotion.emphasized()      // szybki start i miękkie wyhamowanie (jak sprężyna bez odbicia)
         scrimColor = Color.TRANSPARENT
         fadeMode = MaterialContainerTransform.FADE_MODE_THROUGH
         // przy Liquid Glass tło strony jest półprzezroczyste, więc kontener też nie może być nieprzezroczysty

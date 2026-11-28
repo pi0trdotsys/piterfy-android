@@ -82,5 +82,5 @@ object PiterfyMorphPlan {
     const val POSTPONE_TIMEOUT_MS = 350L
 
     /** Czas przejścia kontenera i okładki w milisekundach (380–450 ms według specyfikacji). */
-    const val DURATION_MS = 420L
+    const val DURATION_MS = PiterfyMotionPlan.SLOW_MS
 }

@@ -53,6 +53,49 @@ object PiterfyCoverTheme {
         return result
     }
 
+    /** Czas przejścia akcentu między utworami (ms): wystarczająco długi, żeby zmiana była płynna, i za krótki, by się nie wlokła. */
+    const val FADE_MS = 600L
+
+    /** Łagodne wejście i wyjście (smoothstep) postępu przejścia 0–1. */
+    @JvmStatic
+    fun ease(t: Float): Float {
+        val p = t.coerceIn(0f, 1f)
+        return p * p * (3f - 2f * p)
+    }
+
+    /**
+     * Kolor w trakcie przejścia z [from] do [to] po [t] (0–1) z łagodzeniem. Dla dwóch kolorów czytelnych z białym tekstem
+     * każdy punkt pośredni też jest czytelny (luminancja mieszanki nie przekracza większej z dwóch), więc zmiana akcentu
+     * nigdy nie przechodzi przez jasny „błysk” pod białym tekstem.
+     */
+    @JvmStatic
+    fun fade(from: Int, to: Int, t: Float): Int = mix(from, to, ease(t))
+
+    /**
+     * Akcent szkła (przycisk odtwarzania, szklane powierzchnie) z koloru okładki: rozjaśniony, żeby na ciemnej karcie był
+     * wyraźny, ale tylko do momentu, w którym biała ikona na nim nadal ma kontrast [MIN_CONTRAST]; jaśniejszy akcent jest
+     * przyciemniany jak nagłówek. Zawsze w pełni nieprzezroczysty.
+     */
+    @JvmStatic
+    fun readableAccent(ambient: Int, lighten: Float = 0.32f): Int {
+        val lifted = mix(ambient or (0xFF shl 24), WHITE, lighten)
+        return readableHeader(lifted)
+    }
+
+    /**
+     * Kolor widoczny na ciemnym tle [background] (np. odtworzona część fali na karcie): [color] jest rozjaśniany ku bieli
+     * tak długo, aż kontrast z tłem osiągnie [minContrast] (domyślnie 3, jak dla elementów graficznych w WCAG).
+     */
+    @JvmStatic
+    fun visibleOnDark(color: Int, background: Int, minContrast: Double = 3.0): Int {
+        val base = color or (0xFF shl 24)
+        val bg = background or (0xFF shl 24)
+        var result = base
+        var step = 0
+        while (contrast(result, bg) < minContrast && step++ < 20) result = mix(base, WHITE, step * 0.05f)
+        return result
+    }
+
     /** Mieszanie dwóch kolorów ARGB: 0 = [a], 1 = [b] (kanały liczone osobno, alfa też). */
     @JvmStatic
     fun mix(a: Int, b: Int, t: Float): Int {

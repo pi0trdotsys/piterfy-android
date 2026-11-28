@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Piterfy: Look & feel page, time-of-day home, cover colours, artist hero (package A2). -->
+<resources>
+    <string name="ux_appearance_title">Look &amp; feel</string>
+    <string name="ux_section_preview">Preview</string>
+    <string name="ux_preview_title">Now playing</string>
+    <string name="ux_preview_artist">Piterfy</string>
+    <string name="ux_section_feel">Feel</string>
+    <string name="ux_section_display">Display</string>
+    <string name="ux_section_home">Home</string>
+    <string name="ux_motion_title">Motion</string>
+    <string name="ux_motion_summary">Animations of lists, covers and the player</string>
+    <string name="ux_motion_system">System</string>
+    <string name="ux_motion_full">Full</string>
+    <string name="ux_motion_reduced">Reduced</string>
+    <string name="ux_haptics_title">Haptics</string>
+    <string name="ux_haptics_summary">Gentle vibration on play, like and queue actions</string>
+    <string name="ux_oled_title">True black (OLED)</string>
+    <string name="ux_oled_summary">Pure black surfaces in dark themes</string>
+    <string name="ux_text_size">Text size: %1$d%%</string>
+    <string name="ux_density_title">List density</string>
+    <string name="ux_density_comfortable">Comfortable</string>
+    <string name="ux_density_compact">Compact</string>
+    <string name="ux_cover_colors_title">Cover colours</string>
+    <string name="ux_cover_colors_summary">Tint album, artist and playlist headers with the colour of the cover</string>
+    <string name="ux_home_smart_title">Home by time of day</string>
+    <string name="ux_home_smart_summary">A greeting and shelves that fit the hour. Your own layout stays untouched</string>
+    <string name="piterfy_greeting_morning">Good morning</string>
+    <string name="piterfy_greeting_day">Good afternoon</string>
+    <string name="piterfy_greeting_evening">Good evening</string>
+    <string name="piterfy_greeting_night">Late night listening</string>
+    <string name="ux_continue_progress">%1$d%% played</string>
+    <string name="ux_artist_popular">Popular in your library</string>
+    <string name="ux_artist_timeline">Discography</string>
+    <string name="ux_artist_new_release">New</string>
+    <string name="ux_artist_new_release_note">New release: %1$s</string>
+    <dimen name="artist_hero_height">340dp</dimen>
+</resources>

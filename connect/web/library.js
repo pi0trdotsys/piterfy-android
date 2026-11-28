@@ -250,6 +250,7 @@
       dlg.replaceChildren();
       const prefs=appearancePrefs(),eff=currentAppearance();
       el('h2','Wygląd Piterfy',dlg);
+      window.PiterfyPrefs?.preview(dlg);  // podgląd na żywo (appearance.js)
       const auto=el('label','',dlg,'pf-ap-auto'),box=el('input','',auto);box.type='checkbox';box.checked=prefs.auto!==false;
       const labels=el('span','',auto);el('strong','Automatycznie w dni okolicznościowe',labels);
       el('small','Od 2 dni przed do 2 dni po święcie motyw i ikona zmieniają się same',labels);
@@ -257,6 +258,7 @@
       const note=occasionNote();if(note)el('p',note,dlg,'pf-ap-note');
       window.PiterfyGlass?.section(dlg);  // Liquid Glass: włącznik i siła (glass.js)
       window.PiterfyGlass?.coverSection(dlg);  // Kolory z okładki (glass.js)
+      window.PiterfyPrefs?.section(dlg);  // ruch, wibracje, czerń, rozmiar tekstu, gęstość (appearance.js)
       el('h3','Motywy',dlg);
       const themes=el('div','',dlg,'pf-ap-grid');
       const pick=(group,id)=>{saveAppearance({...appearancePrefs(),[group]:id});applyAppearance(true);render();};
@@ -286,6 +288,7 @@
   setInterval(()=>applyAppearance(false),60000);  // zmiana dnia o północy
 
   window.PiterfyLibrary={smart:smartCore, rankSongs, play, prefetch:records, queue:openQueue, downloads:openDownloads, feedback:vote, exploration:()=>preferences.exploration??50, candidates:()=>subsonic('getRandomSongs',{size:100}).then(r=>r.randomSongs?.song||[])};
+  window.PiterfyLibrary.store=()=>findStore();  // feel.js: porównuje kolejkę przed/po zmianie i cofa ją (PLAYER_SYNC_QUEUE)
   const djScript=document.createElement('script');djScript.src='/piterfy-ui/dj.js?v='+encodeURIComponent(new URL(document.currentScript?.src||location.href).searchParams.get('v')||Date.now());document.head.append(djScript);
   async function records(songs) {
     const owner=identity();if(preparedIdentity!==owner){preparedRecords.clear();preparedIdentity=owner;}
@@ -453,6 +456,42 @@
     });undo.hidden=true;
     const rows=el('div','',queueDialog);let signature='',drag=null;
     const fail=e=>{notice.textContent=e.message;renderQueue(true);};
+    // Dotyk: uchwyt „⋮⋮” przenosi utwór (reszta wierszy rozsuwa się pod palcem), przesunięcie wiersza w lewo go usuwa (z „Cofnij”).
+    function queueTouch(row,i,q,remove,onError){
+      const handle=row.querySelector('.pf-queue-handle'),feel=()=>window.PiterfyFeel;
+      handle?.addEventListener('pointerdown',e=>{
+        if(e.pointerType==='mouse')return;e.preventDefault();
+        const list=[...rows.children].filter(n=>n.classList.contains('pf-queue-row')),boxes=list.map(n=>n.getBoundingClientRect()),h=boxes[i]?.height||0,y0=e.clientY;let target=i;
+        handle.setPointerCapture(e.pointerId);row.classList.add('pf-queue-lifted');feel()?.tap?.();
+        const move=ev=>{
+          const dy=ev.clientY-y0,mid=boxes[i].top+h/2+dy;row.style.translate='0 '+dy+'px';
+          const found=boxes.findIndex(b=>mid<b.top+b.height);const next=found<0?list.length-1:found;
+          if(next!==target){target=next;feel()?.tick?.();}
+          list.forEach((n,k)=>{if(n!==row)n.style.translate=target>i&&k>i&&k<=target?'0 '+-h+'px':target<i&&k>=target&&k<i?'0 '+h+'px':'';});
+        };
+        const end=ev=>{
+          for(const [t,f] of [['pointermove',move],['pointerup',end],['pointercancel',end]])handle.removeEventListener(t,f);
+          list.forEach(n=>{n.style.translate='';});row.classList.remove('pf-queue-lifted');
+          if(ev.type==='pointerup'&&target!==i)editQueue('move',i,target,q).then(()=>{renderQueue(true);feel()?.success?.();}).catch(onError);
+        };
+        handle.addEventListener('pointermove',move);handle.addEventListener('pointerup',end);handle.addEventListener('pointercancel',end);
+      });
+      row.addEventListener('pointerdown',e=>{
+        if(e.pointerType!=='touch'||e.target.closest('button,.pf-queue-handle')||remove.disabled)return;
+        const x0=e.clientX,y0=e.clientY;let dx=0,locked=false;
+        const move=ev=>{
+          dx=ev.clientX-x0;
+          if(!locked&&Math.abs(dx)>10&&Math.abs(dx)>Math.abs(ev.clientY-y0)*1.4){locked=true;row.setPointerCapture(ev.pointerId);}
+          if(locked){const x=Math.min(0,dx);row.style.translate=x+'px 0';row.style.opacity=String(1-Math.min(.8,Math.abs(x)/260));}
+        };
+        const end=()=>{
+          for(const [t,f] of [['pointermove',move],['pointerup',end],['pointercancel',end]])row.removeEventListener(t,f);
+          row.style.translate='';row.style.opacity='';
+          if(locked&&dx<-Math.max(90,row.offsetWidth*.32))remove.click();
+        };
+        row.addEventListener('pointermove',move);row.addEventListener('pointerup',end);row.addEventListener('pointercancel',end);
+      });
+    }
     function renderQueue(force=false){
       if(!queueDialog.open)return;
       const q=queueSnapshot(),sig=JSON.stringify([q.keys,q.index,q.remote,q.version,preferences.pins]);
@@ -461,19 +500,21 @@
       signature=sig;rows.replaceChildren();undo.hidden=!queueUndo;
       if(!q.items.length)el('p','Kolejka jest pusta.',rows,'pf-library-muted');
       q.items.forEach((item,i)=>{
-        const song=q.remote?item:{...item.song,id:item.trackId||item.song?.mediaFileId||item.song?.id},row=el('article','',rows,'pf-queue-row');row.draggable=true;
+        const song=q.remote?item:{...item.song,id:item.trackId||item.song?.mediaFileId||item.song?.id},row=el('article','',rows,'pf-queue-row');row.draggable=true;el('span','⋮⋮',row,'pf-queue-handle').setAttribute('aria-hidden','true');
         const pin=preferences.pins?.includes(song.id);
         el('small',i===q.index?'TERAZ GRA':String(i+1).padStart(2,'0'),row,'pf-dj-eyebrow');
         el('strong',(pin?'📌 ':'')+(song.title||item.name||'Utwór'),row);el('span',song.artist||item.singer||'',row,'pf-library-muted');
         row.addEventListener('dragstart',e=>{drag={i,q};e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain',String(i));});
         row.addEventListener('dragover',e=>e.preventDefault());row.addEventListener('drop',e=>{e.preventDefault();if(drag)editQueue('move',drag.i,i,drag.q).then(()=>renderQueue(true)).catch(fail);drag=null;});
         const controls=el('div','',row,'pf-library-actions');
-        const move=(to)=>editQueue('move',i,to,q).then(()=>renderQueue(true)).catch(fail);
+        const move=(to,said)=>editQueue('move',i,to,q).then(()=>{renderQueue(true);if(said){notice.textContent=said;window.PiterfyFeel?.success?.();window.PiterfyFeel?.toast?.({text:said});}}).catch(fail);
         const up=button(controls,'↑',()=>move(i-1));up.disabled=i===0;up.setAttribute('aria-label','Przesuń wyżej: '+song.title);
         const down=button(controls,'↓',()=>move(i+1));down.disabled=i===q.items.length-1;down.setAttribute('aria-label','Przesuń niżej: '+song.title);
-        const next=button(controls,'Zagraj następne',()=>move(i<q.index?q.index:q.index+1));next.disabled=i===q.index||q.index<0;
+        const next=button(controls,'Zagraj następne',()=>move(i<q.index?q.index:q.index+1,'Zagrane jako następne: „'+song.title+'”'));next.disabled=i===q.index||q.index<0;
+        const last=button(controls,'Na koniec',()=>move(q.items.length-1,'Przeniesiono na koniec kolejki: „'+song.title+'”'));last.disabled=i===q.items.length-1;
         button(controls,pin?'Odepnij':'Przypnij',()=>api({action:'pin',id:song.id,enabled:!pin}).then(()=>{renderQueue(true);notice.textContent=pin?'Odpięto.':'Ten utwór zostanie zachowany przy zmianie klimatu.';}).catch(fail));
-        const remove=button(controls,'Usuń',()=>editQueue('remove',i,i+1,q).then(()=>{renderQueue(true);notice.textContent='Usunięto utwór. Możesz cofnąć tę zmianę.';}).catch(fail));remove.disabled=i===q.index;
+        const remove=button(controls,'Usuń',()=>editQueue('remove',i,i+1,q).then(()=>{renderQueue(true);notice.textContent='Usunięto utwór. Możesz cofnąć tę zmianę.';window.PiterfyFeel?.warn?.();window.PiterfyFeel?.toast?.({text:'Usunięto z kolejki: „'+song.title+'”',action:'Cofnij',onAction:()=>undo.click()});}).catch(fail));remove.disabled=i===q.index;
+        queueTouch(row,i,q,remove,fail);
       });
     }
     queueDialog.showModal();renderQueue(true);api({action:'get'}).then(()=>renderQueue(true)).catch(fail);

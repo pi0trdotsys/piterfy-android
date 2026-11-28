@@ -223,7 +223,8 @@ public class QueueRepository {
                                             entry.getAlbumId(),
                                             entry.getCoverArtId(),
                                             com.eddyizm.tempus.util.PiterfyMedia.isPodcast(entry) ? com.eddyizm.tempus.util.Constants.MEDIA_TYPE_PODCAST : entry.getType(),
-                                            ts
+                                            ts,
+                                            entry.getDuration() != null ? entry.getDuration() * 1000L : 0L
                                     ));
                                 }
                                 Preferences.saveResumePoints(merged);

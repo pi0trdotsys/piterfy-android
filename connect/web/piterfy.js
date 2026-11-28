@@ -1037,7 +1037,7 @@
     const items = [item(PHOTO, avatar.missing ? "Dodaj zdjęcie profilowe" : "Zmień zdjęcie profilowe", pickAvatar)];
     items.push(item(CHART, "Statystyki dla nerdów", () => { location.hash = "#/statystyki"; }));
     items.push(item(WRAPPED_ICON, "Wrapped", () => { location.hash = "#/wrapped"; }));
-    items.push(item(SPARKLE, "Wygląd Piterfy: motywy i ikony", () => { if (window.PiterfyAppearance) window.PiterfyAppearance.open(); }));
+    items.push(item(SPARKLE, "Wygląd Piterfy: motywy, ikony i odczucia", () => { if (window.PiterfyAppearance) window.PiterfyAppearance.open(); }));
     if (!avatar.missing) {
       items.push(item(TRASH, "Usuń zdjęcie profilowe", () => saveAvatar("DELETE")
         .then(() => toast("Zdjęcie profilowe usunięte"), (e) => toast("Nie udało się usunąć zdjęcia: " + e.message))));
@@ -1742,6 +1742,18 @@
 })();
 // piterfy-extras-loader-end
 
+// piterfy-browse-loader
+;(() => {
+  const m = document.currentScript && document.currentScript.src.match(/[?&]v=([^&]+)/);
+  const v = "?v=" + (m ? m[1] : "1");
+  const load = (name, next) => { const el = document.createElement('script'); el.src = '/piterfy-ui/' + name + v; if (next) el.onload = next; document.head.appendChild(el); };
+  if (!window.PiterfySpeed) load('speed-core.js', () => load('speed.js'));  // szybkość odczuwalna (okładki, stale-while-revalidate); boot.js zwykle ładuje ją wcześniej
+  if (window.PiterfyPrefsCore) load('appearance.js'); else load('prefs-core.js', () => load('appearance.js'));  // „Wygląd”: podgląd i ustawienia (boot.js mógł już załadować rdzeń)
+  load('continue-core.js', () => load('continue.js'));  // „Kontynuuj” i pora dnia na stronie startowej
+  load('artist-core.js', () => load('artist.js'));  // strona wykonawcy: nagłówek, popularne, oś czasu
+})();
+// piterfy-browse-loader-end
+
 // piterfy-glass-loader
 ;(() => {
   const m = document.currentScript && document.currentScript.src.match(/[?&]v=([^&]+)/);
@@ -1752,6 +1764,16 @@
   if (needCore) load('glass-core.js', ui); else ui();
 })();
 // piterfy-glass-loader-end
+
+// piterfy-feel-loader
+;(() => {
+  const m = document.currentScript && document.currentScript.src.match(/[?&]v=([^&]+)/);
+  const v = "?v=" + (m ? m[1] : "1");
+  if (!document.getElementById('pf-motion-css')) { const link = document.createElement('link'); link.rel = 'stylesheet'; link.id = 'pf-motion-css'; link.href = '/piterfy-ui/motion.css' + v; document.head.appendChild(link); }
+  const load = (name) => new Promise((resolve) => { const el = document.createElement('script'); el.src = '/piterfy-ui/' + name + v; el.onload = el.onerror = resolve; document.head.appendChild(el); });
+  Promise.all(['feel-core.js', 'undo-core.js', 'gesture-core.js', 'wave-core.js'].map(load)).then(() => ['feel.js', 'gestures.js', 'wave.js'].forEach(load));
+})();
+// piterfy-feel-loader-end
 
 // piterfy-library-loader
 ;(() => { const s = document.createElement('script'); s.src = '/piterfy-ui/library.js?v=20261104-204612'; document.head.appendChild(s); })();

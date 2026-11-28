@@ -343,7 +343,24 @@ public class MainActivity extends BaseActivity {
     public void initBackPressedDispatcher() {
         OnBackPressedCallback callback = new OnBackPressedCallback(bottomSheetBehavior.getState() == BottomSheetBehavior.STATE_EXPANDED) {
             @Override
+            public void handleOnBackStarted(@NonNull androidx.activity.BackEventCompat backEvent) {
+                playerBackPreview(0f);
+                com.eddyizm.tempus.util.PiterfyHaptics.gestureStart(bind.playerBottomSheet);
+            }
+
+            @Override
+            public void handleOnBackProgressed(@NonNull androidx.activity.BackEventCompat backEvent) {
+                playerBackPreview(backEvent.getProgress());
+            }
+
+            @Override
+            public void handleOnBackCancelled() {
+                resetPlayerBackPreview();
+            }
+
+            @Override
             public void handleOnBackPressed() {
+                resetPlayerBackPreview();
                 if (isTelevision && getSupportFragmentManager().findFragmentByTag("PlayerBottomSheet")
                         instanceof PlayerBottomSheetFragment player && player.closeTvPlayerPanel()) return;
                 collapseBottomSheetDelayed();
@@ -358,6 +375,32 @@ public class MainActivity extends BaseActivity {
             @Override
             public void onSlide(@NonNull View bottomSheet, float slideOffset) { }
         });
+    }
+
+    // Piterfy: gest „wstecz” z podglądem (Android 14+): rozwinięty odtwarzacz kurczy się ku mini odtwarzaczowi razem z palcem,
+    // a po puszczeniu albo wraca na miejsce (anulowanie), albo zwija się naprawdę (handleOnBackPressed). Wygląd liczy
+    // PiterfyGesturePlan; bez Androida 14 system nie podaje postępu, więc zostaje zwykłe zwinięcie.
+    private void playerBackPreview(float progress) {
+        if (isTelevision || bind == null || !com.eddyizm.tempus.util.PiterfyMotion.enabled()) return;
+        View sheet = bind.playerBottomSheet;
+        sheet.setPivotX(sheet.getWidth() / 2f);
+        sheet.setPivotY(sheet.getHeight());
+        float scale = com.eddyizm.tempus.util.PiterfyGesturePlan.backScale(progress);
+        sheet.setScaleX(scale);
+        sheet.setScaleY(scale);
+        sheet.setAlpha(1f - 0.08f * Math.min(1f, Math.max(0f, progress)));
+    }
+
+    private void resetPlayerBackPreview() {
+        if (bind == null) return;
+        View sheet = bind.playerBottomSheet;
+        if (sheet.getScaleX() == 1f && sheet.getScaleY() == 1f && sheet.getAlpha() == 1f) return;
+        if (!com.eddyizm.tempus.util.PiterfyMotion.enabled()) {
+            sheet.setScaleX(1f); sheet.setScaleY(1f); sheet.setAlpha(1f);
+            return;
+        }
+        sheet.animate().scaleX(1f).scaleY(1f).alpha(1f).setDuration(200)
+                .setInterpolator(new android.view.animation.DecelerateInterpolator()).start();
     }
 
     public BottomSheetController getBottomSheetController() {

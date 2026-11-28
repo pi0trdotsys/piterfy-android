@@ -2,7 +2,9 @@ package com.eddyizm.tempus.appearance
 
 import android.content.Context
 import com.eddyizm.tempus.App
+import com.eddyizm.tempus.util.PiterfyDisplayPlan
 import com.eddyizm.tempus.util.PiterfyGlassPlan
+import com.eddyizm.tempus.util.PiterfyMotionPlan
 import java.util.Calendar
 
 /**
@@ -31,6 +33,28 @@ object PiterfyAppearance {
     @JvmStatic fun setGlassEnabled(on: Boolean) = prefs().edit().putBoolean(KEY_GLASS, on).apply()
     @JvmStatic fun glassIntensity(): Int = PiterfyGlassPlan.clampIntensity(prefs().getInt(KEY_GLASS_INTENSITY, PiterfyGlassPlan.DEFAULT_INTENSITY))
     @JvmStatic fun setGlassIntensity(value: Int) = prefs().edit().putInt(KEY_GLASS_INTENSITY, PiterfyGlassPlan.clampIntensity(value)).apply()
+
+    // ── „Wygląd” (strona z podglądem na żywo) ──
+    const val KEY_MOTION = "piterfy_motion"            // "system" | "full" | "reduced"
+    const val KEY_HAPTICS = "piterfy_haptics"          // wibracje przy akcjach (silnik haptyki w odtwarzaczu czyta ten klucz)
+    const val KEY_TEXT_SCALE = "piterfy_text_scale"    // 85–130 (% systemowej skali czcionki)
+    const val KEY_DENSITY = "piterfy_density"          // "comfortable" | "compact"
+    const val KEY_COVER_COLORS = "piterfy_cover_colors" // kolory z okładek w nagłówkach stron
+    const val KEY_HOME_SMART = "piterfy_home_smart"    // strona główna zależna od pory dnia
+    // „Prawdziwa czerń OLED” to istniejące ustawienie Preferences.isDarkThemeBlack (klucz dark_theme_black), więc nie dublujemy go.
+
+    @JvmStatic fun motionMode(): String = PiterfyMotionPlan.normalize(prefs().getString(KEY_MOTION, PiterfyMotionPlan.SYSTEM))
+    @JvmStatic fun setMotionMode(mode: String) = prefs().edit().putString(KEY_MOTION, PiterfyMotionPlan.normalize(mode)).apply()
+    @JvmStatic fun hapticsEnabled(): Boolean = prefs().getBoolean(KEY_HAPTICS, true)
+    @JvmStatic fun setHapticsEnabled(on: Boolean) = prefs().edit().putBoolean(KEY_HAPTICS, on).apply()
+    @JvmStatic fun textScalePercent(): Int = PiterfyDisplayPlan.clampTextScale(prefs().getInt(KEY_TEXT_SCALE, PiterfyDisplayPlan.TEXT_SCALE_DEFAULT))
+    @JvmStatic fun setTextScalePercent(value: Int) = prefs().edit().putInt(KEY_TEXT_SCALE, PiterfyDisplayPlan.clampTextScale(value)).apply()
+    @JvmStatic fun density(): String = PiterfyDisplayPlan.normalizeDensity(prefs().getString(KEY_DENSITY, PiterfyDisplayPlan.COMFORTABLE))
+    @JvmStatic fun setDensity(value: String) = prefs().edit().putString(KEY_DENSITY, PiterfyDisplayPlan.normalizeDensity(value)).apply()
+    @JvmStatic fun coverColorsEnabled(): Boolean = prefs().getBoolean(KEY_COVER_COLORS, true)
+    @JvmStatic fun setCoverColorsEnabled(on: Boolean) = prefs().edit().putBoolean(KEY_COVER_COLORS, on).apply()
+    @JvmStatic fun homeSmartEnabled(): Boolean = prefs().getBoolean(KEY_HOME_SMART, true)
+    @JvmStatic fun setHomeSmartEnabled(on: Boolean) = prefs().edit().putBoolean(KEY_HOME_SMART, on).apply()
 
     /** Dzisiejsza data jako (rok, miesiąc, dzień); `Calendar` działa od API 1 (minSdk 24 nie ma java.time bez desugaringu). */
     private fun today(): Triple<Int, Int, Int> {

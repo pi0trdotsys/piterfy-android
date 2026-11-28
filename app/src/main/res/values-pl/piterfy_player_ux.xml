@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="piterfy_waveform_description">Pasek postępu</string>
+    <string name="piterfy_seek_back_ten">Wstecz o 10 sekund</string>
+    <string name="piterfy_seek_forward_ten">Do przodu o 10 sekund</string>
+    <plurals name="piterfy_queue_cleared">
+        <item quantity="one">Usunięto %d utwór z kolejki</item>
+        <item quantity="few">Usunięto %d utwory z kolejki</item>
+        <item quantity="many">Usunięto %d utworów z kolejki</item>
+        <item quantity="other">Usunięto %d utworu z kolejki</item>
+    </plurals>
+    <string name="piterfy_queue_play_next_done">Zagram następny: %1$s</string>
+    <string name="piterfy_queue_add_done">Dodano na koniec kolejki: %1$s</string>
+    <string name="piterfy_queue_undo_stale">Kolejka się zmieniła, więc nie było czego cofnąć.</string>
+    <string name="piterfy_rating_one_hint">Ocena 1★. Ten utwór trafi do kosza przy najbliższym sprzątaniu.</string>
+    <string name="piterfy_rating_restored">Przywrócono ocenę</string>
+</resources>

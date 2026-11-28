@@ -13,7 +13,7 @@
  * a --pf-lyric-progress (0–1) wypełnienie aktywnej linii. Linie bez synchronizacji (zwykły tekst) nie mają tych zmiennych. */
 .pf-lyric-line{--ly-scale:1;--ly-alpha:1;--ly-blur:0px;color:#fff;opacity:var(--ly-alpha);transform:scale(var(--ly-scale));transform-origin:left center;
   filter:blur(var(--ly-blur));font-size:clamp(26px,3.4vw,36px)!important;font-weight:800;line-height:1.3;margin:0 0 22px;cursor:pointer;
-  transition:transform .55s cubic-bezier(.34,1.3,.5,1),opacity .4s ease,filter .5s ease;will-change:transform,opacity}
+  transition:transform var(--pf-dur-slow, 550ms) cubic-bezier(.34,1.3,.5,1),opacity .4s ease,filter .5s ease;will-change:transform,opacity}
 p.pf-lyric-line{cursor:default;--ly-scale:1;--ly-alpha:.92;--ly-blur:0px}
 .pf-lyric-line.past,.pf-lyric-line.active{transform:scale(var(--ly-scale))}
 .pf-lyric-line.active{filter:blur(0) drop-shadow(0 0 16px rgba(255,255,255,.28))}

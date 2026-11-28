@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="piterfy_waveform_description">Seek bar</string>
+    <string name="piterfy_seek_back_ten">Back 10 seconds</string>
+    <string name="piterfy_seek_forward_ten">Forward 10 seconds</string>
+    <plurals name="piterfy_queue_cleared">
+        <item quantity="one">Cleared %d song from the queue</item>
+        <item quantity="other">Cleared %d songs from the queue</item>
+    </plurals>
+    <string name="piterfy_queue_play_next_done">Playing next: %1$s</string>
+    <string name="piterfy_queue_add_done">Added to the end of the queue: %1$s</string>
+    <string name="piterfy_queue_undo_stale">The queue has changed, so there was nothing to undo.</string>
+    <string name="piterfy_rating_one_hint">Rated 1★. This track goes to the trash in the next cleanup.</string>
+    <string name="piterfy_rating_restored">Rating restored</string>
+</resources>

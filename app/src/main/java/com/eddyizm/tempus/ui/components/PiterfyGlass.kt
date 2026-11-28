@@ -194,15 +194,18 @@ object PiterfyGlass {
     /** Naciśnięcie jak sprężyna: pod palcem zapada się do [depth], po puszczeniu wraca z odbiciem. Nie przechwytuje dotyku. */
     @SuppressLint("ClickableViewAccessibility")
     @JvmStatic @JvmOverloads
-    fun springPress(view: View, depth: Float = 0.96f) {
+    fun springPress(view: View, depth: Float = 0.96f, haptic: Boolean = false) {
         fun spring(property: DynamicAnimation.ViewProperty) = SpringAnimation(view, property, 1f).apply {
-            spring = SpringForce(1f).setStiffness(SpringForce.STIFFNESS_MEDIUM).setDampingRatio(SpringForce.DAMPING_RATIO_MEDIUM_BOUNCY)
+            spring = SpringForce(1f).setStiffness(com.eddyizm.tempus.util.PiterfyMotionPlan.SPRING_STIFFNESS).setDampingRatio(com.eddyizm.tempus.util.PiterfyMotionPlan.SPRING_DAMPING_BOUNCY)
         }
         val sx = spring(DynamicAnimation.SCALE_X)
         val sy = spring(DynamicAnimation.SCALE_Y)
         view.setOnTouchListener { _, event ->
             when (event.actionMasked) {
-                MotionEvent.ACTION_DOWN -> { sx.spring.finalPosition = depth - 0.02f; sy.spring.finalPosition = depth - 0.02f; sx.start(); sy.start() }
+                MotionEvent.ACTION_DOWN -> {
+                    if (haptic) com.eddyizm.tempus.util.PiterfyHaptics.click(view)   // przyciski odtwarzacza: dotyk daje „kliknięcie”
+                    sx.spring.finalPosition = depth - 0.02f; sy.spring.finalPosition = depth - 0.02f; sx.start(); sy.start()
+                }
                 MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> { sx.spring.finalPosition = 1f; sy.spring.finalPosition = 1f; sx.start(); sy.start() }
             }
             false

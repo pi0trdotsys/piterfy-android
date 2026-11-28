@@ -83,7 +83,7 @@ class PiterfyCanvasView @JvmOverloads constructor(context: Context, attrs: Attri
 
     private fun effectsAllowed(): Boolean {
         val powerSave = (context.getSystemService(Context.POWER_SERVICE) as? PowerManager)?.isPowerSaveMode == true
-        val animators = Build.VERSION.SDK_INT < 26 || ValueAnimator.areAnimatorsEnabled()
+        val animators = com.eddyizm.tempus.util.PiterfyMotion.enabled()
         return !powerSave && animators
     }
 
