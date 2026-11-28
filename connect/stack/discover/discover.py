@@ -1221,7 +1221,12 @@ def check_health(state, dry_run=False):
     if not conf["level"] and not dry_run:
         return None
     try:
-        result = health.report(MUSIC_DIR, DATA_DIR)
+        try:  # czas ostatnich statystyk — tak samo jak karta (stats.live), inaczej „Statystyki: jeszcze nie działało” byłoby wiecznym ostrzeżeniem
+            stats_file = Path(os.environ.get("STATS_FILE") or DATA_DIR / "stats.json")
+            generated = (json.loads(stats_file.read_text(encoding="utf-8")) or {}).get("generated")
+        except (OSError, ValueError, AttributeError):
+            generated = None
+        result = health.report(MUSIC_DIR, DATA_DIR, stats_generated=generated)
     except Exception as e:  # kontrola stanu nie może zatrzymać odkrywania
         log(f"Kontrola stanu serwera się nie udała: {e}")
         return None
