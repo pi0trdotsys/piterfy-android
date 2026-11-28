@@ -9,6 +9,7 @@ object ConstantsAA {
     const val NUMBER_OF_DISPLAYED_ALBUMS = 15
     const val NUMBER_OF_DISPLAYED_PODCASTS = 100
     const val NUMBER_OF_DISPLAYED_RECENT_TRACKS = 100
+    const val NUMBER_OF_DISPLAYED_CONTINUE = 20
 
     // Android Root function
     const val ROOT_ID = "[rootID]"
@@ -33,6 +34,10 @@ object ConstantsAA {
     const val TRACKS_ID = "[TracksID]"
     const val RECENT_TRACKS_ID = "[recentTracksID]"
     const val DOWNLOADED_ID = "[downloadedID]"
+    // Piterfy: „Kontynuuj” i „Dla Ciebie” (playlisty z serwera discover)
+    const val CONTINUE_ID = "[piterfyContinueID]"
+    const val PITERFY_FOR_YOU_ID = "[piterfyForYouID]"
+    const val EMPTY_PLACEHOLDER_ID = "[piterfyEmptyID]"
 
     // Android Auto System functions
     const val INDEX_ID = "[indexID]"
@@ -52,6 +57,7 @@ object ConstantsAA {
     const val QUEUE_CACHED_SOURCE = "[aaQueueCachedSource]"
     const val INSTANTMIX_SOURCE = "[instantMixSource]"
     const val MADE_FOR_YOU_SOURCE = "[madeForYouSource]"
+    const val RESUME_QUEUE_SOURCE = "[piterfyResumeQueueSource]"
 
     // Android Auto InstantMix constants
     const val MIN_TRACKS_SMALL_MIX = 20

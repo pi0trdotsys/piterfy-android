@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Piterfy: Android Auto (Continue, For you, empty lists, short driving error messages) -->
+<resources>
+    <string name="piterfy_aa_continue">Continue</string>
+    <string name="piterfy_aa_resume_queue">Resume: %1$s</string>
+    <string name="piterfy_aa_resume_queue_plain">Resume playback</string>
+    <string name="piterfy_aa_for_you">For you</string>
+    <string name="piterfy_aa_group_discover">Discover</string>
+    <string name="piterfy_aa_group_mixes">Mixes</string>
+    <string name="piterfy_aa_group_charts">Charts</string>
+    <string name="piterfy_aa_group_soundtracks">Game soundtracks</string>
+    <string name="piterfy_aa_group_playlists">Your playlists</string>
+    <string name="piterfy_aa_empty">Nothing here yet</string>
+    <string name="piterfy_aa_empty_for_you">No server playlists yet</string>
+    <string name="piterfy_aa_empty_continue">Nothing to continue</string>
+    <string name="piterfy_aa_empty_downloads">No downloaded songs. Download some in the app to listen offline.</string>
+    <string name="piterfy_aa_error_network">No connection to the server</string>
+    <string name="piterfy_aa_error_auth">Sign in again in the app</string>
+    <string name="piterfy_aa_error_unavailable">This track is not available</string>
+    <string name="piterfy_aa_error_other">Cannot play this track</string>
+    <string name="piterfy_aa_error_open_app">Open Piterfy</string>
+</resources>

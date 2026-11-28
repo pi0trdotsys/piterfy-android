@@ -22,9 +22,21 @@ import com.eddyizm.tempus.util.Preferences
 import androidx.core.net.toUri
 import androidx.media3.session.SessionError
 import com.eddyizm.tempus.util.Preferences.getServerId
+import com.eddyizm.tempus.repository.QueueRepository
+import com.eddyizm.tempus.subsonic.models.Child
+import com.eddyizm.tempus.util.MappingUtil
+import com.eddyizm.tempus.util.PiterfyAutoPlaylists
+import com.eddyizm.tempus.util.PiterfyAutoResume
+import com.eddyizm.tempus.util.PiterfyAutoSearch
+import com.google.common.util.concurrent.MoreExecutors
+import java.util.concurrent.Callable
+import java.util.concurrent.Executors
 
 @UnstableApi
 object MediaBrowserTree {
+    // Odczyty z bazy i mapowanie zapisanej kolejki nie mogą blokować wątku sesji (Auto czeka na odpowiedź).
+    private val io = MoreExecutors.listeningDecorator(Executors.newSingleThreadExecutor())
+
     private lateinit var appContext: Context
     private lateinit var automotiveRepository: AutomotiveRepository
 
@@ -456,6 +468,32 @@ object MediaBrowserTree {
                 )
             )
 
+        treeNodes[ConstantsAA.CONTINUE_ID] =
+            MediaItemNode(
+                buildMediaItem(
+                    gridView = false,
+                    title = appContext.getString(R.string.piterfy_aa_continue),
+                    mediaId = ConstantsAA.CONTINUE_ID,
+                    isPlayable = false,
+                    isBrowsable = true,
+                    imageUri = iconUri(R.drawable.ic_aa_recent),
+                    mediaType = MediaMetadata.MEDIA_TYPE_FOLDER_MIXED
+                )
+            )
+
+        treeNodes[ConstantsAA.PITERFY_FOR_YOU_ID] =
+            MediaItemNode(
+                buildMediaItem(
+                    gridView = playlistView,
+                    title = appContext.getString(R.string.piterfy_aa_for_you),
+                    mediaId = ConstantsAA.PITERFY_FOR_YOU_ID,
+                    isPlayable = false,
+                    isBrowsable = true,
+                    imageUri = iconUri(R.drawable.ic_aa_for_you),
+                    mediaType = MediaMetadata.MEDIA_TYPE_FOLDER_PLAYLISTS
+                )
+            )
+
         treeNodes[ConstantsAA.QUICKMIX_ID] =
             MediaItemNode(
                 buildMediaItem(
@@ -527,6 +565,9 @@ object MediaBrowserTree {
         // Second level for HOME_ID even there is no HOME_ID displayed
         // Downloads first: it is the only section that works with no connectivity
         treeNodes[ConstantsAA.HOME_ID]?.addChild(ConstantsAA.DOWNLOADED_ID)
+        // Piterfy: „Kontynuuj” (wznów to, co grało) i „Dla Ciebie” (miksy, Odkrywaj, listy przebojów z serwera) zaraz po pobranych
+        treeNodes[ConstantsAA.HOME_ID]?.addChild(ConstantsAA.CONTINUE_ID)
+        treeNodes[ConstantsAA.HOME_ID]?.addChild(ConstantsAA.PITERFY_FOR_YOU_ID)
 
 		// add all functions not previously added
         allFunctions
@@ -578,11 +619,92 @@ object MediaBrowserTree {
         return treeNodes[ConstantsAA.ROOT_ID]!!.item
     }
 
+    /** Playlisty z serwera discover (miksy, Odkrywaj, listy przebojów, soundtracki) w kolejności i z nagłówkami grup. */
+    private fun forYouChildren(): ListenableFuture<LibraryResult<ImmutableList<MediaItem>>> =
+        Futures.transform(automotiveRepository.getPlaylists(ConstantsAA.PLAYLIST_ID), { result ->
+            val list = result.value ?: return@transform result
+            val mine = PiterfyAutoPlaylists.order(list) { it.mediaMetadata.title?.toString() }
+                .filter { PiterfyAutoPlaylists.isPiterfy(it.mediaMetadata.title?.toString()) }
+                .map { PiterfyAutoItems.withGroupTitle(it, PiterfyAutoItems.groupTitle(appContext, PiterfyAutoPlaylists.group(it.mediaMetadata.title?.toString()))) }
+            LibraryResult.ofItemList(mine, result.params)
+        }, MoreExecutors.directExecutor())
+
+    /** „Wszystkie moje playlisty”: playlisty Piterfy na początku z nagłówkiem, reszta pod własnym; bez playlist Piterfy lista jest jak dawniej. */
+    private fun playlistChildren(): ListenableFuture<LibraryResult<ImmutableList<MediaItem>>> =
+        Futures.transform(automotiveRepository.getPlaylists(ConstantsAA.PLAYLIST_ID), { result ->
+            val list = result.value ?: return@transform result
+            if (list.none { PiterfyAutoPlaylists.isPiterfy(it.mediaMetadata.title?.toString()) }) return@transform result
+            val ordered = PiterfyAutoPlaylists.order(list) { it.mediaMetadata.title?.toString() }.map {
+                PiterfyAutoItems.withGroupTitle(it, PiterfyAutoItems.groupTitle(appContext, PiterfyAutoPlaylists.group(it.mediaMetadata.title?.toString())))
+            }
+            LibraryResult.ofItemList(ordered, result.params)
+        }, MoreExecutors.directExecutor())
+
+    /**
+     * „Kontynuuj”: najpierw „Wznów: ostatni utwór” (cała zapisana kolejka od miejsca, w którym przerwano), potem odcinki i długie
+     * utwory z półki „Kontynuuj” aplikacji (najnowsze pierwsze), z paskiem postępu. Odczyty z bazy idą poza wątkiem sesji.
+     */
+    private fun continueChildren(): ListenableFuture<LibraryResult<ImmutableList<MediaItem>>> = io.submit(Callable {
+        val items = ArrayList<MediaItem>()
+        val last = runCatching { QueueRepository().lastPlayedMedia }.getOrNull()
+        if (last != null) {
+            val text = last.title?.let { appContext.getString(R.string.piterfy_aa_resume_queue, it) }
+                ?: appContext.getString(R.string.piterfy_aa_resume_queue_plain)
+            items.add(
+                buildMediaItem(
+                    gridView = false,
+                    title = text,
+                    mediaId = ConstantsAA.RESUME_QUEUE_SOURCE,
+                    isPlayable = true,
+                    isBrowsable = false,
+                    artist = last.artist,
+                    album = last.album,
+                    imageUri = last.coverArtId?.let { com.eddyizm.tempus.provider.AlbumArtContentProvider.contentUri(it) }
+                        ?: iconUri(R.drawable.ic_aa_recent),
+                    mediaType = MediaMetadata.MEDIA_TYPE_MUSIC
+                )
+            )
+        }
+        val points = Preferences.getContinueListening().take(ConstantsAA.NUMBER_OF_DISPLAYED_CONTINUE)
+        if (points.isNotEmpty()) {
+            val children = points.map { point ->
+                Child(point.id).apply {
+                    title = point.title
+                    album = point.album
+                    artist = point.artist
+                    albumId = point.albumId
+                    coverArtId = point.coverArtId
+                    type = point.type
+                    duration = if (point.durationMs > 0) (point.durationMs / 1000).toInt() else null
+                }
+            }
+            // te same elementy w pamięci podręcznej listy (QUEUE_CACHED_SOURCE): kliknięcie zagra odcinek i resztę „Kontynuuj”
+            points.zip(children).forEach { (point, child) ->
+                // jeden niemapowalny zapis (zmienione dane po zmianie serwera) nie może zepsuć całej listy
+                var item = runCatching { MappingUtil.mapMediaItem(child, ConstantsAA.QUEUE_CACHED_SOURCE) }.getOrNull() ?: return@forEach
+                val start = PiterfyAutoResume.continuePosition(point.position, point.durationMs)
+                PiterfyAutoResume.completion(point.position, point.durationMs)?.let { item = PiterfyAutoItems.withCompletion(item, it) }
+                if (start > 0) item = PiterfyAutoItems.withResumeMs(item, start)
+                items.add(item)
+            }
+        }
+        LibraryResult.ofItemList(ImmutableList.copyOf(items), null)
+    })
+
     fun getChildren(
-        id: String
+        id: String,
+        offline: Boolean = false
     ): ListenableFuture<LibraryResult<ImmutableList<MediaItem>>> {
         return when (id) {
-            ConstantsAA.ROOT_ID -> treeNodes[ConstantsAA.ROOT_ID]?.getChildren()!!
+            // bez internetu na samym początku tylko pobrane: reszta drzewa i tak by się nie załadowała
+            ConstantsAA.ROOT_ID -> if (offline) {
+                Futures.immediateFuture(LibraryResult.ofItemList(listOf(treeNodes[ConstantsAA.DOWNLOADED_ID]!!.item), null))
+            } else {
+                treeNodes[ConstantsAA.ROOT_ID]?.getChildren()!!
+            }
+
+            ConstantsAA.CONTINUE_ID -> continueChildren()
+            ConstantsAA.PITERFY_FOR_YOU_ID -> forYouChildren()
 
             ConstantsAA.HOME_ID -> treeNodes[ConstantsAA.HOME_ID]?.getChildren()!!
             ConstantsAA.MADE_FOR_YOU_ID -> treeNodes[ConstantsAA.MADE_FOR_YOU_ID]?.getChildren()!!
@@ -602,7 +724,7 @@ object MediaBrowserTree {
             ConstantsAA.ARTISTS_ID -> automotiveRepository.getArtists(
                 ConstantsAA.ARTIST_ID,
                 true)
-            ConstantsAA.PLAYLIST_ID -> automotiveRepository.getPlaylists(ConstantsAA.PLAYLIST_ID)
+            ConstantsAA.PLAYLIST_ID -> playlistChildren()
             ConstantsAA.PODCAST_ID -> automotiveRepository.getNewestPodcastEpisodes(ConstantsAA.NUMBER_OF_DISPLAYED_PODCASTS)
             ConstantsAA.RADIO_ID -> automotiveRepository.getInternetRadioStations()
             ConstantsAA.FOLDER_ID -> automotiveRepository.getMusicFolders(ConstantsAA.FOLDER_ID)
@@ -687,11 +809,40 @@ object MediaBrowserTree {
         }
     }
 
+    /**
+     * Wyszukiwanie z samochodu: zdanie z asystenta („zagraj album Wolność”) zamieniamy na frazę dla serwera, a wyniki
+     * układamy od najlepszego dopasowania (PiterfyAutoSearch). Dokładny wykonawca czy album ponad luźne trafienia w tytułach.
+     */
     fun search(query: String): ListenableFuture<LibraryResult<ImmutableList<MediaItem>>> {
-        return automotiveRepository.search(
-            query,
-            ConstantsAA.ALBUM_ID,
-            ConstantsAA.ARTIST_ID
+        val parsed = PiterfyAutoSearch.parse(query)
+        val text = if (parsed.isEmpty) query else parsed.queryText
+        return Futures.transform(
+            automotiveRepository.search(text, ConstantsAA.ALBUM_ID, ConstantsAA.ARTIST_ID),
+            { result -> rankResult(result, parsed) },
+            MoreExecutors.directExecutor()
         )
     }
+
+    /** Wyniki wyszukiwania od najlepszego dopasowania; błąd i pusta fraza przechodzą bez zmian. */
+    fun rankResult(
+        result: LibraryResult<ImmutableList<MediaItem>>,
+        parsed: PiterfyAutoSearch.Parsed
+    ): LibraryResult<ImmutableList<MediaItem>> {
+        val list = result.value ?: return result
+        if (parsed.isEmpty || list.size < 2) return result
+        val byId = LinkedHashMap<String, MediaItem>()
+        list.forEach { byId.putIfAbsent(it.mediaId, it) }
+        val ranked = PiterfyAutoSearch.rank(byId.values.map { PiterfyAutoItems.candidate(it) }, parsed).mapNotNull { byId[it.id] }
+        return LibraryResult.ofItemList(ranked, result.params)
+    }
+
+    /** Przy pustym wyniku Auto dostaje jeden element z komunikatem zamiast pustego ekranu. */
+    fun emptyText(parentId: String): String = appContext.getString(
+        when (parentId) {
+            ConstantsAA.DOWNLOADED_ID -> R.string.piterfy_aa_empty_downloads
+            ConstantsAA.PITERFY_FOR_YOU_ID -> R.string.piterfy_aa_empty_for_you
+            ConstantsAA.CONTINUE_ID -> R.string.piterfy_aa_empty_continue
+            else -> R.string.piterfy_aa_empty
+        }
+    )
 }

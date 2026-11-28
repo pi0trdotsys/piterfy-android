@@ -464,6 +464,33 @@ public class PlayerControllerFragment extends Fragment {
             activity.collapseBottomSheetDelayed();
             activity.getNavigationController().getNavController().navigate(R.id.playlistCatalogueFragment);
         });
+        installTvScrub();
+    }
+
+    /**
+     * Przewijanie pilotem: pasek Media3 skacze domyślnie o 1/20 utworu na każde zdarzenie klawisza, a przytrzymana strzałka
+     * generuje ich kilkanaście na sekundę, więc cały utwór przelatywał w sekundę. Przed każdym zdarzeniem ustawiamy krok z
+     * {@link com.eddyizm.tempus.util.PiterfyTvPlan#scrubStepMs}: pierwsze naciśnięcie 5 s, a przytrzymanie przyspiesza stopniowo.
+     * Sam ruch i zatwierdzenie pozycji (po krótkiej pauzie) robi nadal pasek.
+     */
+    private void installTvScrub() {
+        View bar = bind.getRoot().findViewById(R.id.exo_progress);
+        if (!(bar instanceof androidx.media3.ui.DefaultTimeBar)) return;
+        androidx.media3.ui.DefaultTimeBar timeBar = (androidx.media3.ui.DefaultTimeBar) bar;
+        final long[] lastEvent = {0L};
+        timeBar.setOnKeyListener((v, keyCode, event) -> {
+            if (event.getAction() != android.view.KeyEvent.ACTION_DOWN) return false;
+            if (keyCode != android.view.KeyEvent.KEYCODE_DPAD_LEFT && keyCode != android.view.KeyEvent.KEYCODE_DPAD_RIGHT) return false;
+            long now = event.getEventTime();
+            long since = event.getRepeatCount() == 0 ? 0L : now - lastEvent[0];
+            lastEvent[0] = now;
+            androidx.media3.common.Player player = bind.nowPlayingMediaControllerView.getPlayer();
+            long duration = player != null ? player.getDuration() : androidx.media3.common.C.TIME_UNSET;
+            if (duration == androidx.media3.common.C.TIME_UNSET) duration = 0L;
+            timeBar.setKeyTimeIncrement(com.eddyizm.tempus.util.PiterfyTvPlan.scrubStepMs(
+                    event.getRepeatCount(), now - event.getDownTime(), since, duration));
+            return false;   // resztę (ruch i zatwierdzenie) robi pasek
+        });
     }
 
     private void renderTvMode(Button displayMode) {

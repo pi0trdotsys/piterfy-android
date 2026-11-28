@@ -92,6 +92,23 @@ Navidrome + Last.fm ──► discover ──► slskd ──► incoming/ ─�
     - Domyślna lista zawiera audycje o Ameryce (NPR, The Daily, Americast, American History Tellers, Throughline,
       „Ameryka dla Zaawansowanych”, AmerykaPL i inne). `last=N` po adresie RSS ogranicza liczbę trzymanych odcinków;
       dzienne serwisy mają ich tylko kilka.
+    - **Nauka gustu i nowe podcasty na próbę.** `podcast_taste.py` ocenia każdy kanał z tego, co robisz z odcinkami: odsłuch,
+      gwiazdka i ocena 4–5 liczą się na plus, ocena 1★ na mocny minus, a odcinek nietknięty od dwóch tygodni na lekki minus
+      (świeższe zdarzenia ważą więcej, półokres 30 dni; ocena od trzech rozstrzygniętych odcinków). Z kanałów, które lubisz,
+      powstaje profil: języki, kategorie Apple i słowa z tytułów. Raz w tygodniu discover szuka w publicznym katalogu iTunes
+      (tylko ogólne hasła, kraj i język, nic o Tobie), sprawdza RSS kandydatów (świeży odcinek ≤ 90 dni, ≥ 10 odcinków, język
+      z Twojego gustu, bez „explicit”, jeśli takich nie słuchasz) i dopisuje najlepsze, po jednym z kategorii, **na próbę**
+      (domyślnie 2 na przebieg, najwyżej 8 naraz) do `podcasts-auto.json`; `podcasts.txt` zostaje Twój i nigdy nie jest zmieniany.
+      Kanał na próbie trzyma 3 najnowsze odcinki. Po 21 dniach: jeśli odsłuchałeś choć jeden, zostaje na stałe (8 odcinków);
+      jeśli nie, znika razem z nieodsłuchanymi odcinkami i trafia do `podcasts-block.json`, więc nie wróci. Kanał, który
+      mocno Ci nie podszedł (np. dwie oceny 1★), znika od razu. O nowym, zatrzymanym i usuniętym kanale dostajesz mail i wiadomość
+      na Telegramie (`DISCOVER_PODCAST_DISCOVER_NOTIFY=0` wyłącza).
+      ```bash
+      docker compose run --rm --no-deps piterfy-discover --podcast-discover --dry-run   # co by wybrał i dlaczego
+      docker compose run --rm --no-deps piterfy-discover --podcast-discover             # dobierz od razu
+      docker compose run --rm --no-deps piterfy-discover --podcast-keep "Nazwa"          # zostaw kanał na stałe
+      docker compose run --rm --no-deps piterfy-discover --podcast-block "Nazwa"         # usuń i nie wracaj
+      ```
 11. **Tematyczne miksy.** `mixes.py` układa z całej biblioteki playlisty „Happy Mix”, „Dark Mix”, „Electronic Mix”,
     „Bass Boost”, „Chill Mix”, „Workout Mix”, „Rock Mix” i „Hip-Hop Mix”:
     - Utwór wchodzi do miksu według gatunku (tagi w bibliotece, a gdy jest eksport Spotify, także jego gatunki) albo
@@ -223,6 +240,11 @@ Po zmianie uruchom `docker compose up -d piterfy-discover`.
 | `DISCOVER_PODCAST_EVERY_HOURS` | `3` | co ile godzin sprawdza kanały podcastów |
 | `DISCOVER_PODCAST_LATEST` | `20` | ile najnowszych odcinków audycji trzyma |
 | `DISCOVER_PODCAST_KEEP_DAYS` | `30` | po ilu dniach od odsłuchania odcinek znika |
+| `DISCOVER_PODCAST_DISCOVER_EVERY_DAYS` | `7` | co ile dni discover szuka nowych podcastów wg Twojego gustu (`0` = wyłączone) |
+| `DISCOVER_PODCAST_DISCOVER_PER_RUN` / `_MAX` | `2` / `8` | ile nowych kanałów na próbę na jeden przebieg i ile kanałów dobranych automatycznie naraz |
+| `DISCOVER_PODCAST_DISCOVER_TRIAL_DAYS` | `21` | po ilu dniach próby kanał zostaje (był odsłuch) albo odpada (nie było) |
+| `DISCOVER_PODCAST_DISCOVER_QUERIES` | `10` | ile zapytań do iTunes na przebieg |
+| `DISCOVER_PODCAST_DISCOVER_NOTIFY` | `1` | `1` = mail i Telegram o nowym, zatrzymanym i usuniętym kanale |
 | `DISCOVER_MIXES` | `all` | które miksy tworzyć: `all`, lista nazw po `;` (np. `Happy Mix;Bass Boost`) albo pusta = bez miksów |
 | `DISCOVER_MIX_EVERY_HOURS` | `24` | co ile godzin miksy dobierają utwory od nowa |
 | `DISCOVER_MIX_SIZE` / `DISCOVER_MIX_SIZE_MAX` | `40` / `100` | najmniejsza i największa liczba utworów w miksie |

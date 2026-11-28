@@ -37,7 +37,8 @@ object PiterfyGlass {
     @JvmStatic
     fun plan(context: Context): PiterfyGlassPlan.Plan {
         val powerSave = (context.getSystemService(Context.POWER_SERVICE) as? PowerManager)?.isPowerSaveMode == true
-        return PiterfyGlassPlan.plan(Build.VERSION.SDK_INT, PiterfyAppearance.glassEnabled(), PiterfyAppearance.glassIntensity(),
+        return PiterfyGlassPlan.plan(Build.VERSION.SDK_INT, PiterfyAppearance.glassEnabled(),
+            com.eddyizm.tempus.util.PiterfyTvPlan.glassIntensity(PiterfyAppearance.glassIntensity(), com.eddyizm.tempus.util.PiterfyTv.isTelevision()),
             powerSave, PiterfyMotion.enabled())
     }
 

@@ -29,6 +29,12 @@ class PiterfyRepeatPlanTest {
         assertFalse(PiterfyRepeatPlan.shouldTurnOff(Player.REPEAT_MODE_ALL, seek, "a", "b"))
     }
 
+    @Test fun aNewQueueChosenInTheCarTurnsRepeatOneOffButNothingElse() {
+        assertTrue(PiterfyRepeatPlan.shouldTurnOffForNewQueue(one))
+        assertFalse(PiterfyRepeatPlan.shouldTurnOffForNewQueue(Player.REPEAT_MODE_OFF))
+        assertFalse(PiterfyRepeatPlan.shouldTurnOffForNewQueue(Player.REPEAT_MODE_ALL))
+    }
+
     @Test fun missingNewIdChangesNothing() {
         assertFalse(PiterfyRepeatPlan.shouldTurnOff(one, seek, "a", null))
         assertFalse(PiterfyRepeatPlan.shouldTurnOff(one, seek, "a", ""))

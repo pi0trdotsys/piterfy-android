@@ -8,6 +8,8 @@ import androidx.media3.common.util.UnstableApi
 import com.eddyizm.tempus.R
 import com.eddyizm.tempus.ui.activity.MainActivity
 import com.eddyizm.tempus.util.PiterfyHaptics
+import com.eddyizm.tempus.util.PiterfyTv
+import com.eddyizm.tempus.util.PiterfyTvPlan
 import com.google.android.material.snackbar.Snackbar
 
 /**
@@ -20,14 +22,36 @@ object PiterfyUndo {
     /** Pokazuje [message] z akcją „Cofnij”, która woła [onUndo]; [host] to dowolny widok z okna aplikacji. */
     @JvmStatic
     fun show(host: View, message: CharSequence, onUndo: Runnable) {
-        val snackbar = Snackbar.make(host, message, Snackbar.LENGTH_LONG)
+        val tv = PiterfyTv.isTelevision()
+        val snackbar = Snackbar.make(host, message, if (tv) Snackbar.LENGTH_INDEFINITE else Snackbar.LENGTH_LONG)
         activityOf(host.context)?.getSnackbarAnchor()?.let { snackbar.setAnchorView(it) }
         snackbar.setAction(R.string.song_bottom_sheet_undo) {
             PiterfyHaptics.confirm(it)
             onUndo.run()
         }
         PiterfyHaptics.tick(host)
+        if (tv) showForRemote(snackbar, host)
         snackbar.show()
+    }
+
+    /**
+     * Na telewizorze „Cofnij” musi być osiągalne pilotem: przycisk dostaje fokus (strzałki nie dochodzą do Snackbara same),
+     * pasek znika po [PiterfyTvPlan.undoDurationMs], a po zamknięciu fokus wraca tam, gdzie był, zamiast skakać na początek listy.
+     */
+    private fun showForRemote(snackbar: Snackbar, host: View) {
+        val previous = host.rootView.findFocus()
+        val hide = Runnable { if (snackbar.isShown) snackbar.dismiss() }
+        snackbar.view.postDelayed(hide, PiterfyTvPlan.undoDurationMs(0, true).toLong())
+        snackbar.addCallback(object : Snackbar.Callback() {
+            override fun onShown(sb: Snackbar) {
+                sb.view.findViewById<View>(com.google.android.material.R.id.snackbar_action)?.requestFocus()
+            }
+
+            override fun onDismissed(sb: Snackbar, event: Int) {
+                sb.view.removeCallbacks(hide)
+                if (previous != null && previous.isAttachedToWindow && previous.isShown) previous.requestFocus()
+            }
+        })
     }
 
     /** Krótka informacja bez akcji (np. „Zagram następny: …”). */

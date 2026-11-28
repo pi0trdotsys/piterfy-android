@@ -20,4 +20,12 @@ object PiterfyRepeatPlan {
         repeatMode == Player.REPEAT_MODE_ONE &&
             reason == Player.MEDIA_ITEM_TRANSITION_REASON_SEEK &&
             !newId.isNullOrEmpty() && newId != previousId
+
+    /**
+     * Nowa kolejka wybrana ręcznie w samochodzie (przeglądanie albo polecenie głosowe): to też ręczna zmiana utworu, ale ustawienie
+     * kolejki przychodzi do odtwarzacza jako PLAYLIST_CHANGED, a nie SEEK, więc [shouldTurnOff] jej nie zauważa. Wznowienie zapisanej
+     * kolejki po połączeniu z autem tego nie robi: powtarzanie ma wtedy zostać.
+     */
+    @JvmStatic
+    fun shouldTurnOffForNewQueue(repeatMode: Int): Boolean = repeatMode == Player.REPEAT_MODE_ONE
 }

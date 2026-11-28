@@ -11,7 +11,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="center_horizontal" android:layout_marginTop="4dp" android:layout_marginBottom="4dp"
-        android:background="@drawable/piterfy_mode_badge" android:textColor="#10241A" android:textSize="12sp"
+        android:background="@drawable/piterfy_mode_badge" android:textColor="#10241A" android:textSize="14sp"
         android:textStyle="bold" android:visibility="gone" />
     <LinearLayout
         android:layout_width="match_parent"
@@ -41,7 +41,7 @@
     android:id="@+id/piterfy_source_quality"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
- android:gravity="center" android:paddingHorizontal="16dp" android:paddingBottom="3dp" android:textSize="12sp"
+ android:gravity="center" android:paddingHorizontal="16dp" android:paddingBottom="3dp" android:textSize="14sp"
  android:textStyle="bold" android:textColor="#FF1ED760" android:text=""/>
 <androidx.media3.ui.PlayerControlView
     android:id="@+id/now_playing_media_controller_view"

@@ -25,7 +25,7 @@
 
                 <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
                     android:text="@string/piterfy_tv_now_playing" android:textColor="#76EFA5"
-                    android:textSize="14sp" android:textStyle="bold" android:letterSpacing=".12"
+                    android:textSize="16sp" android:textStyle="bold" android:letterSpacing=".12"
                     android:layout_marginBottom="6dp" />
                 <TextView
                     android:id="@+id/player_media_title_label"
@@ -54,14 +54,14 @@
                     android:ellipsize="end" />
 
                 <androidx.media3.ui.DefaultTimeBar android:id="@id/exo_progress"
-                    android:layout_width="match_parent" android:layout_height="36dp"
+                    android:layout_width="match_parent" android:layout_height="44dp"
                     app:bar_height="5dp" app:played_color="#76EFA5"
                     app:scrubber_color="#76EFA5" app:buffered_color="#627D6C" app:unplayed_color="#334238" />
                 <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content">
                     <TextView android:id="@id/exo_position" android:layout_width="0dp"
-                        android:layout_weight="1" android:layout_height="wrap_content" android:textColor="#E1F3E7" />
+                        android:layout_weight="1" android:layout_height="wrap_content" android:textSize="16sp" android:textColor="#E1F3E7" />
                     <TextView android:id="@id/exo_duration" android:layout_width="wrap_content"
-                        android:layout_height="wrap_content" android:textColor="#E1F3E7" />
+                        android:layout_height="wrap_content" android:textSize="16sp" android:textColor="#E1F3E7" />
                 </LinearLayout>
 
                 <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
@@ -69,14 +69,14 @@
                     <ImageButton
                         android:id="@+id/exo_prev" style="@style/PiterfyTvIconButton"
                         android:layout_width="0dp"
-                        android:layout_height="58dp"
+                        android:layout_height="64dp"
                         android:src="@drawable/ic_skip_previous"
                         android:contentDescription="@string/piterfy_tv_previous"
                         android:layout_weight="1" />
                     <ImageButton
                         android:id="@+id/exo_play_pause" style="@style/ExoStyledControls.Button.Center.PlayPause"
                         android:layout_width="0dp"
-                        android:layout_height="58dp"
+                        android:layout_height="64dp"
                         android:layout_weight="1"
                         android:layout_marginHorizontal="8dp"
                         android:padding="14dp"
@@ -86,7 +86,7 @@
                     <ImageButton
                         android:id="@+id/exo_next" style="@style/PiterfyTvIconButton"
                         android:layout_width="0dp"
-                        android:layout_height="58dp"
+                        android:layout_height="64dp"
                         android:src="@drawable/ic_skip_next"
                         android:contentDescription="@string/piterfy_tv_next"
                         android:layout_weight="1" />
@@ -134,40 +134,40 @@
                     android:gravity="center_vertical">
                     <ImageButton
                         android:id="@+id/exo_shuffle" style="@style/PiterfyTvIconButton"
-                        android:layout_width="44dp"
-                        android:layout_height="44dp"
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
                         android:src="@drawable/ic_shuffle"
                         android:contentDescription="@string/piterfy_tv_shuffle" />
                     <ImageButton
                         android:id="@+id/exo_repeat_toggle" style="@style/PiterfyTvIconButton"
-                        android:layout_width="44dp"
-                        android:layout_height="44dp"
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
                         android:src="@drawable/ic_repeat"
                         android:contentDescription="@string/piterfy_tv_repeat" />
                     <ToggleButton
                         android:id="@+id/button_favorite"
-                        android:layout_width="44dp"
-                        android:layout_height="44dp"
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
                         android:background="@drawable/button_favorite_selector" android:textOff="" android:textOn=""
                         android:contentDescription="@string/piterfy_tv_favorite" />
                     <ImageButton
                         android:id="@+id/player_overflow_button" style="@style/PiterfyTvIconButton"
-                        android:layout_width="44dp"
-                        android:layout_height="44dp"
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
                         android:src="@drawable/ic_more_vert"
                         android:contentDescription="@string/piterfy_tv_options" />
                     <ImageButton
                         android:id="@+id/player_info_track" style="@style/PiterfyTvIconButton"
-                        android:layout_width="44dp"
-                        android:layout_height="44dp"
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
                         android:src="@drawable/ic_info_stream"
                         android:contentDescription="@string/piterfy_tv_stream_info" />
                     <Button android:id="@+id/player_playback_speed_button"
                         style="@style/Widget.Material3.Button.TextButton"
                             android:layout_width="wrap_content"
-                            android:layout_height="44dp" />
+                            android:layout_height="48dp" />
                     <ToggleButton android:id="@+id/player_skip_silence_toggle_button"
-                        android:layout_width="40dp" android:layout_height="40dp" android:textOff="" android:textOn=""
+                        android:layout_width="48dp" android:layout_height="48dp" android:textOff="" android:textOn=""
 
                             android:background="@drawable/button_skip_silence_selector"
                             android:contentDescription="@string/piterfy_tv_skip_silence" />
@@ -184,18 +184,20 @@
 
                             android:layout_height="wrap_content"
                             android:layout_marginStart="8dp"
+                            android:textSize="16sp"
                             android:textColor="#E1F3E7" />
                     <LinearLayout android:id="@+id/player_sleep_timer_container" android:layout_width="wrap_content"
                         android:layout_height="wrap_content" android:gravity="center_vertical">
                         <ImageButton
                             android:id="@+id/player_sleep_timer_button" style="@style/PiterfyTvIconButton"
-                            android:layout_width="44dp"
-                            android:layout_height="44dp"
+                            android:layout_width="48dp"
+                            android:layout_height="48dp"
                             android:src="@drawable/ic_timer"
                             android:contentDescription="@string/piterfy_tv_sleep" />
                         <TextView android:id="@+id/player_sleep_timer_label" android:layout_width="wrap_content"
 
                                 android:layout_height="wrap_content"
+                                android:textSize="16sp"
                                 android:textColor="#E1F3E7"
                                 android:visibility="gone" />
                     </LinearLayout>
@@ -206,7 +208,7 @@
                     <RatingBar android:id="@+id/song_rating_bar" android:layout_width="wrap_content"
                         android:layout_height="wrap_content" android:numStars="5" android:stepSize="1" />
                     <TextView android:id="@+id/rating_text" android:layout_width="wrap_content"
-                        android:layout_height="wrap_content" android:textColor="#E1F3E7" />
+                        android:layout_height="wrap_content" android:textSize="16sp" android:textColor="#E1F3E7" />
                 </LinearLayout>
             </LinearLayout>
         </ScrollView>

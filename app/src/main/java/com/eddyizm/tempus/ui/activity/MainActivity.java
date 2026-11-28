@@ -119,6 +119,7 @@ public class MainActivity extends BaseActivity {
     @Override
     public boolean dispatchKeyEvent(android.view.KeyEvent event) {
         if (com.eddyizm.tempus.lan.LanRemoteVolume.dispatch(event)) return true;
+        if (isTelevision && bind != null && handleTvRemoteKey(event)) return true;
         if (isTelevision && event.getKeyCode() == android.view.KeyEvent.KEYCODE_MENU
                 && bind != null && !isNavigationDrawerLocked() && bind.bottomNavigation.isShown()) {
             if (event.getAction() == android.view.KeyEvent.ACTION_UP && !event.isCanceled()) {
@@ -127,6 +128,100 @@ public class MainActivity extends BaseActivity {
             return true;
         }
         return super.dispatchKeyEvent(event);
+    }
+
+    /**
+     * Piterfy TV: klawisze pilota, których nie obsługuje samo Media3. MENU w rozwiniętym odtwarzaczu otwiera jego menu
+     * (opcje utworu), a klawisz SZUKAJ (jest na części pilotów) otwiera wyszukiwarkę, także z rozwiniętego odtwarzacza.
+     * Obie akcje wykonujemy po puszczeniu klawisza, a samo naciśnięcie połykamy, żeby nie zadziałało dwa razy.
+     */
+    private boolean handleTvRemoteKey(android.view.KeyEvent event) {
+        int key = event.getKeyCode();
+        boolean up = event.getAction() == android.view.KeyEvent.ACTION_UP && !event.isCanceled();
+        if (key == android.view.KeyEvent.KEYCODE_MENU && bottomSheetBehavior != null
+                && bottomSheetBehavior.getState() == BottomSheetBehavior.STATE_EXPANDED) {
+            if (up) {
+                View overflow = bind.playerBottomSheet.findViewById(R.id.player_overflow_button);
+                if (overflow != null) overflow.performClick();
+            }
+            return true;
+        }
+        if (key == android.view.KeyEvent.KEYCODE_SEARCH && navController != null) {
+            var destination = navController.getCurrentDestination();
+            boolean signedOut = destination == null || destination.getId() == R.id.loginFragment
+                    || destination.getId() == R.id.landingFragment;
+            if (!signedOut && up && destination.getId() != R.id.searchFragment) {
+                if (bottomSheetBehavior != null && bottomSheetBehavior.getState() == BottomSheetBehavior.STATE_EXPANDED) {
+                    collapseBottomSheetDelayed();
+                }
+                navController.navigate(R.id.searchFragment);
+            }
+            return !signedOut;
+        }
+        return false;
+    }
+
+    /** Piterfy TV: 5% bezpiecznego marginesu (overscan) z lewej, prawej i u góry, liczone z rzeczywistego rozmiaru ekranu. */
+    private void applyTvSafeArea() {
+        View content = (View) bind.navHostFragment.getParent();
+        android.util.DisplayMetrics metrics = getResources().getDisplayMetrics();
+        int horizontal = Math.round(com.eddyizm.tempus.util.PiterfyTvPlan.safeHorizontalDp(metrics.widthPixels / metrics.density) * metrics.density);
+        int top = Math.round(com.eddyizm.tempus.util.PiterfyTvPlan.safeVerticalDp(metrics.heightPixels / metrics.density) * metrics.density);
+        content.setPadding(horizontal, top, horizontal, content.getPaddingBottom());
+    }
+
+    /**
+     * Piterfy TV: po zmianie ekranu widok, który miał fokus, znika razem z fragmentem i pilot „gubi” fokus (strzałki nic nie robią).
+     * Gdy nic nie ma fokusu, ustawiamy go na pierwszym elemencie listy nowego ekranu; lista ładuje się z opóźnieniem, więc próbujemy
+     * kilka razy. Fokus, który użytkownik już ma (np. na dolnej nawigacji przy przełączaniu zakładek), zostaje nietknięty.
+     */
+    private void installTvFocusRecovery() {
+        navController.addOnDestinationChangedListener((controller, destination, arguments) -> focusContentWhenLost(0));
+    }
+
+    private void focusContentWhenLost(int attempt) {
+        Long delay = com.eddyizm.tempus.util.PiterfyTvPlan.focusRetryDelayMs(attempt);
+        if (delay == null) return;
+        bind.getRoot().postDelayed(() -> {
+            if (isFinishing() || isDestroyed() || bind == null) return;
+            if (bottomSheetBehavior != null && bottomSheetBehavior.getState() == BottomSheetBehavior.STATE_EXPANDED) return;
+            View focused = bind.getRoot().findFocus();
+            if (focused != null && focused != bind.getRoot()) return;
+            if (!focusFirstContentItem()) focusContentWhenLost(attempt + 1);
+        }, delay);
+    }
+
+    /** Pierwszy element pierwszej niepustej listy na ekranie; bez listy: najwyższy, lewy użyteczny element (PiterfyTvPlan). */
+    private boolean focusFirstContentItem() {
+        View root = bind.navHostFragment;
+        androidx.recyclerview.widget.RecyclerView list = firstFilledList(root);
+        if (list != null) {
+            for (int i = 0; i < list.getChildCount(); i++) {
+                if (list.getChildAt(i).requestFocus()) return true;
+            }
+        }
+        java.util.ArrayList<View> focusables = root.getFocusables(View.FOCUS_DOWN);
+        java.util.ArrayList<com.eddyizm.tempus.util.PiterfyTvPlan.FocusCandidate> candidates = new java.util.ArrayList<>();
+        int[] where = new int[2];
+        for (View candidate : focusables) {
+            candidate.getLocationOnScreen(where);
+            boolean usable = candidate.isShown() && candidate.isEnabled() && candidate.getWidth() > 0 && candidate.getHeight() > 0;
+            candidates.add(new com.eddyizm.tempus.util.PiterfyTvPlan.FocusCandidate(where[1], where[0], usable));
+        }
+        Integer pick = com.eddyizm.tempus.util.PiterfyTvPlan.pickDefaultFocus(candidates);
+        return pick != null && focusables.get(pick).requestFocus();
+    }
+
+    @Nullable
+    private static androidx.recyclerview.widget.RecyclerView firstFilledList(View view) {
+        if (view instanceof androidx.recyclerview.widget.RecyclerView rv && rv.isShown() && rv.getChildCount() > 0) return rv;
+        if (view instanceof android.view.ViewGroup group) {
+            for (int i = 0; i < group.getChildCount(); i++) {
+                androidx.recyclerview.widget.RecyclerView found = firstFilledList(group.getChildAt(i));
+                if (found != null) return found;
+            }
+        }
+        return null;
     }
 
     // #688: Deep navigation accumulates fragment + back-stack state in the saved
@@ -168,6 +263,7 @@ public class MainActivity extends BaseActivity {
         View view = bind.getRoot();
         setContentView(view);
         isTelevision = TvFocus.install(this);
+        if (isTelevision) applyTvSafeArea();
 
         mainViewModel = new ViewModelProvider(this).get(MainViewModel.class);
         assetLinkNavigator = new AssetLinkNavigator(this);
@@ -257,6 +353,7 @@ public class MainActivity extends BaseActivity {
         }
 
         toggleNavigationDrawerLockOnOrientationChange();
+        if (isTelevision) installTvFocusRecovery();
 
     }
 
@@ -465,6 +562,9 @@ public class MainActivity extends BaseActivity {
                         case BottomSheetBehavior.STATE_COLLAPSED:
                             if (isTelevision) {
                                 bind.navHostFragment.setDescendantFocusability(android.view.ViewGroup.FOCUS_AFTER_DESCENDANTS);
+                                // pełny odtwarzacz otwiera się z mini paska: po zwinięciu fokus wraca na niego, nie ginie
+                                View header = playerBottomSheetFragment != null ? playerBottomSheetFragment.getPlayerHeader() : null;
+                                if (header != null) header.post(header::requestFocus);
                             }
                             animateBottomSheet(0.0f);
                             if (!isLandscape) {

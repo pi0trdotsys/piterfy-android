@@ -27,3 +27,31 @@ Accent on America | https://anchor.fm/s/115525e34/podcast/rss | last=4
 Ameryka dla Zaawansowanych | https://anchor.fm/s/119257258/podcast/rss | last=10
 AmerykaPL (Wiadomości) | https://anchor.fm/s/10f0c8b94/podcast/rss | last=7
 Ameryka i ja (RMF Classic) | https://static.rmf.pl/portal/podcasts/xml/ameryka-i-ja-lidia-krawczuk.xml | last=4
+
+# Nauka języków: Easy Languages (oficjalne kanały; adresy RSS sprawdzone 2026-11-28). last=8 trzyma osiem najnowszych odcinków.
+Easy Spanish | https://feeds.fireside.fm/easyspanish/rss | last=8
+Easy French | https://feeds.fireside.fm/easyfrench/rss | last=8
+Easy German | https://proxyfeed.svmaudio.com/feeds/easygerman/feed.xml | last=8
+Easy Italian | https://feeds.fireside.fm/easyitalian/rss | last=8
+Easy Dutch | https://feeds.fireside.fm/easydutch/rss | last=8
+Easy Turkish | https://feeds.fireside.fm/easyturkish/rss | last=8
+Easy English | https://feeds.fireside.fm/easyenglish/rss | last=8
+Easy Russian | https://feeds.fireside.fm/easyrussian/rss | last=8
+Easy Greek | https://feeds.fireside.fm/easygreek/rss | last=8
+Super Easy Greek | https://feeds.fireside.fm/supereasygreek/rss | last=8
+Super Easy Polish | https://rss.libsyn.com/shows/534012/destinations/4593967.xml | last=8
+Easy Catalan | https://feeds.fireside.fm/easycatalan/rss | last=8
+Easy Languages: Stories of Language Learning | https://feeds.fireside.fm/easylanguages/rss | last=8
+
+# Nauka języków: inne uznane kursy i opowieści po hiszpańsku.
+Coffee Break Spanish | https://feeds.acast.com/public/shows/985e7c00-8945-4e0d-a4da-b93049180ce1 | last=6
+Coffee Break French | https://feeds.acast.com/public/shows/47990e88-454b-4e3b-bf78-75a172c33184 | last=6
+Coffee Break German | https://feeds.acast.com/public/shows/0c3c53a1-180f-435a-9453-cec3883b4ada | last=6
+Coffee Break Italian | https://feeds.acast.com/public/shows/86766c5f-1580-450f-9376-bd74b57fcfbb | last=6
+Slow German | https://feed.slowgerman.com/feed/mp3 | last=8
+Duolingo Spanish Podcast | https://anchor.fm/s/fc714074/podcast/rss | last=6
+Radio Ambulante | https://www.omnycontent.com/d/playlist/e73c998e-6e60-432f-8610-ae210140c5b1/b3c9b6e7-72ba-45c4-aff9-b1e7012d213b/092b66a8-4329-4183-bb12-b1e7012d216f/podcast.rss | last=4
+
+# Technologia i przyszłość po polsku.
+Futura Podcast | https://rss.buzzsprout.com/1412281.rss | last=8
+O przyszłości teraz | https://anchor.fm/s/daf139f4/podcast/rss | last=8

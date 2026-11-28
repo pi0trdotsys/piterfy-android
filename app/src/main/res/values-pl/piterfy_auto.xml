@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Piterfy: Android Auto (Kontynuuj, Dla Ciebie, puste listy, krótkie komunikaty o błędach w czasie jazdy) -->
+<resources>
+    <string name="piterfy_aa_continue">Kontynuuj</string>
+    <string name="piterfy_aa_resume_queue">Wznów: %1$s</string>
+    <string name="piterfy_aa_resume_queue_plain">Wznów odtwarzanie</string>
+    <string name="piterfy_aa_for_you">Dla Ciebie</string>
+    <string name="piterfy_aa_group_discover">Odkrywaj</string>
+    <string name="piterfy_aa_group_mixes">Miksy</string>
+    <string name="piterfy_aa_group_charts">Listy przebojów</string>
+    <string name="piterfy_aa_group_soundtracks">Soundtracki gier</string>
+    <string name="piterfy_aa_group_playlists">Twoje playlisty</string>
+    <string name="piterfy_aa_empty">Nic tu jeszcze nie ma</string>
+    <string name="piterfy_aa_empty_for_you">Brak playlist z serwera</string>
+    <string name="piterfy_aa_empty_continue">Nie ma czego kontynuować</string>
+    <string name="piterfy_aa_empty_downloads">Brak pobranych utworów. Pobierz je w aplikacji, żeby słuchać bez internetu.</string>
+    <string name="piterfy_aa_error_network">Brak połączenia z serwerem</string>
+    <string name="piterfy_aa_error_auth">Zaloguj się ponownie w aplikacji</string>
+    <string name="piterfy_aa_error_unavailable">Ten utwór jest niedostępny</string>
+    <string name="piterfy_aa_error_other">Nie można odtworzyć utworu</string>
+    <string name="piterfy_aa_error_open_app">Otwórz Piterfy</string>
+</resources>

@@ -87,6 +87,14 @@ PODCASTS_FILE    = Path(os.environ.get("PODCASTS_FILE", "/app/podcasts.txt"))  #
 PODCAST_EVERY_HOURS = env_float("DISCOVER_PODCAST_EVERY_HOURS", 3)  # co ile godzin sprawdza kanały RSS
 PODCAST_LATEST   = env_int("DISCOVER_PODCAST_LATEST", 20)      # tyle najnowszych odcinków audycji trzyma
 PODCAST_KEEP_DAYS = env_int("DISCOVER_PODCAST_KEEP_DAYS", 30)  # odsłuchany odcinek znika po tylu dniach
+PODCAST_AUTO_FILE = DATA_DIR / "podcasts-auto.json"              # kanały dobrane automatycznie (próbne i zatrzymane) — podcasts.txt zostaje ręczny
+PODCAST_BLOCK_FILE = DATA_DIR / "podcasts-block.json"            # kanały, które odpadły albo zablokowałeś — nie wracają
+PODCAST_DISCOVER_EVERY_DAYS = env_float("DISCOVER_PODCAST_DISCOVER_EVERY_DAYS", 7)  # co ile dni szukamy nowych podcastów wg Twojego gustu; 0 = wyłączone
+PODCAST_DISCOVER_PER_RUN = env_int("DISCOVER_PODCAST_DISCOVER_PER_RUN", 2)    # ile nowych kanałów na próbę na jeden przebieg
+PODCAST_DISCOVER_MAX = env_int("DISCOVER_PODCAST_DISCOVER_MAX", 8)            # ile kanałów auto naraz (próbne i zatrzymane)
+PODCAST_DISCOVER_TRIAL_DAYS = env_int("DISCOVER_PODCAST_DISCOVER_TRIAL_DAYS", 21)  # po ilu dniach próby kanał zostaje (był odsłuch) albo odpada
+PODCAST_DISCOVER_QUERIES = env_int("DISCOVER_PODCAST_DISCOVER_QUERIES", 10)   # ile zapytań do iTunes na przebieg
+PODCAST_DISCOVER_NOTIFY = env_int("DISCOVER_PODCAST_DISCOVER_NOTIFY", 1)      # 1 = mail i Telegram o nowym, zatrzymanym i usuniętym kanale
 MIXES            = os.environ.get("DISCOVER_MIXES", "all")      # „all”, lista nazw po średniku albo pusta = bez miksów (mixes.py)
 MIX_EVERY_HOURS  = env_float("DISCOVER_MIX_EVERY_HOURS", 24)    # co ile godzin miksy dobierają utwory od nowa
 MIX_SIZE         = env_int("DISCOVER_MIX_SIZE", 40)             # najmniejsza liczba utworów w miksie (rośnie z biblioteką)
@@ -142,6 +150,7 @@ import origins  # noqa: E402  (miksy wg pochodzenia: French Music, Latin Music, 
 import games  # noqa: E402  (soundtracki z najpopularniejszych gier jako playlisty)
 import health  # noqa: E402  (stan serwera: liczniki Last.fm i Deezera, alarmy dla panelu „Statystyki → Serwer”)
 import health_alerts  # noqa: E402  (mail i Telegram, gdy stan serwera robi się czerwony)
+import podcast_taste  # noqa: E402  (nauka gustu w podcastach i dobór nowych kanałów)
 import translate  # noqa: E402  (tłumaczenia tekstów piosenek: rejestruje POST /piterfy-api/translate w profile_api)
 import radar  # noqa: E402  (radar nowości: nowe wydania wykonawców z biblioteki + „Dociągnij” przez slskd)
 import yearago  # noqa: E402  (miks „Rok temu o tej porze” ze scrobbli Last.fm)
@@ -338,7 +347,7 @@ def listening_profile(nd, history):
                 offer(song_artist(song), song.get("title") or "", last, song.get("playCount", 0))
 
     scrobbles = {}
-    shows = podcasts.show_names(podcasts.load_shows(PODCASTS_FILE, log=lambda *_: None))
+    shows = podcasts.show_names(load_podcast_shows(quiet=True))
     for artist, title, when in lastfm_scrobbles(since):
         if unicodedata.normalize("NFKC", artist).casefold() in shows:  # scrobble odcinka audycji
             continue
@@ -1986,8 +1995,12 @@ def refresh_yearago(state, force=False, dry_run=False):
 
 # ── podcasty ─────────────────────────────────────────────────────────────────
 
-def load_podcast_shows():
-    return podcasts.load_shows(PODCASTS_FILE, PODCAST_LATEST, PODCAST_KEEP_DAYS, log)
+def load_podcast_shows(quiet=False):
+    """Kanały do synchronizacji: ręczne z podcasts.txt plus dobrane automatycznie (podcasts-auto.json, bez zablokowanych)."""
+    say = (lambda *_: None) if quiet else log
+    curated = podcasts.load_shows(PODCASTS_FILE, PODCAST_LATEST, PODCAST_KEEP_DAYS, say)
+    return podcast_taste.merge_shows(curated, podcast_taste.load_auto(PODCAST_AUTO_FILE, say),
+                                     podcast_taste.load_block(PODCAST_BLOCK_FILE, say), PODCAST_KEEP_DAYS)
 
 
 def all_native_songs(nd):
@@ -2021,7 +2034,9 @@ def refresh_podcasts(state, force=False):
                 log(f"Podcast „{show['name']}”: {e}")
             save_state(state)  # po każdej audycji — przerwany przebieg nie zgubi pobranych odcinków
         nd = Navidrome()
-        changed += podcasts.cleanup(all_native_songs(nd), shows, state, MUSIC_DIR, log)
+        songs = all_native_songs(nd)
+        changed += podcasts.cleanup(songs, shows, state, MUSIC_DIR, log)
+        changed += podcast_learn(state, songs)  # ocena kanałów z odsłuchów i przegląd kanałów na próbie (nie zatrzymuje reszty)
         if changed:
             log(f"Podcasty: zmiany w bibliotece ({changed}) — skanuję Navidrome...")
             nd.rescan()
@@ -2029,6 +2044,168 @@ def refresh_podcasts(state, force=False):
     except Exception as e:  # podcasty nie mogą zatrzymać odkrywania muzyki
         log(f"Podcasty się nie odświeżyły: {e} — spróbuję przy następnym sprawdzeniu.")
         state["podcasts_checked"] = time.time() - PODCAST_EVERY_HOURS * 3600 + 1800  # ponowna próba za pół godziny
+
+
+def podcast_notify(kind, show, why=""):
+    if PODCAST_DISCOVER_NOTIFY:
+        text = podcast_taste.describe(kind, show, why)
+        subject, _, body = text.partition("\n")
+        notify(subject, body.strip() or subject)
+
+
+def podcast_learn(state, songs, now=None, dry_run=False):
+    """Uczy się gustu: ocenia każdy kanał z odsłuchów (zapis do state['podcast_taste']) i przegląda kanały auto na próbie:
+    po oknie próby z odsłuchem zostają, bez odsłuchu odpadają razem z nieodsłuchanymi odcinkami, nielubiane odpadają od razu.
+    Zwraca liczbę usuniętych plików. Błąd tu nie może zatrzymać podcastów."""
+    try:
+        now = now or datetime.now(timezone.utc)
+        summaries = podcast_taste.summarize_shows(state.get("podcasts", {}), songs, now)
+        state["podcast_taste"] = {"shows": summaries, "updated": now.isoformat(timespec="seconds")}
+        if PODCAST_DISCOVER_EVERY_DAYS <= 0:
+            return 0
+        auto = podcast_taste.load_auto(PODCAST_AUTO_FILE, log)
+        actions = podcast_taste.review_trials(auto, summaries, now, PODCAST_DISCOVER_TRIAL_DAYS)
+        if not actions:
+            return 0
+        if dry_run:
+            for kind, show, why in actions:
+                log(f"{podcast_taste.ICONS[kind]} {show['name']}: {kind} ({why})")
+            return 0
+        removed = 0
+        blocklist = podcast_taste.load_block(PODCAST_BLOCK_FILE, log)
+        for show in podcast_taste.apply_review(auto, blocklist, actions, now):
+            removed += podcasts.remove_unplayed(show["name"], state, songs, MUSIC_DIR, log)
+        podcast_taste.save_json(PODCAST_AUTO_FILE, auto)
+        podcast_taste.save_json(PODCAST_BLOCK_FILE, blocklist)
+        for kind, show, why in actions:
+            log(f"{podcast_taste.ICONS[kind]} Podcast „{show['name']}”: {'zostaje na stałe' if kind == 'kept' else 'usunięty'} ({why}).")
+            podcast_notify(kind, show, why)
+        return removed
+    except Exception as e:
+        log(f"Nauka gustu w podcastach się nie udała: {e}")
+        return 0
+
+
+def _fetch_text(url, timeout=30):
+    with podcasts.open_url(url, timeout=timeout) as response:
+        return response.read()
+
+
+def discover_podcasts(state, now=None, dry_run=False, fetch=None, fetch_feed=None, pause=1.5):
+    """Szuka nowych podcastów podobnych do tych, które lubisz (iTunes Search + sprawdzenie RSS) i dopisuje je na próbę.
+    `fetch` i `fetch_feed` można podmienić (testy). Zwraca listę dopisanych (albo, przy dry_run, wybranych) kanałów."""
+    now = now or datetime.now(timezone.utc)
+    fetch = fetch or _fetch_text
+    fetch_feed = fetch_feed or podcasts.fetch_feed
+    shows = load_podcast_shows(quiet=True)
+    summaries = (state.get("podcast_taste") or {}).get("shows", {})
+    metas = {name: (data or {}).get("meta") or {} for name, data in state.get("podcasts", {}).items()}
+    profile = podcast_taste.build_profile(shows, summaries, metas)
+    if not profile["languages"] or not profile["sources"]:
+        log("Podcasty: jeszcze nie znam języków i kategorii Twoich kanałów (pojawią się po pierwszej synchronizacji) — szukam przy następnym przebiegu.")
+        return []
+    auto = podcast_taste.load_auto(PODCAST_AUTO_FILE, log)
+    slots = PODCAST_DISCOVER_MAX - len(auto["shows"])
+    if slots <= 0:
+        log(f"Podcasty: masz już {len(auto['shows'])} kanałów auto (limit {PODCAST_DISCOVER_MAX}) — nie dobieram nowych.")
+        return []
+    if not podcast_space_ok():
+        log("Podcasty: za mało miejsca na dysku — nie dobieram nowych kanałów.")
+        return []
+    blocklist = podcast_taste.load_block(PODCAST_BLOCK_FILE, log)
+    known_urls = {podcast_taste.norm_url(s["url"]) for s in shows}
+    known_names = {podcast_taste.fold(s["name"]) for s in shows}
+    queries = podcast_taste.query_plan(profile, int(now.timestamp() // 604800), PODCAST_DISCOVER_QUERIES)
+    shares = sorted(podcast_taste.language_shares(profile).items(), key=lambda x: -x[1])[:4]
+    log(f"Podcasty: szukam nowych wg gustu ({len(queries)} zapytań; języki: " + ", ".join(f"{k} {v:.0%}" for k, v in shares) + ").")
+    found = []
+    for query in queries:
+        try:
+            for cand in podcast_taste.parse_search(fetch(podcast_taste.search_url(query["term"], query["country"]))):
+                cand["qlang"] = query["language"]   # z jakiego języka zapytania pochodzi — do równoważenia sprawdzanych kanałów
+                found.append(cand)
+        except (OSError, ValueError, urllib.error.URLError) as e:
+            log(f"   iTunes „{query['term']}” ({query['country']}): {e}")
+        time.sleep(pause)
+    cands = podcast_taste.prefilter(found, known_urls, known_names, set(blocklist["urls"]), set(blocklist["names"]), profile, now)
+    top = podcast_taste.balanced_top(cands, profile, now, 12)
+    log(f"Podcasty: {len(found)} wyników, {len(cands)} po wstępnym sitku, sprawdzam {len(top)} (po kolei z każdego języka).")
+    scored = []
+    for cand in top:
+        try:
+            feed = fetch_feed(cand["url"])
+        except (OSError, ValueError, urllib.error.URLError, podcasts.ET.ParseError) as e:
+            log(f"   {cand['name']}: kanał nie działa ({e})")
+            continue
+        finally:
+            time.sleep(pause / 2)
+        meta, why = podcast_taste.validate_feed(cand, feed, profile, now)
+        if not meta:
+            log(f"   {cand['name']}: odpada ({why})")
+            continue
+        score, category, reason, _similar = podcast_taste.final_score(cand, meta, profile, now)
+        scored.append((score, category, cand, meta, reason))
+    taken = [s.get("category") for s in auto["shows"] if s.get("status") != "kept" and s.get("category")]
+    picks = podcast_taste.pick_diverse(scored, min(PODCAST_DISCOVER_PER_RUN, slots), taken)
+    if dry_run:
+        for score, category, cand, meta, reason in sorted(scored, key=lambda x: -x[0])[:10]:
+            mark = "→" if any(p[2] is cand for p in picks) else " "
+            log(f"  {mark} {score:.3f}  {cand['name']} — {reason}")
+        return [p[2] for p in picks]
+    added = podcast_taste.add_trials(auto, picks, now, PODCAST_DISCOVER_MAX)
+    if added:
+        podcast_taste.save_json(PODCAST_AUTO_FILE, auto)
+        state["podcasts_checked"] = 0  # synchronizacja od razu przy następnym obiegu pętli
+    for show in added:
+        log(f"🎙 Nowy podcast na próbę: {show['name']} ({show['reason']})")
+        podcast_notify("added", show)
+    if not added:
+        log("Podcasty: tym razem nic nowego, co pasuje do Twojego gustu.")
+    return added
+
+
+def refresh_podcast_discovery(state, force=False, dry_run=False):
+    """Co PODCAST_DISCOVER_EVERY_DAYS dni dobiera nowe podcasty wg gustu (0 = wyłączone). Błąd nie zatrzymuje reszty."""
+    if not PODCASTS_FILE.is_file():
+        return
+    if not force and (PODCAST_DISCOVER_EVERY_DAYS <= 0
+                      or time.time() - state.get("podcast_discover_checked", 0) < PODCAST_DISCOVER_EVERY_DAYS * 86400):
+        return
+    try:
+        discover_podcasts(state, dry_run=dry_run)
+        if not dry_run:
+            state["podcast_discover_checked"] = time.time()
+    except Exception as e:
+        log(f"Dobór nowych podcastów się nie udał: {e} — spróbuję za godzinę.")
+        if not dry_run:
+            state["podcast_discover_checked"] = time.time() - PODCAST_DISCOVER_EVERY_DAYS * 86400 + 3600
+
+
+def podcast_block_show(name, keep=False):
+    """--podcast-block „Nazwa”: kanał auto znika (z nieodsłuchanymi odcinkami) i nie wraca; --podcast-keep: zostaje na stałe."""
+    now = datetime.now(timezone.utc)
+    auto = podcast_taste.load_auto(PODCAST_AUTO_FILE, log)
+    names = ", ".join(s["name"] for s in auto["shows"]) or "(brak kanałów auto)"
+    if keep:
+        show = podcast_taste.promote(auto, name, now)
+        if not show:
+            raise SystemExit(f"Podaj fragment nazwy jednego kanału auto. Masz: {names}")
+        podcast_taste.save_json(PODCAST_AUTO_FILE, auto)
+        log(f"✅ „{show['name']}” zostaje na stałe (ostatnie {show['last']} odcinków).")
+        return
+    matches = [s for s in auto["shows"] if podcast_taste.fold(name) in podcast_taste.fold(s["name"])]
+    if len(matches) != 1:
+        raise SystemExit(f"Podaj fragment nazwy jednego kanału auto. Masz: {names}")
+    show, blocklist, state = matches[0], podcast_taste.load_block(PODCAST_BLOCK_FILE, log), load_state()
+    podcast_taste.apply_review(auto, blocklist, [("dropped", show, "zablokowany ręcznie")], now)
+    nd = Navidrome()
+    removed = podcasts.remove_unplayed(show["name"], state, all_native_songs(nd), MUSIC_DIR, log)
+    podcast_taste.save_json(PODCAST_AUTO_FILE, auto)
+    podcast_taste.save_json(PODCAST_BLOCK_FILE, blocklist)
+    save_state(state)
+    if removed:
+        nd.rescan()
+    log(f"🗑 „{show['name']}” usunięty i zablokowany (usunięte nieodsłuchane odcinki: {removed}).")
 
 
 def podcast_fetch_older(name, year, pattern, execute):
@@ -2072,6 +2249,9 @@ def main():
     parser.add_argument("--games", action="store_true", help="odśwież soundtracki gier od razu (z --dry-run: tylko pokaż, co by zrobił)")
     parser.add_argument("--radar", action="store_true", help="odśwież radar nowości od razu (z --dry-run: tylko pokaż nowe wydania)")
     parser.add_argument("--yearago", action="store_true", help="odśwież miks „Rok temu o tej porze” od razu (z --dry-run: tylko pokaż)")
+    parser.add_argument("--podcast-discover", action="store_true", help="dobierz nowe podcasty wg gustu od razu (z --dry-run: tylko pokaż wybór z uzasadnieniem)")
+    parser.add_argument("--podcast-block", metavar="NAZWA", help="usuń kanał dobrany automatycznie (z nieodsłuchanymi odcinkami) i nie dobieraj go więcej")
+    parser.add_argument("--podcast-keep", metavar="NAZWA", help="zostaw kanał dobrany automatycznie na stałe")
     parser.add_argument("--podcast-fetch", metavar="AUDYCJA", help="pobierz starsze odcinki audycji (podgląd, dopóki nie dodasz --yes)")
     parser.add_argument("--year", type=int, help="z --podcast-fetch: tylko odcinki z tego roku")
     parser.add_argument("--match", metavar="REGEX", help="z --podcast-fetch: tylko odcinki z pasującym tytułem (np. serię)")
@@ -2079,6 +2259,15 @@ def main():
     args = parser.parse_args()
     if args.podcast_fetch:
         podcast_fetch_older(args.podcast_fetch, args.year, args.match, args.yes)
+        return
+    if args.podcast_block or args.podcast_keep:
+        podcast_block_show(args.podcast_block or args.podcast_keep, keep=bool(args.podcast_keep))
+        return
+    if args.podcast_discover:
+        state = load_state()
+        refresh_podcast_discovery(state, force=True, dry_run=args.dry_run)
+        if not args.dry_run:
+            save_state(state)
         return
     if args.podcasts:
         state = load_state()
@@ -2174,6 +2363,7 @@ def main():
         check_slskd(state)
         refresh_taste(state)
         refresh_podcasts(state)
+        refresh_podcast_discovery(state)  # co tydzień: nowe podcasty wg gustu na próbę (podcast_taste.py)
         refresh_mixes(state)
         refresh_charts(state)
         refresh_games(state)

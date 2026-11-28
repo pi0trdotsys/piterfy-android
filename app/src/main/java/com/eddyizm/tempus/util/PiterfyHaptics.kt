@@ -58,7 +58,7 @@ object PiterfyHaptics {
     fun detent(fraction: Float, steps: Int): Int = (fraction.coerceIn(0f, 1f) * steps.coerceAtLeast(1) + 0.5f).toInt()
 
     @JvmStatic
-    fun enabled(): Boolean = runCatching { App.getInstance().preferences.getBoolean(KEY, true) }.getOrDefault(true)
+    fun enabled(): Boolean = runCatching { PiterfyTvPlan.hapticsAllowed(App.getInstance().preferences.getBoolean(KEY, true), PiterfyTv.isTelevision()) }.getOrDefault(true)
 
     @JvmStatic fun perform(view: View?, kind: Kind) {
         if (view == null || !enabled()) return

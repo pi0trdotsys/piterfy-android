@@ -97,7 +97,20 @@ def parse_feed(data):
     episodes.sort(key=lambda e: e["date"], reverse=True)
     for rank, episode in enumerate(reversed(episodes), 1):
         episode["track"] = episode["number"] or rank
-    return {"cover": cover, "episodes": episodes}
+    return {"cover": cover, "episodes": episodes, "meta": channel_meta(channel)}
+
+
+def channel_meta(channel):
+    """Język, kategorie Apple (także podkategorie), tytuł i znacznik „explicit” kanału — do nauki gustu (podcast_taste.py)."""
+    categories = []
+    for element in channel.iter(ITUNES + "category"):
+        text = " ".join((element.get("text") or "").replace("&amp;", "&").split())
+        if text and text not in categories:
+            categories.append(text)
+    explicit = (channel.findtext(ITUNES + "explicit") or "").strip().lower() in ("true", "yes", "explicit")
+    return {"title": " ".join((channel.findtext("title") or "").split())[:160],
+            "language": (channel.findtext("language") or "").strip().lower()[:12],
+            "categories": categories[:8], "explicit": explicit}
 
 
 def fetch_feed(url):
@@ -312,8 +325,10 @@ def download_episode(show, episode, music_dir, log):
 
 
 def sync_show(show, music_dir, state, log, free_ok=lambda: True, episodes=None):
-    seen = state.setdefault("podcasts", {}).setdefault(show["name"], {"episodes": {}})["episodes"]
+    show_state = state.setdefault("podcasts", {}).setdefault(show["name"], {"episodes": {}})
+    seen = show_state["episodes"]
     feed = fetch_feed(show["url"])
+    show_state["meta"] = feed.get("meta") or show_state.get("meta") or {}   # język i kategorie dla nauki gustu
     if episodes is None:
         episodes = [e for e in feed["episodes"][:show["last"]] if e["guid"] not in seen]
     got = 0
@@ -384,4 +399,36 @@ def cleanup(songs, shows, state, music_dir, log, now=None):
             episode["status"] = "deleted"
             removed += 1
             log(f"🗑 Odsłuchany ponad {keep.get(name, 30)} dni temu: {name} — {episode['title'][:70]}")
+    return removed
+
+
+def remove_unplayed(name, state, songs, music_dir, log):
+    """Usuwa z dysku pobrane, a nieodsłuchane odcinki kanału (po odrzuceniu kanału na próbie). Odsłuchane i ocenione zostają
+    i znikną same po `keep` dniach od odsłuchania. Gdy po kanale nie zostaje żaden plik, znika też jego folder (z okładką)."""
+    by_path = {library_key(s): s for s in songs}
+    show_state = state.get("podcasts", {}).get(name) or {}
+    removed = 0
+    for episode in show_state.get("episodes", {}).values():
+        if episode.get("status") != "done" or not episode.get("file"):
+            continue
+        song = by_path.get(unicodedata.normalize("NFC", episode["file"]))
+        if song and (song.get("playCount") or song.get("starred") or song.get("rating")):
+            continue
+        path = Path(music_dir) / episode["file"]
+        try:
+            path.unlink(missing_ok=True)
+        except OSError as e:
+            log(f"Podcasty: nie usunąłem {path.name}: {e}")
+            continue
+        episode["status"] = "deleted"
+        removed += 1
+    folder = Path(music_dir) / FOLDER / safe_name(name)
+    try:
+        leftovers = [f for f in folder.iterdir() if not (f.is_file() and f.stem.lower() in ("cover", "folder"))]
+        if folder.is_dir() and not leftovers:
+            for f in folder.iterdir():
+                f.unlink()
+            folder.rmdir()
+    except OSError:
+        pass
     return removed
