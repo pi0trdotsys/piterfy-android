@@ -8,6 +8,8 @@ sprząta nieodsłuchane do kosza i wysyła podsumowania oraz alarmy mailem.
   python discover.py --dry-run                  tylko pokazuje, co by pobrał (nic nie ściąga)
   python discover.py --search "Artysta - Tytuł" jedno próbne wyszukiwanie w Soulseek
   python discover.py --test-mail                próbny mail
+  python discover.py --test-telegram            próbna wiadomość na Telegram
+  python discover.py --health-check             stan serwera i ustawienia powiadomień o awarii (nic nie wysyła)
 
 Bez zewnętrznych bibliotek — wystarczy goły Python 3.11+.
 """
@@ -139,6 +141,7 @@ import charts  # noqa: E402  (listy przebojów: Top 100 Polska — dopasowanie d
 import origins  # noqa: E402  (miksy wg pochodzenia: French Music, Latin Music, Polski Rap...)
 import games  # noqa: E402  (soundtracki z najpopularniejszych gier jako playlisty)
 import health  # noqa: E402  (stan serwera: liczniki Last.fm i Deezera, alarmy dla panelu „Statystyki → Serwer”)
+import health_alerts  # noqa: E402  (mail i Telegram, gdy stan serwera robi się czerwony)
 import translate  # noqa: E402  (tłumaczenia tekstów piosenek: rejestruje POST /piterfy-api/translate w profile_api)
 import radar  # noqa: E402  (radar nowości: nowe wydania wykonawców z biblioteki + „Dociągnij” przez slskd)
 import yearago  # noqa: E402  (miks „Rok temu o tej porze” ze scrobbli Last.fm)
@@ -1160,15 +1163,16 @@ def smtp_settings():
 
 
 def send_mail(subject, body, html_body=None):
+    """Wysyła maila na MAIL_TO. Zwraca True, gdy poszedł (False: brak adresu, brak ustawień SMTP albo błąd wysyłki)."""
     if not MAIL_TO:
-        return
+        return False
     conf = smtp_settings()
     if not conf.get("host"):
         log("Mail: brak ustawień SMTP (zamontuj ~/.msmtprc albo ustaw SMTP_HOST).")
-        return
+        return False
     if conf.get("passwordeval") and not conf.get("password"):
         log("Mail: msmtprc bierze hasło z passwordeval — ustaw SMTP_PASSWORD w .env.")
-        return
+        return False
     message = EmailMessage()
     message["Subject"], message["To"] = subject, MAIL_TO
     from_addr = conf.get("from") or conf.get("user") or MAIL_TO
@@ -1190,8 +1194,53 @@ def send_mail(subject, body, html_body=None):
                 server.login(conf["user"], conf.get("password") or "")
             server.send_message(message)
         log(f"Wysłany mail: {subject}")
+        return True
     except (OSError, smtplib.SMTPException) as e:
         log(f"Nie wysłałem maila „{subject}”: {e}")
+        return False
+
+
+def notify(subject, body):
+    """Powiadomienie o awarii wszystkimi skonfigurowanymi kanałami (mail, Telegram). Zwraca True, gdy dotarło choć jednym."""
+    token, chat = os.environ.get("TELEGRAM_BOT_TOKEN", ""), os.environ.get("TELEGRAM_CHAT_ID", "")
+    delivered = False
+    if token and chat:
+        ok, error = health_alerts.send_telegram(f"{subject}\n\n{body}", token, chat)
+        if ok:
+            log(f"Wysłany Telegram: {subject}")
+        else:
+            log(f"Nie wysłałem Telegrama „{subject}”: {error}")
+        delivered = ok
+    return send_mail(subject, body) or delivered
+
+
+def check_health(state, dry_run=False):
+    """Mail i Telegram, gdy stan serwera (health.report) robi się czerwony, przypomnienie co kilka godzin i wiadomość o powrocie
+    do normy. Logika w health_alerts.py; tu tylko zbieranie odczytów i wysyłka. Zwraca wynik oceny (do podglądu w --health-check)."""
+    conf = health_alerts.settings(os.environ)
+    if not conf["level"] and not dry_run:
+        return None
+    try:
+        result = health.report(MUSIC_DIR, DATA_DIR)
+    except Exception as e:  # kontrola stanu nie może zatrzymać odkrywania
+        log(f"Kontrola stanu serwera się nie udała: {e}")
+        return None
+    if not conf["level"]:
+        return result
+    now = time.time()
+    previous = state.get("health_alerts")
+    new, action = health_alerts.decide(previous, result, now, conf["level"], conf["repeat_h"], conf["confirm"])
+    if action and not dry_run:
+        subject, body = health_alerts.format_message(action, result, now)
+        if not notify(subject, body):
+            # nic nie dotarło (brak kanałów albo błąd sieci): nie uznajemy powiadomienia za wysłane, spróbujemy przy następnej kontroli
+            new["notified_at"] = (previous or {}).get("notified_at")
+            new["notified_codes"] = (previous or {}).get("notified_codes") or []
+            if action["kind"] == "recovered":
+                new.update({"since": (previous or {}).get("since"), "ok_streak": (previous or {}).get("ok_streak") or 0})
+    if not dry_run:
+        state["health_alerts"] = new
+    return result
 
 
 def check_slskd(state):
@@ -2008,6 +2057,8 @@ def main():
     parser.add_argument("--dry-run", action="store_true", help="pokaż, co by pobrał, nic nie ściągaj")
     parser.add_argument("--search", metavar='"ARTYSTA - TYTUŁ"', help="sprawdź jedno wyszukiwanie w Soulseek")
     parser.add_argument("--test-mail", action="store_true", help="wyślij próbnego maila")
+    parser.add_argument("--test-telegram", action="store_true", help="wyślij próbną wiadomość na Telegram")
+    parser.add_argument("--health-check", action="store_true", help="pokaż stan serwera i co by zostało wysłane (nic nie wysyła)")
     parser.add_argument("--taste", action="store_true", help="odśwież panel gustu od razu")
     parser.add_argument("--stats", action="store_true", help="policz statystyki dla nerdów od razu")
     parser.add_argument("--podcasts", action="store_true", help="sprawdź kanały podcastów od razu")
@@ -2073,6 +2124,27 @@ def main():
             raise SystemExit("Ustaw DISCOVER_MAIL_TO w .env.")
         send_mail("🎵 piterfy-discover: próbny mail", "Jeśli to czytasz, powiadomienia działają.")
         return
+    if args.test_telegram:
+        token, chat = os.environ.get("TELEGRAM_BOT_TOKEN", ""), os.environ.get("TELEGRAM_CHAT_ID", "")
+        if not (token and chat):
+            raise SystemExit("Ustaw TELEGRAM_BOT_TOKEN i TELEGRAM_CHAT_ID w .env.")
+        ok, error = health_alerts.send_telegram("🎵 piterfy-discover: próbna wiadomość\n\nJeśli to czytasz, powiadomienia na Telegramie działają.", token, chat)
+        if not ok:
+            raise SystemExit(f"Telegram nie przyjął wiadomości: {error}")
+        print("Wysłano.")
+        return
+    if args.health_check:
+        conf = health_alerts.settings(os.environ)
+        result = check_health(load_state(), dry_run=True)
+        if not result:
+            raise SystemExit("Nie udało się ocenić stanu serwera.")
+        print(f"Status: {result['status']}  (powiadamiam od poziomu: {conf['level'] or 'wyłączone'}, "
+              f"przypomnienie co {conf['repeat_h']:g} h, potwierdzenie przez {conf['confirm']} kontrole)")
+        for alert in result.get("alerts") or []:
+            print(f"  [{alert['level']}] {alert.get('title')}: {alert.get('detail') or ''}")
+        print(f"Kanały: mail {'tak' if MAIL_TO else 'nie'}, Telegram "
+              f"{'tak' if os.environ.get('TELEGRAM_BOT_TOKEN') and os.environ.get('TELEGRAM_CHAT_ID') else 'nie'}")
+        return
     if args.search:
         try:
             test_search(args.search)
@@ -2103,6 +2175,7 @@ def main():
         refresh_stats(state)
         state["api_health"] = health.api_snapshot()
         save_state(state)
+        check_health(state)  # mail i Telegram przy awarii serwera (zapis stanu poniżej)
         process_radar(state)  # prośby „Dociągnij” z radaru; wynik trafia do radar.json, a tu zapisujemy historię wyszukiwań
         save_state(state)
         if time.time() >= retry_at and is_due(state, datetime.now()):

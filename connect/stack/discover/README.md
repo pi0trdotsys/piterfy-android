@@ -213,6 +213,9 @@ Po zmianie uruchom `docker compose up -d piterfy-discover`.
 | `DISCOVER_TRASH_DAYS` | `30` | po ilu dniach kosz kasuje pliki (`0` = nigdy) |
 | `DISCOVER_MIN_FREE_GB` | `20` | poniżej tylu GB wolnego miejsca nic nie pobiera |
 | `DISCOVER_MAIL_TO` | | adres na podsumowania i alarmy (pusty = bez maili) |
+| `TELEGRAM_BOT_TOKEN` / `TELEGRAM_CHAT_ID` | | Telegram: razem z mailem dostają alarmy o awarii serwera (patrz „Powiadomienia o awarii”) |
+| `HEALTH_NOTIFY` | `crit` | od jakiego poziomu stanu serwera wysyłać alarm: `crit` (tylko czerwony), `warn` (też ostrzeżenia, np. brak kopii zapasowych) albo `off` |
+| `HEALTH_NOTIFY_REPEAT_H` / `HEALTH_NOTIFY_CONFIRM` | `6` / `2` | co ile godzin przypominać o trwającej awarii (`0` = bez przypomnień) i ile kolejnych kontroli (co ~10 min) musi potwierdzić zmianę stanu |
 | `DISCOVER_PLAYLIST` | `Odkrywaj` | nazwa zbiorczej playlisty (pusta = bez niej) |
 | `DISCOVER_PLAYLIST_SIZE` | `60` | ile ostatnich odkryć trzymać w zbiorczej playliście |
 | `DISCOVER_DAILY_PLAYLIST` | `Odkrywaj` | początek nazwy playlisty dnia, dalej jest data (pusta = bez playlist dnia) |
@@ -247,12 +250,18 @@ Jak oceniać w Navidrome:
 - ocena 1 oznacza „wyrzuć i rzadziej tego wykonawcę”;
 - ocena 2 oznacza „rzadziej tego wykonawcę”, ale plik zostaje.
 
+## Powiadomienia o awarii
+
+Karta „Stan serwera” (Statystyki → Serwer) ma też wersję bez patrzenia na ekran: co ~10 minut pętla discovera ocenia ten sam stan (`health.report`) i gdy robi się **czerwony** (np. odmontowany dysk USB, zapełniona biblioteka, Last.fm lub Deezer nie odpowiada od wielu prób), wysyła wiadomość na mail (`DISCOVER_MAIL_TO`) i na Telegram (`TELEGRAM_BOT_TOKEN` + `TELEGRAM_CHAT_ID`) — każdy kanał działa, gdy jest skonfigurowany. Awaria musi utrzymać się przez dwie kolejne kontrole, żeby chwilowa czkawka nie budziła telefonu. Potem dostajesz jedną wiadomość o awarii, kolejną przy każdym nowym krytycznym alarmie, przypomnienie co 6 godzin, dopóki trwa, i „✅ znów w normie”, gdy się skończy. Gdy żaden kanał nie dotrze (np. chwilowy brak sieci), wiadomość jest ponawiana przy następnej kontroli. Stan zapamiętuje `state.json` (`health_alerts`), więc restart nie powtarza alarmu. `HEALTH_NOTIFY=warn` dorzuca ostrzeżenia (np. brak kopii zapasowych), `HEALTH_NOTIFY=off` wyłącza powiadomienia. Logika (`health_alerts.py`) jest czysta i ma testy.
+
 ## Przydatne komendy
 
 ```bash
 docker compose run --rm --no-deps piterfy-discover --dry-run        # co by pobrał, bez pobierania
 docker compose run --rm piterfy-discover --search "Artysta - Tytuł"  # jedno próbne wyszukiwanie w Soulseek
 docker compose run --rm --no-deps piterfy-discover --test-mail      # próbny mail
+docker compose run --rm --no-deps piterfy-discover --test-telegram  # próbna wiadomość na Telegram
+docker compose run --rm --no-deps piterfy-discover --health-check   # stan serwera i ustawienia alarmów (nic nie wysyła)
 docker compose run --rm --no-deps piterfy-discover --taste          # odśwież panel gustu od razu
 docker compose run --rm --no-deps piterfy-discover --mixes          # odśwież miksy (Happy Mix, Dark Mix...) od razu
 docker compose run --rm --no-deps piterfy-discover --charts         # odśwież listy przebojów (Top 100 Polska) od razu
