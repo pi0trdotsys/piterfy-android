@@ -1,7 +1,11 @@
 package com.eddyizm.tempus.ui.fragment;
 
 import android.content.ComponentName;
+import android.content.Intent;
+import android.content.SharedPreferences;
+import android.graphics.Bitmap;
 import android.graphics.Color;
+import android.net.Uri;
 import android.os.*;
 import android.text.*;
 import android.text.method.LinkMovementMethod;
@@ -12,6 +16,7 @@ import android.widget.LinearLayout;
 import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.OptIn;
+import androidx.core.content.FileProvider;
 import androidx.core.widget.NestedScrollView;
 import androidx.dynamicanimation.animation.DynamicAnimation;
 import androidx.dynamicanimation.animation.SpringAnimation;
@@ -20,18 +25,30 @@ import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.media3.common.util.UnstableApi;
 import androidx.media3.session.*;
+import com.bumptech.glide.Glide;
+import com.bumptech.glide.request.FutureTarget;
+import com.eddyizm.tempus.R;
 import com.eddyizm.tempus.appearance.PiterfyAppearance;
+import com.eddyizm.tempus.glide.CustomGlideRequest;
 import com.eddyizm.tempus.databinding.InnerFragmentPlayerLyricsBinding;
 import com.eddyizm.tempus.service.MediaService;
 import com.eddyizm.tempus.subsonic.models.*;
 import com.eddyizm.tempus.ui.components.PiterfyGlass;
+import com.eddyizm.tempus.ui.components.PiterfyLyricCard;
 import com.eddyizm.tempus.ui.components.PiterfyLyricLineView;
 import com.eddyizm.tempus.util.*;
 import com.eddyizm.tempus.viewmodel.PlayerBottomSheetViewModel;
 import com.eddyizm.tempus.lan.LanRemoteSession;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import android.text.style.ForegroundColorSpan;
+import android.text.style.RelativeSizeSpan;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.util.*;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 @OptIn(markerClass = UnstableApi.class)
 public class PlayerLyricsFragment extends Fragment {
@@ -48,6 +65,12 @@ public class PlayerLyricsFragment extends Fragment {
     private final List<PiterfyLyricLineView> lineViews = new ArrayList<>();
     private List<Line> builtLines;
     private SpringAnimation scrollSpring;
+    // Piterfy: tłumaczenie obok oryginału (serwer: POST /piterfy-api/translate) i karta z linijką do udostępnienia
+    private static final Executor CARD_IO = Executors.newSingleThreadExecutor();
+    private List<String> translation;
+    private String translationSig = "";
+    private boolean translateBusy;
+    private int translateRequest, translateReason;   // 0 = brak problemu, 1 = tekst już w tym języku (trwałe), 2 = błąd (ponowna próba po przełączeniu)
     private final Runnable frame = new Runnable() {
         public void run() {
             if (!resumed || bind == null || !synced) return;
@@ -113,6 +136,14 @@ public class PlayerLyricsFragment extends Fragment {
                 highlighted = -2; controls(); paint(true);
             }).show();
         });
+        bind.translateLyricsButton.setCheckable(true);
+        bind.translateLyricsButton.setOnClickListener(v -> {
+            boolean on = !translateOn();
+            prefs().edit().putBoolean("translate", on).apply();
+            if (on && translateReason == 2) translateReason = 0;
+            syncTranslation();
+        });
+        bind.shareLyricButton.setOnClickListener(v -> pickAndShare());
         bind.lyricsStatus.setOnClickListener(v -> model.refreshMediaInfo(getViewLifecycleOwner(), model.getLiveMedia().getValue()));
         bind.nowPlayingSongLyricsSrollView.setOnTouchListener((v, event) -> {
             if (scrollSpring != null && (event.getActionMasked() == MotionEvent.ACTION_DOWN || event.getActionMasked() == MotionEvent.ACTION_MOVE)) scrollSpring.cancel();
@@ -129,7 +160,7 @@ public class PlayerLyricsFragment extends Fragment {
     @Override public void onResume() { super.onResume(); resumed = true; main.removeCallbacks(tick); main.post(tick); main.removeCallbacks(frame); main.post(frame); requireActivity().getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON); }
     @Override public void onPause() { resumed = false; main.removeCallbacks(tick); main.removeCallbacks(frame); if (!Preferences.isDisplayAlwaysOn()) requireActivity().getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON); super.onPause(); }
     @Override public void onStop() { browser = null; if (future != null) MediaBrowser.releaseFuture(future); future = null; super.onStop(); }
-    @Override public void onDestroyView() { main.removeCallbacks(tick); main.removeCallbacks(frame); if (scrollSpring != null) scrollSpring.cancel(); scrollSpring = null; lineViews.clear(); builtLines = null; bind = null; lines = Collections.emptyList(); plain = null; description = null; super.onDestroyView(); }
+    @Override public void onDestroyView() { main.removeCallbacks(tick); main.removeCallbacks(frame); if (scrollSpring != null) scrollSpring.cancel(); scrollSpring = null; lineViews.clear(); builtLines = null; translateRequest++; translateBusy = false; translationSig = ""; translation = null; bind = null; lines = Collections.emptyList(); plain = null; description = null; super.onDestroyView(); }
     private long position() { return LanRemoteSession.isActive() ? LanRemoteSession.current().positionAt(SystemClock.elapsedRealtime()) : browser == null ? 0 : browser.getCurrentPosition(); }
     private void controls() {
         if (bind == null) return;
@@ -147,16 +178,157 @@ public class PlayerLyricsFragment extends Fragment {
         if (synced) {
             bind.nowPlayingSongLyricsTextView.setVisibility(View.GONE);
             bind.lyricsLinesContainer.setVisibility(View.VISIBLE);
-            paint(true); return;
+            paint(true); syncTranslation(); return;
         }
         bind.lyricsLinesContainer.setVisibility(View.GONE);
         bind.nowPlayingSongLyricsTextView.setVisibility(View.VISIBLE);
         bind.nowPlayingSongLyricsTextView.setMovementMethod(null);
         bind.nowPlayingSongLyricsTextView.setTextColor(Color.WHITE);
-        StringBuilder text = new StringBuilder();
-        for (Line line : lines) text.append(line.getValue().trim()).append("\n\n");
-        if (text.length() == 0) text.append(plain != null ? MusicUtil.getReadableLyrics(plain) : description != null ? MusicUtil.getReadableLyrics(description) : "♪");
-        bind.nowPlayingSongLyricsTextView.setText(text);
+        bind.nowPlayingSongLyricsTextView.setText(plainText());
+        syncTranslation();
+    }
+    /** Tekst bez synchronizacji; z włączonym tłumaczeniem każda linijka dostaje pod sobą mniejszy, przygaszony przekład. */
+    private CharSequence plainText() {
+        List<String> source = sourceLines();
+        if (source.isEmpty()) return "♪";
+        boolean spaced = !lines.isEmpty();
+        SpannableStringBuilder out = new SpannableStringBuilder();
+        for (int i = 0; i < source.size(); i++) {
+            out.append(source.get(i));
+            String tr = translationFor(i);
+            if (tr != null && !source.get(i).isEmpty()) {
+                int from = out.length() + 1;
+                out.append('\n').append(tr);
+                out.setSpan(new RelativeSizeSpan(0.6f), from, out.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                out.setSpan(new ForegroundColorSpan(0xB3FFFFFF), from, out.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            }
+            out.append(spaced ? "\n\n" : "\n");
+        }
+        return out;
+    }
+    private SharedPreferences prefs() { return requireContext().getSharedPreferences("piterfy_lyrics", 0); }
+    private boolean translateOn() { return prefs().getBoolean("translate", false); }
+    /** Wiersze tekstu w kolejności z ekranu: linijki z serwera/LRCLIB albo, gdy ich nie ma, wiersze zwykłego tekstu. */
+    private List<String> sourceLines() {
+        List<String> out = new ArrayList<>();
+        if (!lines.isEmpty()) { for (Line line : lines) out.add(line.getValue().trim()); return out; }
+        String raw = plain != null && !plain.isBlank() ? plain : description;
+        if (raw == null || raw.isBlank()) return out;
+        for (String line : String.valueOf(MusicUtil.getReadableLyrics(raw)).split("\n", -1)) out.add(line.trim());
+        return out;
+    }
+    private String translationFor(int index) {
+        if (translation == null || !translateOn() || index < 0 || index >= translation.size()) return null;
+        String value = translation.get(index);
+        return value == null || value.isBlank() ? null : value;
+    }
+    private String targetLanguage() {
+        String language = Locale.getDefault().getLanguage();
+        return language == null || language.length() != 2 ? "pl" : language;
+    }
+    /** Pokazuje przycisk tłumaczenia, ustawia jego stan i w razie potrzeby pobiera przekład (serwer zapamiętuje go na dysku). */
+    private void syncTranslation() {
+        if (bind == null) return;
+        List<String> source = sourceLines();
+        boolean has = false;
+        for (String line : source) if (!line.isEmpty()) { has = true; break; }
+        bind.lyricsExtrasRow.setVisibility(has ? View.VISIBLE : View.GONE);
+        String signature = key + "|" + targetLanguage() + "|" + source.hashCode();
+        if (!signature.equals(translationSig)) {
+            translationSig = signature; translation = null; translateReason = 0; translateBusy = false; translateRequest++;
+        }
+        boolean on = translateOn();
+        bind.translateLyricsButton.setChecked(on && translateReason == 0);
+        bind.translateLyricsButton.setText(translateBusy ? R.string.lyrics_translate_busy : R.string.lyrics_translate);
+        if (!has) return;
+        if (!on || translateBusy) { applyTranslation(); return; }
+        if (translation == null && translateReason == 0) {
+            Child song = model.getLiveMedia().getValue();
+            if (song == null || song.getId() == null) return;
+            List<String> cached = PiterfyLyricTranslate.recalled(song.getId(), source.size(), targetLanguage());
+            if (cached != null) translation = cached;
+            else {
+                translateBusy = true;
+                bind.translateLyricsButton.setText(R.string.lyrics_translate_busy);
+                final int request = ++translateRequest;
+                final String mine = translationSig;
+                PiterfyLyricTranslate.fetch(song.getId(), source, targetLanguage(), result -> {
+                    if (bind == null || request != translateRequest || !mine.equals(translationSig)) return;
+                    translateBusy = false;
+                    if (result instanceof PiterfyLyricTranslate.Result.Ok) translation = ((PiterfyLyricTranslate.Result.Ok) result).getLines();
+                    else {
+                        translateReason = result instanceof PiterfyLyricTranslate.Result.Skipped ? 1 : 2;
+                        int message = result instanceof PiterfyLyricTranslate.Result.Skipped ? R.string.lyrics_translate_skipped
+                            : result instanceof PiterfyLyricTranslate.Result.Unavailable ? R.string.lyrics_translate_unavailable : R.string.lyrics_translate_failed;
+                        Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show();
+                    }
+                    syncTranslation();
+                });
+                return;
+            }
+        }
+        applyTranslation();
+    }
+    /** Nakłada (albo zdejmuje) przekład na widoki linijek lub na zwykły tekst. */
+    private void applyTranslation() {
+        if (bind == null) return;
+        if (synced) { for (int i = 0; i < lineViews.size(); i++) lineViews.get(i).setTranslation(translationFor(i)); }
+        else bind.nowPlayingSongLyricsTextView.setText(plainText());
+    }
+    /** Karta z linijką: przy tekście synchronizowanym bieżąca linijka, przy zwykłym lista do wyboru. */
+    private void pickAndShare() {
+        if (bind == null) return;
+        if (synced) {
+            if (highlighted >= 0 && highlighted < lines.size()) shareLine(highlighted);
+            else Toast.makeText(requireContext(), R.string.lyrics_share_none, Toast.LENGTH_SHORT).show();
+            return;
+        }
+        List<String> source = sourceLines();
+        List<String> labels = new ArrayList<>(); final List<Integer> indexes = new ArrayList<>();
+        for (int i = 0; i < source.size(); i++) if (!source.get(i).isEmpty()) { labels.add(source.get(i)); indexes.add(i); }
+        if (labels.isEmpty()) return;
+        new MaterialAlertDialogBuilder(requireContext()).setTitle(R.string.lyrics_share_pick)
+            .setItems(labels.toArray(new String[0]), (dialog, which) -> shareLine(indexes.get(which))).show();
+    }
+    private void shareLine(int index) {
+        if (bind == null) return;
+        List<String> source = sourceLines();
+        if (index < 0 || index >= source.size() || source.get(index).isEmpty()) return;
+        final String text = source.get(index), tr = translationFor(index);
+        Child song = model.getLiveMedia().getValue();
+        final String title = song == null ? null : song.getTitle(), artist = song == null ? null : song.getArtist();
+        final String coverId = song == null ? null : song.getCoverArtId();
+        final android.content.Context app = requireContext().getApplicationContext();
+        final boolean offlineOnly = Preferences.isDataSavingMode();
+        CARD_IO.execute(() -> {
+            FutureTarget<Bitmap> cover = null;
+            try {
+                Bitmap art = null;
+                if (coverId != null && !offlineOnly) {
+                    try { cover = Glide.with(app).asBitmap().load(CustomGlideRequest.createUrl(coverId, 600)).submit(600, 600); art = cover.get(8, TimeUnit.SECONDS); }
+                    catch (Exception ignored) { art = null; }
+                }
+                Bitmap card = PiterfyLyricCard.render(app, text, tr, title, artist, art, 1080);
+                File folder = new File(app.getCacheDir(), "wrapped"); folder.mkdirs();   // ten sam katalog FileProvidera co karta Wrapped
+                File[] old = folder.listFiles((dir, name) -> name.startsWith("piterfy-lyric-"));
+                if (old != null) for (File file : old) file.delete();
+                File file = new File(folder, "piterfy-lyric-" + System.currentTimeMillis() + ".png");
+                try (FileOutputStream out = new FileOutputStream(file)) { card.compress(Bitmap.CompressFormat.PNG, 100, out); }
+                card.recycle();
+                Uri uri = FileProvider.getUriForFile(app, app.getPackageName() + ".update.fileprovider", file);
+                main.post(() -> {
+                    if (!isAdded() || bind == null) return;
+                    Intent send = new Intent(Intent.ACTION_SEND).setType("image/png").putExtra(Intent.EXTRA_STREAM, uri)
+                        .putExtra(Intent.EXTRA_TEXT, (title == null ? "" : title) + (artist == null ? "" : " · " + artist))
+                        .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                    startActivity(Intent.createChooser(send, getString(R.string.lyrics_share_chooser)));
+                });
+            } catch (Exception e) {
+                main.post(() -> { if (isAdded()) Toast.makeText(app, R.string.lyrics_share_failed, Toast.LENGTH_LONG).show(); });
+            } finally {
+                if (cover != null) Glide.with(app).clear(cover);
+            }
+        });
     }
     private void paint(boolean force) {
         if (bind == null || !synced) return;
@@ -177,6 +349,9 @@ public class PlayerLyricsFragment extends Fragment {
             String value = lines.get(i).getValue().trim();
             PiterfyLyricLineView view = new PiterfyLyricLineView(requireContext());
             view.setText(value.isEmpty() ? "♪" : value);
+            view.setTranslation(translationFor(i));
+            final int index = i;
+            view.setOnLongClickListener(v -> { shareLine(index); return true; });
             LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
             params.bottomMargin = (int) margin;
             view.setOnClickListener(v -> {

@@ -153,6 +153,25 @@
     return '<div class="pf-st-ring" style="--deg:' + deg + 'deg"><b>' + esc(text) + "</b><span>" + esc(label) + "</span></div>";
   }
 
+  /** Karta „Stan serwera”: plakietka statusu, alarmy (awarie przed ostrzeżeniami) i lista pozycji. Bez danych → pusta (starszy stos). */
+  function healthHtml(health) {
+    const m = core.healthModel(health);
+    if (!m) return "";
+    const ICON = { ok: "✓", warn: "!", crit: "✕" };
+    const alerts = m.alerts.length
+      ? '<ul class="pf-st-alerts" role="list">' + m.alerts.map((a) =>
+        '<li class="pf-st-alert ' + a.level + '"><span class="pf-st-alert-icon" aria-hidden="true">' + ICON[a.level] + "</span><div><b>" +
+        esc(a.title) + "</b>" + (a.detail ? "<span>" + esc(a.detail) + "</span>" : "") + "</div></li>").join("") + "</ul>"
+      : '<p class="pf-st-note pf-st-allgood">Dysk, odkrywanie, Last.fm, Deezer i Soulseek działają bez zastrzeżeń.</p>';
+    const items = m.items.length
+      ? '<dl class="pf-st-health-items">' + m.items.map((x) =>
+        '<div class="pf-st-health-item ' + x.level + '"><dt>' + esc(x.label) + "</dt><dd>" + esc(x.value) + "</dd></div>").join("") + "</dl>"
+      : "";
+    return '<section class="pf-sec pf-st-sec pf-st-health ' + m.level.cls + '" aria-label="Stan serwera"><div class="pf-sec-head"><h2>Stan serwera</h2>' +
+      '<span class="pf-st-badge ' + m.level.cls + '" role="status">' + esc(m.level.text) + "</span></div>" +
+      '<p class="pf-st-note">' + esc(m.summary) + "</p>" + alerts + items + "</section>";
+  }
+
   function serverHtml(s, l) {
     const acq = s.acquisition || {};
     const growth = core.growthSeries((s.growth || {}).weeks);
@@ -161,7 +180,7 @@
     const discover = s.discover || {};
     const engines = rateTable(acq.engines, (k) => k);
     const pools = rateTable(acq.pools, (k) => ENGINE_NAMES[k] || k);
-    return '<div class="pf-st-tiles">' +
+    return healthHtml(s.health) + '<div class="pf-st-tiles">' +
       tile("Nowe w 7 dni", "+" + core.fmtNum((s.growth || {}).added_7), core.fmtNum((s.growth || {}).added_30) + NBSP + "w ostatnich 30 dniach") +
       tile("Soulseek", core.fmtPercent(acq.got, acq.tried), core.fmtNum(acq.got) + NBSP + "z " + core.fmtNum(acq.tried) + NBSP + "prób zakończyło się plikiem") +
       tile("Trafność odkryć", discover.hit_rate == null ? "—" : Math.round(discover.hit_rate * 100) + "%",

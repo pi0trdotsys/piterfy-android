@@ -38,8 +38,17 @@ object PiterfyStatsModel {
     data class Server(
         val weeks: List<Week>, val added7: Int, val added30: Int, val firstAdded: String?, val acquisition: Acquisition,
         val liked: Int, val trashed: Int, val hitRate: Double?, val disk: Disk?, val trashBytes: Long,
-        val lastRun: String?, val lastScan: String?, val scanning: Boolean,
+        val lastRun: String?, val lastScan: String?, val scanning: Boolean, val health: Health? = null,
     )
+    /** Poziom stanu serwera (health.py): OK, WARN albo CRIT; nieznany tekst czytamy jak OK. */
+    enum class Level { OK, WARN, CRIT }
+    data class Alert(val level: Level, val code: String, val title: String, val detail: String)
+    data class HealthItem(val label: String, val value: String, val level: Level)
+    /** Karta „Stan serwera”: [alerts] już posortowane (awarie przed ostrzeżeniami, kolejność serwera zostaje). */
+    data class Health(val status: Level, val alerts: List<Alert>, val items: List<HealthItem>) {
+        val crit get() = alerts.count { it.level == Level.CRIT }
+        val warn get() = alerts.count { it.level == Level.WARN }
+    }
     data class Listener(val id: String, val name: String, val blurb: String, val why: List<String>)
     data class Compare(val plays: Int?, val minutes: Int?, val artists: Int?, val prevPlays: Int)
     data class Track(val title: String, val artist: String, val plays: Int, val id: String = "", val cover: String? = null, val seconds: Int = 0)
@@ -116,7 +125,21 @@ object PiterfyStatsModel {
                 rates(acq?.obj("engines")), rates(acq?.obj("pools"))),
             discover?.int("liked") ?: 0, discover?.int("trashed") ?: 0, discover?.doubleOrNull("hit_rate"),
             disk, o.obj("trash")?.long("bytes") ?: 0L, o.str("last_run"), o.str("last_scan"), o.bool("scanning"),
+            health(o.obj("health")),
         )
+    }
+
+    private fun level(value: String?) = when (value) { "crit" -> Level.CRIT; "warn" -> Level.WARN; else -> Level.OK }
+
+    /** null, gdy serwer nie policzył stanu (starszy stos) — ekran wtedy pomija kartę. */
+    private fun health(o: JsonObject?): Health? {
+        o ?: return null
+        val alerts = o.arr("alerts").objects().filter { !it.str("title").isNullOrBlank() }
+            .map { Alert(level(it.str("level")), it.str("code").orEmpty(), it.str("title")!!, it.str("detail").orEmpty()) }
+            .sortedByDescending { it.level.ordinal } // stabilnie: CRIT, WARN, OK; w obrębie poziomu kolejność serwera
+        val items = o.arr("items").objects().filter { !it.str("label").isNullOrBlank() }
+            .map { HealthItem(it.str("label")!!, it.str("value") ?: "—", level(it.str("level"))) }
+        return Health(level(o.str("status") ?: alerts.firstOrNull()?.level?.name?.lowercase()), alerts, items)
     }
 
     private fun period(o: JsonObject): Period {

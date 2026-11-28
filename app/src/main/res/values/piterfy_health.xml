@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="stats_health">Server health</string>
+    <string name="stats_health_ok">All good</string>
+    <string name="stats_health_warn">Needs attention</string>
+    <string name="stats_health_crit">Outage</string>
+    <string name="stats_health_none">Nothing needs attention.</string>
+    <string name="stats_health_all_good">Disk, discovery, Last.fm, Deezer and Soulseek are all working.</string>
+    <plurals name="stats_health_crit_count">
+        <item quantity="one">%d outage</item>
+        <item quantity="other">%d outages</item>
+    </plurals>
+    <plurals name="stats_health_warn_count">
+        <item quantity="one">%d warning</item>
+        <item quantity="other">%d warnings</item>
+    </plurals>
+</resources>

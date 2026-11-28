@@ -435,12 +435,16 @@ open class BaseMediaService : MediaLibraryService(), MediaManager.QueueTarget {
                         ?.handle(player, currentMediaItem, this@BaseMediaService)
                         ?: false
 
-                    if (!handled && Preferences.isContinuousPlayEnabled()) {
+                    // Piterfy: radio z utworu samo pilnuje kolejki (dociaga podobne i wylacza sie, gdy gra cos obcego),
+                    // wiec inteligentne odtwarzanie i "ciagle odtwarzanie" w tym czasie nie dokladaja swoich utworow
+                    PiterfyRadioManager.onTrackStarted(currentMediaItem, this@BaseMediaService)
+                    val radioOn = PiterfyRadioManager.isActive()
+                    if (!handled && !radioOn && Preferences.isContinuousPlayEnabled()) {
                         // Piterfy: inteligentne odtwarzanie wplata polecone i nowe utwory co kilka piosenek
                         PiterfySmartPlayback.onTrackStarted(currentMediaItem, this@BaseMediaService)
                     }
                     if (player.nextMediaItemIndex == C.INDEX_UNSET) {
-                        if (!handled && Preferences.isContinuousPlayEnabled()) {
+                        if (!handled && !radioOn && Preferences.isContinuousPlayEnabled()) {
                             MediaManager.continuousPlay(currentMediaItem, this@BaseMediaService)
                         }
                     }

@@ -33,6 +33,8 @@ import com.eddyizm.tempus.subsonic.models.Playlist;
 import com.eddyizm.tempus.util.Constants;
 import com.eddyizm.tempus.util.DownloadUtil;
 import com.eddyizm.tempus.util.PiterfyMotion;
+import com.eddyizm.tempus.util.PiterfyRadarClient;
+import com.eddyizm.tempus.util.PiterfyRadarModel;
 import com.eddyizm.tempus.util.Preferences;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.snackbar.Snackbar;
@@ -41,6 +43,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
+import java.util.TimeZone;
 import java.util.function.Consumer;
 
 import retrofit2.Call;
@@ -68,6 +71,8 @@ public final class PiterfyHomePanel extends LinearLayout implements DefaultLifec
     private final View chartSection;
     private final LinearLayout gameShelf;
     private final View gameSection;
+    private final LinearLayout radarShelf;
+    private final View radarSection;
     private final Typeface regular;
     private final Typeface bold;
     private boolean destroyed;
@@ -75,6 +80,10 @@ public final class PiterfyHomePanel extends LinearLayout implements DefaultLifec
 
     private List<Playlist> discover = new ArrayList<>();
     private List<AlbumID3> recent = new ArrayList<>();
+    private List<PiterfyRadarModel.Album> radarAlbums = new ArrayList<>();
+    private boolean radarFill = true;
+    private boolean radarShown;
+    private final Runnable radarPoll = this::loadRadar;
 
     public PiterfyHomePanel(Fragment host, Consumer<List<Child>> play) {
         super(host.requireContext());
@@ -203,8 +212,32 @@ public final class PiterfyHomePanel extends LinearLayout implements DefaultLifec
         gameSection = gameSectionBox;
         addView(gameSectionBox);
 
+        // Piterfy: nowosci od artystow z biblioteki (Deezer, przez serwer) z przyciskiem "Dociągnij" - radar.py po stronie serwera
+        LinearLayout radarSectionBox = new LinearLayout(getContext());
+        radarSectionBox.setOrientation(VERTICAL);
+        TextView radarHeading = text(getResources().getString(R.string.piterfy_radar), 22, Color.WHITE, true);
+        radarHeading.setPadding(dp(4), dp(28), 0, dp(12));
+        radarSectionBox.addView(radarHeading);
+        radarShelf = new LinearLayout(getContext());
+        radarShelf.setOrientation(HORIZONTAL);
+        HorizontalScrollView radarScroll = new HorizontalScrollView(getContext());
+        radarScroll.setHorizontalScrollBarEnabled(false);
+        radarScroll.setOverScrollMode(OVER_SCROLL_NEVER);
+        radarScroll.addView(radarShelf);
+        radarSectionBox.addView(radarScroll);
+        radarSectionBox.setVisibility(GONE);
+        radarSection = radarSectionBox;
+        addView(radarSectionBox);
+
         load();
         loadRecentAlbums();
+        PiterfyRadarModel.Listing cachedRadar = PiterfyRadarClient.cached();
+        if (cachedRadar != null) {  // ostatnia lista z pamieci, zanim odpowie serwer
+            radarAlbums = cachedRadar.getAlbums();
+            radarFill = cachedRadar.getFill();
+            showRadar();
+        }
+        loadRadar();
     }
 
     // ── pomocnicze ──
@@ -415,6 +448,165 @@ public final class PiterfyHomePanel extends LinearLayout implements DefaultLifec
         mixSection.setVisibility(list.isEmpty() ? GONE : VISIBLE);
     }
 
+    // ── radar nowosci ──
+
+    private void loadRadar() {
+        PiterfyRadarClient.load(listing -> {
+            if (!alive()) return;
+            radarAlbums = listing.getAlbums();
+            radarFill = listing.getFill();
+            showRadar();
+        }, code -> { /* bez radaru strona dziala jak dotad; przy kolejce odpytujemy dalej */
+            if (alive() && PiterfyRadarModel.shouldPoll(radarAlbums)) postDelayed(radarPoll, PiterfyRadarModel.POLL_MS);
+        });
+    }
+
+    private void showRadar() {
+        removeCallbacks(radarPoll);
+        radarShelf.removeAllViews();
+        int index = 0;
+        for (PiterfyRadarModel.Album album : radarAlbums) {
+            View c = radarCard(album);
+            if (!radarShown) PiterfyMotion.enter(c, index++);
+            radarShelf.addView(c);
+        }
+        radarShown = !radarAlbums.isEmpty();
+        radarSection.setVisibility(radarAlbums.isEmpty() ? GONE : VISIBLE);
+        if (PiterfyRadarModel.shouldPoll(radarAlbums)) postDelayed(radarPoll, PiterfyRadarModel.POLL_MS);
+    }
+
+    /** Podpis pod tytulem: rodzaj wydania, kiedy wyszlo i ile ma utworow ("Album · 3 dni temu · 12 utw."). */
+    private String radarMeta(PiterfyRadarModel.Album album) {
+        List<String> parts = new ArrayList<>();
+        switch (PiterfyRadarModel.kindOf(album.getType())) {
+            case ALBUM: parts.add(getResources().getString(R.string.piterfy_radar_type_album)); break;
+            case EP: parts.add(getResources().getString(R.string.piterfy_radar_type_ep)); break;
+            case SINGLE: parts.add(getResources().getString(R.string.piterfy_radar_type_single)); break;
+            default: parts.add(getResources().getString(R.string.piterfy_radar_type_other)); break;
+        }
+        long now = System.currentTimeMillis();
+        PiterfyRadarModel.Age age = PiterfyRadarModel.age(album.getReleased(), now, TimeZone.getDefault().getOffset(now));
+        if (age.getDays() >= 0) {
+            if (age.getDays() == 0) parts.add(getResources().getString(R.string.piterfy_radar_today));
+            else if (age.getDays() == 1) parts.add(getResources().getString(R.string.piterfy_radar_yesterday));
+            else if (age.getDays() <= PiterfyRadarModel.RECENT_DAYS)
+                parts.add(getResources().getString(R.string.piterfy_radar_days_ago, age.getDays()));
+            else parts.add(age.getShortDate());
+        }
+        if (album.getTracks() > 1) parts.add(getResources().getString(R.string.piterfy_radar_tracks, album.getTracks()));
+        return android.text.TextUtils.join(" \u00b7 ", parts);
+    }
+
+    private View radarCard(PiterfyRadarModel.Album album) {
+        LinearLayout card = new LinearLayout(getContext());
+        card.setOrientation(VERTICAL);
+        LayoutParams params = new LayoutParams(dp(148), -2);
+        params.rightMargin = dp(12);
+        card.setLayoutParams(params);
+
+        FrameLayout frame = new FrameLayout(getContext());
+        frame.setBackground(surface(TILE_COLOR, 8));
+        clipRounded(frame);
+        ImageView image = new ImageView(getContext());
+        image.setScaleType(ImageView.ScaleType.CENTER_CROP);
+        if (album.getCover() == null) image.setImageResource(R.drawable.ic_placeholder_album);
+        else Glide.with(host).load(album.getCover()).placeholder(R.drawable.ic_placeholder_album).centerCrop().into(image);
+        frame.addView(image, new FrameLayout.LayoutParams(-1, -1));
+        card.addView(frame, new LayoutParams(dp(148), dp(148)));
+
+        TextView name = text(album.getTitle(), 14, Color.WHITE, true);
+        name.setSingleLine(true);
+        name.setEllipsize(android.text.TextUtils.TruncateAt.END);
+        name.setPadding(0, dp(8), 0, 0);
+        card.addView(name);
+        TextView artist = text(album.getArtist(), 12, 0xFFB3B3B3, false);
+        artist.setSingleLine(true);
+        artist.setEllipsize(android.text.TextUtils.TruncateAt.END);
+        card.addView(artist);
+        TextView meta = text(radarMeta(album), 12, 0xFFB3B3B3, false);
+        meta.setMaxLines(1);
+        meta.setEllipsize(android.text.TextUtils.TruncateAt.END);
+        card.addView(meta);
+        if (!album.getNote().isEmpty() && !"queued".equals(album.getStatus())) {
+            TextView note = text(album.getNote(), 11, 0xFFB3B3B3, false);
+            note.setMaxLines(3);
+            card.addView(note);
+        }
+
+        PiterfyRadarModel.Action action = PiterfyRadarModel.actionOf(album, radarFill);
+        MaterialButton button = new MaterialButton(getContext());
+        button.setAllCaps(false);
+        button.setTypeface(bold);
+        button.setTextSize(12);
+        button.setSingleLine(true);
+        button.setMinHeight(0);
+        button.setMinimumHeight(dp(36));
+        button.setInsetTop(0);
+        button.setInsetBottom(0);
+        button.setCornerRadius(dp(18));
+        int fill = TILE_COLOR, ink = Color.WHITE;
+        String label;
+        switch (action) {
+            case BUSY:
+                label = album.getTotal() > 0
+                        ? getResources().getString(R.string.piterfy_radar_progress, album.getHave(), album.getTotal())
+                        : getResources().getString(R.string.piterfy_radar_queued);
+                ink = 0xFFB3B3B3;
+                break;
+            case DONE:
+                label = album.getTotal() > 0
+                        ? getResources().getString(R.string.piterfy_radar_done_counts, album.getHave(), album.getTotal())
+                        : getResources().getString(R.string.piterfy_radar_done);
+                ink = GREEN;
+                break;
+            case FAILED:
+                label = getResources().getString(R.string.piterfy_radar_retry);
+                fill = 0xFF3A3A3A;
+                break;
+            case OFF:
+                label = getResources().getString(R.string.piterfy_radar_off);
+                ink = 0xFFB3B3B3;
+                break;
+            default:
+                label = getResources().getString(R.string.piterfy_radar_fetch);
+                fill = GREEN;
+                ink = Color.BLACK;
+                break;
+        }
+        button.setText(label);
+        button.setBackgroundTintList(android.content.res.ColorStateList.valueOf(fill));
+        button.setTextColor(android.content.res.ColorStateList.valueOf(ink));
+        boolean actionable = action == PiterfyRadarModel.Action.NEW || action == PiterfyRadarModel.Action.FAILED;
+        button.setEnabled(actionable);
+        button.setOnClickListener(v -> requestRadar(album));
+        LayoutParams buttonParams = new LayoutParams(-2, -2);
+        buttonParams.topMargin = dp(8);
+        card.addView(button, buttonParams);
+        card.setContentDescription(album.getArtist() + " - " + album.getTitle());
+        return card;
+    }
+
+    /** "Dociagnij": od razu pokazujemy "w kolejce", a serwer potwierdza (albo odmawia) i odpowiada zaktualizowana pozycja. */
+    private void requestRadar(PiterfyRadarModel.Album album) {
+        radarAlbums = PiterfyRadarModel.replace(radarAlbums, PiterfyRadarModel.withStatus(album, "queued", ""));
+        showRadar();
+        PiterfyRadarClient.fetch(album.getId(), requested -> {
+            if (!alive()) return;
+            radarAlbums = PiterfyRadarModel.replace(radarAlbums, requested.getAlbum());
+            showRadar();
+            if ("disabled".equals(requested.getCode()))
+                Snackbar.make(this, R.string.piterfy_radar_off_hint, Snackbar.LENGTH_LONG).show();
+            else if ("queued".equals(requested.getCode()))
+                Snackbar.make(this, getResources().getString(R.string.piterfy_radar_requested, album.getTitle()), Snackbar.LENGTH_LONG).show();
+        }, message -> {
+            if (!alive()) return;
+            String note = message == null || message.isEmpty() || "https".equals(message)
+                    ? getResources().getString(R.string.piterfy_radar_request_failed) : message;
+            radarAlbums = PiterfyRadarModel.replace(radarAlbums, PiterfyRadarModel.withStatus(album, "failed", note));
+            showRadar();
+        });
+    }
+
     private void loadRecentAlbums() {
         new AlbumRepository().getAlbums("recent", 8, null, null).observe(host.getViewLifecycleOwner(), albums -> {
             if (albums == null || !alive()) return;
@@ -616,6 +808,7 @@ public final class PiterfyHomePanel extends LinearLayout implements DefaultLifec
     @Override
     public void onDestroy(@NonNull LifecycleOwner owner) {
         destroyed = true;
+        removeCallbacks(radarPoll);
         for (var c : calls) c.cancel();
         calls.clear();
     }

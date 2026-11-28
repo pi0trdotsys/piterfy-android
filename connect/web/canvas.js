@@ -23,6 +23,7 @@
     pause: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5h4v14H7zM13 5h4v14h-4z" fill="currentColor"/></svg>',
     prev: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 5h2v14H6zM20 5v14L9 12z" fill="currentColor"/></svg>',
     next: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 5h2v14h-2zM4 5l11 7L4 19z" fill="currentColor"/></svg>',
+    radio: '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="2.2" fill="currentColor"/><path d="M7.8 7.8a6 6 0 0 0 0 8.4M16.2 7.8a6 6 0 0 1 0 8.4M4.9 4.9a10 10 0 0 0 0 14.2M19.1 4.9a10 10 0 0 1 0 14.2"/></svg>',
     motion: '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 12c3-6 6-6 9 0s6 6 9 0"/></svg>',
     still: '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 12h18"/></svg>',
   };
@@ -195,7 +196,8 @@
     dialog.setAttribute('aria-label', 'Teraz gra');
     dialog.innerHTML =
       '<canvas class="pf-cv-bg" aria-hidden="true"></canvas><div class="pf-cv-scrim" aria-hidden="true"></div>' +
-      '<div class="pf-cv-top"><button type="button" class="pf-cv-btn" data-cv="motion"></button>' +
+      '<div class="pf-cv-top"><button type="button" class="pf-cv-btn" data-cv="radio" aria-pressed="false" aria-label="Radio z tego utworu" title="Radio z tego utworu: podobne utwory bez końca">' + ICON.radio + '</button>' +
+      '<button type="button" class="pf-cv-btn" data-cv="motion"></button>' +
       '<button type="button" class="pf-cv-btn" data-cv="close" aria-label="Zamknij" title="Zamknij (Esc)">' + ICON.close + '</button></div>' +
       '<div class="pf-cv-main"><img class="pf-cv-art" alt="" decoding="async">' +
       '<div class="pf-cv-meta"><h2 class="pf-cv-title"></h2><p class="pf-cv-artist"></p></div>' +
@@ -213,11 +215,18 @@
       play: dialog.querySelector('[data-cv="toggle"]'), motion: dialog.querySelector('[data-cv="motion"]'),
     });
     paintMotion();
+    const paintRadio = () => {
+      const button = dialog.querySelector('[data-cv="radio"]'), radio = window.PiterfyRadio;
+      button.hidden = !radio; button.setAttribute('aria-pressed', radio && radio.active() ? 'true' : 'false');
+      button.style.color = radio && radio.active() ? '#1db954' : '';
+    };
+    paintRadio(); window.addEventListener('pf-radio', paintRadio);
     dialog.addEventListener('click', (e) => {
       const b = e.target.closest('[data-cv]');
       if (!b) return;
       const act = b.dataset.cv, pb = window.PiterfyPlayback;
       if (act === 'close') dialog.close();
+      else if (act === 'radio') { const radio = window.PiterfyRadio; if (radio) { if (radio.active()) radio.stop(); else radio.fromCurrent(); } }
       else if (act === 'motion') { animate = !animate; try { localStorage.setItem('pf-canvas', animate ? '1' : '0'); } catch (e2) { /* bez zapamiętywania */ } paintMotion(); kick(); }
       else if (pb && (act === 'previous' || act === 'next')) { pb.control(act); setTimeout(refresh, 250); }
       else if (pb && act === 'toggle') { pb.control(song && song.playing ? 'pause' : 'play'); setTimeout(refresh, 150); }

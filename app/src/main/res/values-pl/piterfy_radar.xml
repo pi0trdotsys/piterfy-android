@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="piterfy_radar">Nowości od Twoich artystów</string>
+    <string name="piterfy_radar_fetch">Dociągnij</string>
+    <string name="piterfy_radar_queued">W kolejce…</string>
+    <string name="piterfy_radar_progress">Pobieram %1$d/%2$d</string>
+    <string name="piterfy_radar_done">Gotowe</string>
+    <string name="piterfy_radar_done_counts">Gotowe %1$d/%2$d</string>
+    <string name="piterfy_radar_retry">Spróbuj ponownie</string>
+    <string name="piterfy_radar_off">Dociąganie wyłączone</string>
+    <string name="piterfy_radar_off_hint">Dociąganie jest wyłączone na serwerze (DISCOVER_CHART_FILL=0).</string>
+    <string name="piterfy_radar_request_failed">Nie udało się wysłać prośby. Spróbuj ponownie później.</string>
+    <string name="piterfy_radar_requested">Zlecono: %1$s</string>
+    <string name="piterfy_radar_type_album">Album</string>
+    <string name="piterfy_radar_type_ep">EP</string>
+    <string name="piterfy_radar_type_single">Singiel</string>
+    <string name="piterfy_radar_type_other">Wydanie</string>
+    <string name="piterfy_radar_today">Dziś</string>
+    <string name="piterfy_radar_yesterday">Wczoraj</string>
+    <string name="piterfy_radar_days_ago">%1$d dni temu</string>
+    <string name="piterfy_radar_tracks">%1$d utw.</string>
+</resources>

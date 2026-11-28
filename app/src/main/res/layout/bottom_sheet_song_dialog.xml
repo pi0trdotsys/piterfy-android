@@ -100,6 +100,19 @@
             android:text="@string/song_bottom_sheet_instant_mix" />
 
         <TextView
+            android:id="@+id/piterfy_radio_text_view"
+            style="@style/LabelMedium"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="?attr/selectableItemBackground"
+            android:clickable="true"
+            android:paddingStart="20dp"
+            android:paddingTop="12dp"
+            android:paddingEnd="20dp"
+            android:paddingBottom="12dp"
+            android:text="@string/piterfy_radio_song_start" />
+
+        <TextView
             android:id="@+id/play_next_text_view"
             style="@style/LabelMedium"
             android:layout_width="match_parent"

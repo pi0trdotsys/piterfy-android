@@ -130,6 +130,14 @@ public class ArtistBottomSheetDialog extends BottomSheetDialogFragment implement
             });
         });
 
+        // Piterfy: radio wykonawcy - jego najpopularniejsze utwory i podobni wykonawcy bez konca (PiterfyRadioManager)
+        TextView piterfyRadio = view.findViewById(R.id.piterfy_radio_text_view);
+        piterfyRadio.setOnClickListener(v -> {
+            com.eddyizm.tempus.service.PiterfyRadioManager.startFromArtist(mediaBrowserListenableFuture, artist.getId(), artist.getName());
+            ((MainActivity) requireActivity()).setBottomSheetInPeek(true);
+            dismissBottomSheet();
+        });
+
         TextView playRandom = view.findViewById(R.id.play_random_text_view);
         playRandom.setOnClickListener(v -> {
             ArtistRepository artistRepository = new ArtistRepository();

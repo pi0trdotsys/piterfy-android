@@ -181,6 +181,7 @@ class PiterfyStatsDialog : PiterfyPageDialog() {
     private fun server(data: PiterfyStatsModel.Stats) {
         val sv = data.server
         val acq = sv.acquisition
+        sv.health?.let { health(it) }
         tiles(listOf(
             Triple(s(R.string.stats_new7), "+" + F.num(sv.added7), s(R.string.stats_new_sub, F.num(sv.added30))),
             Triple(s(R.string.stats_soulseek), F.percent(acq.got.toDouble(), acq.tried.toDouble()), s(R.string.stats_soulseek_sub, F.num(acq.got), F.num(acq.tried))),
@@ -222,6 +223,53 @@ class PiterfyStatsDialog : PiterfyPageDialog() {
         rings.addView(ring(sv.hitRate, s(R.string.stats_ring_kept)), LinearLayout.LayoutParams(-2, -2).apply { rightMargin = dp(24) })
         rings.addView(ring(acq.soulseekRate, s(R.string.stats_ring_found)))
         add(rings, 22)
+    }
+
+    // ── Stan serwera ──
+    private fun levelColor(level: PiterfyStatsModel.Level) = when (level) {
+        PiterfyStatsModel.Level.OK -> 0xFF4ADE80.toInt()
+        PiterfyStatsModel.Level.WARN -> 0xFFFBBF24.toInt()
+        PiterfyStatsModel.Level.CRIT -> 0xFFFF6B6B.toInt()
+    }
+
+    /** Karta na górze zakładki Serwer: plakietka statusu, alarmy (awarie najpierw) i pozycje; teksty alarmów podaje serwer. */
+    private fun health(h: PiterfyStatsModel.Health) {
+        val res = requireContext().resources
+        val badge = when (h.status) {
+            PiterfyStatsModel.Level.OK -> R.string.stats_health_ok
+            PiterfyStatsModel.Level.WARN -> R.string.stats_health_warn
+            PiterfyStatsModel.Level.CRIT -> R.string.stats_health_crit
+        }
+        val summary = if (h.status == PiterfyStatsModel.Level.OK) s(R.string.stats_health_none)
+        else listOfNotNull(
+            h.crit.takeIf { it > 0 }?.let { res.getQuantityString(R.plurals.stats_health_crit_count, it, it) },
+            h.warn.takeIf { it > 0 }?.let { res.getQuantityString(R.plurals.stats_health_warn_count, it, it) },
+        ).joinToString(", ")
+        val head = LinearLayout(requireContext()).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
+        head.addView(text(s(R.string.stats_health), 19f, true), LinearLayout.LayoutParams(0, -2, 1f))
+        head.addView(text(s(badge).uppercase(), 11f, true, 0xFF0B1A10.toInt()).apply {
+            letterSpacing = 0.06f; setPadding(dp(12), dp(6), dp(12), dp(6)); background = rounded(levelColor(h.status), 20)
+            contentDescription = s(R.string.stats_health) + ": " + s(badge)
+        })
+        add(head, 4)
+        if (summary.isNotEmpty()) add(text(summary, 13f, false, muted).apply { setPadding(dp(2), dp(4), 0, dp(4)) })
+        if (h.alerts.isEmpty()) add(text(s(R.string.stats_health_all_good), 13.5f, false, muted).apply { setPadding(dp(2), 0, 0, 0) }, 6)
+        h.alerts.forEach { a ->
+            val row = LinearLayout(requireContext()).apply {
+                orientation = LinearLayout.VERTICAL; setPadding(dp(14), dp(10), dp(14), dp(10))
+                background = rounded(if (a.level == PiterfyStatsModel.Level.CRIT) ColorUtils.setAlphaComponent(levelColor(a.level), 36) else cardBackground, 12)
+            }
+            row.addView(text(a.title, 14.5f, true, levelColor(a.level)))
+            if (a.detail.isNotEmpty()) row.addView(text(a.detail, 12.5f, false, muted).apply { setPadding(0, dp(2), 0, 0) })
+            add(row, 8)
+        }
+        h.items.forEach { item ->
+            val row = LinearLayout(requireContext()).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
+            row.addView(View(requireContext()).apply { background = rounded(levelColor(item.level), 4) }, LinearLayout.LayoutParams(dp(10), dp(10)).apply { rightMargin = dp(10) })
+            row.addView(text(item.label, 13f, false, muted), LinearLayout.LayoutParams(0, -2, 1f))
+            row.addView(text(item.value, 13f, true).apply { gravity = Gravity.END }, LinearLayout.LayoutParams(0, -2, 1.3f))
+            add(row, 8)
+        }
     }
 
     private fun rateTable(title: String, rows: Map<String, PiterfyStatsModel.Rate>, names: Map<String, String>?) {

@@ -143,6 +143,26 @@ class ServerTest(unittest.TestCase):
         self.assertEqual(out["library"], {"tracks": 3})
         self.assertEqual(out["server"]["last_run"], "x")
 
+    def test_server_carries_health_and_live_recomputes_it(self):
+        report = {"status": "ok", "alerts": [], "items": [], "files": 7}
+        self.assertEqual(stats.server([], {}, {}, NOW, health=report)["health"], report)
+        self.assertIsNone(stats.server([], {}, {}, NOW)["health"])         # stary przebieg bez zdrowia nadal się buduje
+        with tempfile.TemporaryDirectory() as tmp:
+            music, data_dir = Path(tmp) / "music", Path(tmp) / "data"
+            music.mkdir()
+            data_dir.mkdir()
+            old = (stats.MUSIC_DIR, stats.DATA_DIR)
+            stats.MUSIC_DIR, stats.DATA_DIR = music, data_dir
+            try:
+                out = stats.live({"generated": "2026-11-16T12:00", "server": {"health": {"files": 7}}})
+            finally:
+                stats.MUSIC_DIR, stats.DATA_DIR = old
+            health = out["server"]["health"]
+            self.assertEqual(health["files"], 7)                              # liczba plików z ostatniego pełnego przebiegu
+            self.assertIn(health["status"], ("ok", "warn", "crit"))
+            self.assertIn("backup_missing", [a["code"] for a in health["alerts"]])
+            json.dumps(out, ensure_ascii=False)
+
 
 def make_days(spec):
     """spec: {data: {id: odsłuchy}} → dni taste."""

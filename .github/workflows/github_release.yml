@@ -43,6 +43,11 @@ jobs:
           node --check connect/web/glass-core.js
           node --check connect/web/glass.js
           node --check connect/web/morph.js
+          node --check connect/web/piterfy.js
+          node --check connect/web/radio.js
+          node --check connect/web/radio-core.js
+          node --check connect/web/radar.js
+          node --test connect/web/radio-core.test.cjs connect/web/radar.test.cjs connect/web/lyrics-core.test.cjs
           python3 -m unittest discover -s connect/stack/discover -p 'test_*.py'
           node --test connect/web/media-kind-core.test.cjs
           node --test connect/web/offline-core.test.cjs connect/web/offline-sw.test.cjs

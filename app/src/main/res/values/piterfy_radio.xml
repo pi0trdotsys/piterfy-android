@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Piterfy: "Radio z utworu / wykonawcy" — an endless queue of similar songs from the library (not internet radio stations) -->
+    <string name="piterfy_radio_song_start">Song radio</string>
+    <string name="piterfy_radio_artist_start">Artist radio</string>
+    <string name="piterfy_radio_label_song">Song radio: %1$s</string>
+    <string name="piterfy_radio_label_artist">Artist radio: %1$s</string>
+    <string name="piterfy_radio_menu_start">Start song radio</string>
+    <string name="piterfy_radio_menu_stop">Stop %1$s</string>
+    <string name="piterfy_radio_stopped">Radio turned off</string>
+    <string name="piterfy_radio_empty">No similar songs found in your library</string>
+    <string name="piterfy_radio_nothing_playing">Play a song first</string>
+    <string name="piterfy_radio_not_on_remote">Radio is not available while playing on another device</string>
+</resources>

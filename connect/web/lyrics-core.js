@@ -33,6 +33,46 @@
       const d = Math.min(Math.abs(Math.round(Number(distance) || 0)), api.STYLE_ALPHA.length - 1);
       return { scale: d === 0 ? 1 : api.INACTIVE_SCALE, alpha: api.STYLE_ALPHA[d], blur: api.STYLE_BLUR[d] };
     },
+    /**
+     * Zawija tekst do szerokości `maxWidth` (zachłannie po słowach; słowo szersze niż linia jest łamane po znakach).
+     * `measure(tekst)` zwraca szerokość w tych samych jednostkach co `maxWidth` (na stronie ctx.measureText, w testach atrapa).
+     */
+    wrap(text, maxWidth, measure) {
+      const words = String(text || '').split(/\s+/).filter(Boolean);
+      const lines = []; let line = '';
+      const push = () => { if (line) lines.push(line); line = ''; };
+      for (const word of words) {
+        const candidate = line ? line + ' ' + word : word;
+        if (measure(candidate) <= maxWidth) { line = candidate; continue; }
+        push();
+        if (measure(word) <= maxWidth) { line = word; continue; }
+        let piece = '';  // słowo dłuższe niż linia (np. tekst bez spacji): łamiemy po znakach
+        for (const ch of [...word]) {
+          if (piece && measure(piece + ch) > maxWidth) { lines.push(piece); piece = ''; }
+          piece += ch;
+        }
+        line = piece;
+      }
+      push();
+      return lines;
+    },
+    /**
+     * Dobiera największy rozmiar czcionki (od `max` w dół do `min`, krok `step`), przy którym zawinięty cytat mieści się
+     * w ramce `width` × `height`. `measureAt(rozmiar, tekst)` mierzy szerokość tekstu danym rozmiarem. Gdy nic się nie mieści,
+     * zwraca `min` i ucina linie do tylu, ile się mieści (ostatnia kończy się „…”).
+     */
+    fitCard(text, measureAt, { width, height, max = 104, min = 44, step = 4, lineHeight = 1.22 }) {
+      for (let size = max; size >= min; size -= step) {
+        const lines = api.wrap(text, width, t => measureAt(size, t));
+        const total = lines.length * size * lineHeight;
+        if (lines.length && total <= height) return { size, lines, height: total, truncated: false };
+      }
+      const lines = api.wrap(text, width, t => measureAt(min, t));
+      const fit = Math.max(1, Math.floor(height / (min * lineHeight)));
+      const cut = lines.slice(0, fit);
+      if (lines.length > fit) cut[fit - 1] = cut[fit - 1].replace(/[\s.,;:!?-]*$/, '') + '…';
+      return { size: min, lines: cut, height: cut.length * min * lineHeight, truncated: lines.length > fit };
+    },
     LINE_MAX_MS: 9000,
     LAST_LINE_MS: 4000,
     INACTIVE_SCALE: 0.86,

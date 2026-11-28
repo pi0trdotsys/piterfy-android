@@ -189,6 +189,14 @@ public class SongBottomSheetDialog extends BottomSheetDialogFragment implements 
             });
         });
 
+        // Piterfy: radio z utworu - nieskonczona kolejka podobnych utworow z biblioteki (PiterfyRadioManager)
+        TextView piterfyRadio = view.findViewById(R.id.piterfy_radio_text_view);
+        piterfyRadio.setOnClickListener(v -> {
+            com.eddyizm.tempus.service.PiterfyRadioManager.startFromSong(mediaBrowserListenableFuture, song);
+            ((MainActivity) requireActivity()).setBottomSheetInPeek(true);
+            dismissBottomSheet();
+        });
+
         TextView playNext = view.findViewById(R.id.play_next_text_view);
         playNext.setOnClickListener(v -> {
             MediaManager.enqueue(mediaBrowserListenableFuture, song, true);

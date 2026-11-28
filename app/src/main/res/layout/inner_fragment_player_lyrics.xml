@@ -23,4 +23,10 @@
             <com.google.android.material.button.MaterialButton android:id="@+id/download_lyrics_button" style="@style/Widget.Material3.Button.TonalButton"
                 android:layout_width="0dp" android:layout_weight="1" android:layout_height="48dp" android:paddingHorizontal="4dp" android:minWidth="0dp" android:textSize="12sp" android:layout_marginStart="6dp" android:text="Offline" android:contentDescription="Zapisz tekst do odczytu offline" android:visibility="gone" />
         </LinearLayout>
+        <LinearLayout android:id="@+id/lyrics_extras_row" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:paddingBottom="8dp" android:visibility="gone">
+            <com.google.android.material.button.MaterialButton android:id="@+id/translate_lyrics_button" style="@style/Widget.Material3.Button.TonalButton"
+                android:layout_width="0dp" android:layout_weight="1" android:layout_height="48dp" android:paddingHorizontal="4dp" android:minWidth="0dp" android:textSize="12sp" android:text="@string/lyrics_translate" android:contentDescription="@string/lyrics_translate_cd" />
+            <com.google.android.material.button.MaterialButton android:id="@+id/share_lyric_button" style="@style/Widget.Material3.Button.TonalButton"
+                android:layout_width="0dp" android:layout_weight="1" android:layout_height="48dp" android:paddingHorizontal="4dp" android:minWidth="0dp" android:textSize="12sp" android:layout_marginStart="6dp" android:text="@string/lyrics_share_line" android:contentDescription="@string/lyrics_share_line_cd" />
+        </LinearLayout>
 </LinearLayout>

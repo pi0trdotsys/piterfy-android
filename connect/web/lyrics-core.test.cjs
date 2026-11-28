@@ -37,4 +37,25 @@ for (let d = 1; d < 6; d++) {
   assert.ok(core.style(d).blur > core.style(d - 1).blur);
   assert.ok(core.style(d).blur <= 4 && core.style(d).alpha > 0.2);
 }
-console.log('Lyrics timing and karaoke: assertions passed');
+// karta z linijką: zawijanie i dobór rozmiaru czcionki (atrapa miary: 0,5 × rozmiar na znak)
+const at = (size, text) => [...text].length * size * 0.5;
+assert.deepEqual(core.wrap('ala ma kota', 100, t => [...t].length * 10), ['ala ma', 'kota']);
+assert.deepEqual(core.wrap('', 100, t => t.length * 10), []);
+assert.deepEqual(core.wrap('abcdefghij', 40, t => [...t].length * 10), ['abcd', 'efgh', 'ij']);   // słowo dłuższe niż linia
+assert.deepEqual(core.wrap('a bb  ccc', 1000, t => t.length), ['a bb ccc']);
+const quote = 'I never wanted to be the one who leaves you here alone';
+const big = core.fitCard('Hej', at, { width: 880, height: 700 });
+assert.equal(big.size, 104);
+assert.deepEqual(big.lines, ['Hej']);
+const three = quote + ' ' + quote + ' ' + quote;
+const fit = core.fitCard(three, at, { width: 880, height: 700 });
+assert.ok(fit.size < 104 && fit.size >= 44);
+assert.ok(fit.height <= 700 && !fit.truncated);
+assert.equal(fit.lines.join(' '), three);
+assert.ok(fit.lines.every(l => at(fit.size, l) <= 880));
+const longText = 'słowo '.repeat(400);
+const cut = core.fitCard(longText, at, { width: 880, height: 300 });
+assert.equal(cut.size, 44);
+assert.ok(cut.truncated && cut.height <= 300 && cut.lines[cut.lines.length - 1].endsWith('…'));
+assert.ok(core.fitCard(quote, at, { width: 880, height: 700 }).size >= core.fitCard(quote + ' ' + quote, at, { width: 880, height: 700 }).size);   // dłuższy cytat nie dostaje większej czcionki
+console.log('Lyrics timing, karaoke and card layout: assertions passed');

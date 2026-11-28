@@ -1227,6 +1227,7 @@
       (more ? '<a href="' + esc(more) + '">Pokaż wszystko</a>' : "") + '</div><div class="pf-row' + (rowClass ? " " + rowClass : "") + '">' + cards.join("") + "</div></section>";
   }
 
+  window.PiterfyHomeExtras = window.PiterfyHomeExtras || [];
   function renderHome(box, d) {
     const hour = new Date().getHours();
     const albumCard = (a) => card("#/album/" + a.id + "/show", a.name, a.artist || "", cover(a.coverArt));
@@ -1286,6 +1287,8 @@
       section("Twoje playlisty", "#/playlist", d.own.map((p) => playlistCard(p, songs(p)))) +
       section("Najczęściej słuchane", sidebarLink("mostPlayed", "#/album"), d.frequent.map(albumCard)) +
       section("Nowe w bibliotece", sidebarLink("recentlyAdded", "#/album"), d.newest.map(albumCard));
+    // moduły dokładają własne półki (np. „Nowości od Twoich artystów”): window.PiterfyHomeExtras.push((box, dane) => …)
+    (window.PiterfyHomeExtras || []).forEach((extra) => { try { extra(box, d); } catch (e) { /* półka dodatkowa nie psuje strony */ } });
   }
 
   // ── „Ulubione” (#/ulubione): tylko muzyka z serduszkiem, bez podcastów ──
@@ -1730,6 +1733,14 @@
   document.head.appendChild(el);
 })();
 // piterfy-morph-loader-end
+
+// piterfy-extras-loader
+;(() => {
+  const m = document.currentScript && document.currentScript.src.match(/[?&]v=([^&]+)/);
+  const v = "?v=" + (m ? m[1] : "1");
+  ["radio.js", "radar.js"].forEach((name) => { const el = document.createElement('script'); el.src = '/piterfy-ui/' + name + v; document.head.appendChild(el); });
+})();
+// piterfy-extras-loader-end
 
 // piterfy-glass-loader
 ;(() => {

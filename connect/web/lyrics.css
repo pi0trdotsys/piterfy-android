@@ -28,3 +28,12 @@ p.pf-lyric-line{cursor:default;--ly-scale:1;--ly-alpha:.92;--ly-blur:0px}
 @media(max-width:600px){.pf-lyric-line{font-size:clamp(24px,7vw,30px)!important}}
 @media not all{.pf-lyric-line{transition:none}}
 
+/* tłumaczenie obok oryginału i karta z linijką */
+.pf-lyric-tr{display:block;margin-top:6px;font:600 clamp(16px,2vw,24px)/1.35 system-ui;color:rgba(255,255,255,.58);-webkit-text-fill-color:currentColor;background:none}
+.pf-lyric-line.active .pf-lyric-tr{color:rgba(255,255,255,.8)}
+#pf-lyrics-dialog footer button[aria-pressed="true"]{background:#ffffff30;border-color:#ffffff70;color:#fff}
+#pf-lyrics-dialog footer button.busy{opacity:.6;cursor:progress}
+#pf-lyrics-dialog footer button:disabled{opacity:.45}
+p.pf-lyric-line{cursor:pointer}
+p.pf-lyric-line.picked{outline:2px solid rgba(255,255,255,.55);outline-offset:6px;border-radius:10px}
+@media(max-width:600px){.pf-lyric-tr{font-size:17px}}

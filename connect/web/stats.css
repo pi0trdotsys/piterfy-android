@@ -133,6 +133,29 @@ html[data-pf-light] .pf-st-periods button[aria-selected="true"] { color: #fff; }
 .pf-st-tracks em { grid-row: span 2; align-self: center; color: var(--pf-h-muted); font-style: normal; font-weight: 700; }
 .pf-st-facts li { padding: 2px 0; color: var(--pf-h-muted); }
 
+/* Stan serwera (zakładka Serwer): plakietka statusu, alarmy i pozycje; kolory: zielony / bursztynowy / czerwony */
+.pf-st-health { --pf-hl: #4ade80; margin-top: 4px; }
+.pf-st-health.warn { --pf-hl: #fbbf24; }
+.pf-st-health.crit { --pf-hl: #ff6b6b; }
+.pf-st-health .pf-sec-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.pf-st-badge { display: inline-flex; align-items: center; padding: 5px 12px; border-radius: 999px; font: 800 12px/1 Figtree, system-ui, sans-serif; letter-spacing: 0.06em; text-transform: uppercase; color: #0b1a10; background: var(--pf-hl); }
+.pf-st-alerts { margin: 0 0 16px; padding: 0; list-style: none; display: grid; gap: 8px; }
+.pf-st-alert { display: flex; gap: 12px; align-items: flex-start; padding: 12px 14px; border-radius: 12px; background: var(--pf-h-surface); border-left: 4px solid #fbbf24; }
+.pf-st-alert.crit { border-left-color: #ff6b6b; background: color-mix(in srgb, #ff6b6b 12%, var(--pf-h-surface)); }
+.pf-st-alert.ok { border-left-color: #4ade80; }
+.pf-st-alert-icon { flex: none; display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 50%; font: 800 13px/1 Figtree, system-ui, sans-serif; color: #0b1a10; background: #fbbf24; }
+.pf-st-alert.crit .pf-st-alert-icon { background: #ff6b6b; }
+.pf-st-alert.ok .pf-st-alert-icon { background: #4ade80; }
+.pf-st-alert b { display: block; font: 700 15px/1.35 Figtree, system-ui, sans-serif; color: var(--pf-h-text); }
+.pf-st-alert span:not(.pf-st-alert-icon) { display: block; margin-top: 2px; color: var(--pf-h-muted); font: 500 13px/1.45 Figtree, system-ui, sans-serif; overflow-wrap: anywhere; }
+.pf-st-health-items { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 8px; margin: 0; }
+.pf-st-health-item { display: flex; justify-content: space-between; gap: 12px; align-items: baseline; padding: 10px 14px; border-radius: 10px; background: var(--pf-h-surface); border-left: 3px solid #4ade80; }
+.pf-st-health-item.warn { border-left-color: #fbbf24; }
+.pf-st-health-item.crit { border-left-color: #ff6b6b; }
+.pf-st-health-item dt { margin: 0; color: var(--pf-h-muted); font: 700 12px/1.3 Figtree, system-ui, sans-serif; letter-spacing: 0.04em; text-transform: uppercase; }
+.pf-st-health-item dd { margin: 0; text-align: right; font: 700 14px/1.3 Figtree, system-ui, sans-serif; color: var(--pf-h-text); overflow-wrap: anywhere; }
+.pf-st-allgood { margin-bottom: 16px; }
+
 @keyframes pf-st-grow { from { transform: scaleX(0); } to { transform: scaleX(1); } }
 @keyframes pf-st-rise { from { transform: scaleY(0); } to { transform: scaleY(1); } }
 @keyframes pf-st-pop { from { opacity: 0; transform: translateY(14px) scale(0.97); } to { opacity: 1; transform: none; } }

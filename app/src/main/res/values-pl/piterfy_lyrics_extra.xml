@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="lyrics_translate">Tłumaczenie</string>
+    <string name="lyrics_translate_busy">Tłumaczę…</string>
+    <string name="lyrics_translate_cd">Pokaż tłumaczenie pod każdą linijką</string>
+    <string name="lyrics_translate_skipped">Tekst jest już po polsku</string>
+    <string name="lyrics_translate_unavailable">Tłumaczenia nie są skonfigurowane na serwerze</string>
+    <string name="lyrics_translate_failed">Tłumaczenie chwilowo niedostępne</string>
+    <string name="lyrics_share_line">Udostępnij linijkę</string>
+    <string name="lyrics_share_line_cd">Udostępnij bieżącą linijkę jako kartę</string>
+    <string name="lyrics_share_pick">Wybierz linijkę do udostępnienia</string>
+    <string name="lyrics_share_none">Włącz utwór, aby wybrać linijkę, albo przytrzymaj linijkę</string>
+    <string name="lyrics_share_failed">Nie udało się przygotować karty</string>
+    <string name="lyrics_share_chooser">Udostępnij kartę z tekstem</string>
+</resources>

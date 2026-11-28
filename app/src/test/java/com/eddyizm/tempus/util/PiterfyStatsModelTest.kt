@@ -138,4 +138,30 @@ class PiterfyStatsModelTest {
         assertTrue(minimal.periods.isEmpty())
         assertNull(minimal.server.disk)
     }
+
+    @Test fun serverHealthComesFromTheServerWithAlertsSortedWorstFirst() {
+        val h = stats.server.health!!
+        assertEquals(PiterfyStatsModel.Level.CRIT, h.status)
+        assertEquals(listOf("library_space", "backup_missing"), h.alerts.map { it.code })
+        assertEquals(1, h.crit)
+        assertEquals(1, h.warn)
+        assertTrue(h.alerts.first().detail.contains("12,0 GB"))
+        val space = h.items.first { it.label == "Wolne miejsce" }
+        assertEquals(PiterfyStatsModel.Level.CRIT, space.level)
+        assertEquals(PiterfyStatsModel.Level.OK, h.items.first { it.label == "Dysk muzyki" }.level)
+        assertEquals(PiterfyStatsModel.Level.WARN, h.items.last().level)
+    }
+
+    @Test fun healthIsAbsentOnAnOlderStackAndForgivesBadEntries() {
+        assertNull(PiterfyStatsModel.parse("{\"library\":{},\"server\":{}}")!!.server.health)
+        val h = PiterfyStatsModel.parse(
+            "{\"library\":{},\"server\":{\"health\":{\"alerts\":[{\"level\":\"warn\",\"title\":\"A\"},{\"level\":\"crit\",\"title\":\"B\"}," +
+                "{\"level\":\"warn\"},{\"level\":\"nonsense\",\"title\":\"C\"}],\"items\":[{\"label\":\"X\"},{\"value\":\"no label\"}]}}}"
+        )!!.server.health!!
+        assertEquals(listOf("B", "A", "C"), h.alerts.map { it.title })
+        assertEquals(PiterfyStatsModel.Level.CRIT, h.status) // bez pola „status”: poziom najgorszego alarmu
+        assertEquals(listOf("X"), h.items.map { it.label })
+        assertEquals("—", h.items.single().value)
+        assertEquals(PiterfyStatsModel.Level.OK, h.alerts.last().level)
+    }
 }

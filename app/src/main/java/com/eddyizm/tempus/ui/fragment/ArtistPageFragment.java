@@ -302,16 +302,13 @@ public class ArtistPageFragment extends Fragment implements ClickCallback {
             }
         }));
 
-        bind.artistPageRadioButton.setOnClickListener(v -> artistPageViewModel.getArtistInstantMix().observe(getViewLifecycleOwner(), new Observer<List<Child>>() {
-            @Override
-            public void onChanged(List<Child> songs) {
-                if (songs != null && !songs.isEmpty()) {
-                    MediaManager.startQueue(mediaBrowserListenableFuture, songs, 0);
-                    activity.setBottomSheetInPeek(true);
-                    artistPageViewModel.getArtistInstantMix().removeObserver(this);
-                }
-            }
-        }));
+        // Piterfy: przycisk Radio na stronie wykonawcy uruchamia radio wykonawcy - nieskonczona kolejka
+        // najpopularniejszych utworow i podobnych wykonawcow (PiterfyRadioManager), a nie skonczony miks.
+        bind.artistPageRadioButton.setOnClickListener(v -> {
+            ArtistID3 radioArtist = artistPageViewModel.getArtist();
+            com.eddyizm.tempus.service.PiterfyRadioManager.startFromArtist(mediaBrowserListenableFuture, radioArtist.getId(), radioArtist.getName());
+            activity.setBottomSheetInPeek(true);
+        });
     }
 
     private static final long TOP_SONGS_TIMEOUT = 3000;

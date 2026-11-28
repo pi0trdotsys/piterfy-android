@@ -1140,6 +1140,8 @@ html:not([data-pf-light]) .pf-hello {
 .pf-card-art[data-pf-art="mix-phonk"]::before { content: "👻"; }
 .pf-card-art[data-pf-art="mix-game"] { background: linear-gradient(135deg, #1d976c, #93f9b9); background-size: 220% 220%; }
 .pf-card-art[data-pf-art="mix-game"]::before { content: "🎮"; }
+.pf-card-art[data-pf-art="mix-rok-temu-o-tej-porze"] { background: linear-gradient(135deg, #3a1c71, #d76d77 55%, #ffaf7b); background-size: 220% 220%; }
+.pf-card-art[data-pf-art="mix-rok-temu-o-tej-porze"]::before { content: "⏳"; }
 
 /* wiersze kart mają zapas u góry, żeby uniesiona okładka nie była ucięta przez overflow */
 .pf-row { padding-top: 10px; margin-top: -10px; }

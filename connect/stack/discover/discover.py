@@ -100,6 +100,10 @@ GAME_EVERY_HOURS = env_float("DISCOVER_GAME_EVERY_HOURS", 6)    # co ile godzin 
 GAME_TARGET      = env_int("DISCOVER_GAME_TARGET", 15)          # tyle utworów soundtracku gry chcemy mieć w bibliotece (dociąganie: po jednej grze naraz)
 GAME_MIN         = env_int("DISCOVER_GAME_MIN", 5)              # tyle utworów musi być w bibliotece, żeby powstała playlista gry
 GAME_FILL_PER_RUN = env_int("DISCOVER_GAME_FILL_PER_RUN", 10)   # najwyżej tyle utworów soundtracku na jedno odświeżenie (dociąganie wymaga DISCOVER_CHART_FILL=1)
+RADAR_ARTISTS    = env_int("DISCOVER_RADAR_ARTISTS", 150)       # tylu najważniejszych wykonawców z biblioteki sprawdza radar nowości (w Deezerze)
+RADAR_DAYS       = env_int("DISCOVER_RADAR_DAYS", 60)           # wydania z ostatnich tylu dni są „nowościami”
+RADAR_EVERY_HOURS = env_int("DISCOVER_RADAR_EVERY_HOURS", 12)   # jak często radar szuka nowości
+RADAR_TRACKS_PER_REQUEST = env_int("DISCOVER_RADAR_TRACKS", 14) # najwyżej tyle utworów albumu dociąga jedno „Dociągnij”
 CHART_FILL       = env_int("DISCOVER_CHART_FILL", 0)             # 1 = dociągaj przez slskd brakujące utwory z czołówki list przebojów (domyślnie wyłączone)
 CHART_FILL_TOP   = env_int("DISCOVER_CHART_FILL_TOP", 30)        # tylko z tylu pierwszych miejsc listy
 CHART_FILL_PER_RUN = env_int("DISCOVER_CHART_FILL_PER_RUN", 5)   # najwyżej tyle utworów na jedno odświeżenie listy
@@ -133,6 +137,10 @@ import mixes  # noqa: E402  (tematyczne miksy: Happy Mix, Dark Mix, Electronic M
 import charts  # noqa: E402  (listy przebojów: Top 100 Polska — dopasowanie do biblioteki)
 import origins  # noqa: E402  (miksy wg pochodzenia: French Music, Latin Music, Polski Rap...)
 import games  # noqa: E402  (soundtracki z najpopularniejszych gier jako playlisty)
+import health  # noqa: E402  (stan serwera: liczniki Last.fm i Deezera, alarmy dla panelu „Statystyki → Serwer”)
+import translate  # noqa: E402  (tłumaczenia tekstów piosenek: rejestruje POST /piterfy-api/translate w profile_api)
+import radar  # noqa: E402  (radar nowości: nowe wydania wykonawców z biblioteki + „Dociągnij” przez slskd)
+import yearago  # noqa: E402  (miks „Rok temu o tej porze” ze scrobbli Last.fm)
 
 VARIOUS_ARTISTS = {"various artists", "various", "va", "unknown artist", "unknown", ""}
 
@@ -393,9 +401,13 @@ class LastFm:
             data = http("GET", "https://ws.audioscrobbler.com/2.0/", params=params)
         except (urllib.error.URLError, ValueError, OSError) as e:  # OSError: m.in. przekroczony czas odpowiedzi
             log(f"   Last.fm {method}: {e}")
+            health.api_record("lastfm", False, f"{method}: {e}")
             return {}
         finally:
             time.sleep(0.25)
+        # błędy klucza i limitu (nie „brak wykonawcy”) liczą się jako awaria usługi
+        fatal = isinstance(data, dict) and data.get("error") in (4, 8, 9, 10, 11, 16, 26, 29)
+        health.api_record("lastfm", not fatal, f"{method}: błąd {data.get('error')} {data.get('message', '')}".strip() if fatal else None)
         return {} if not data or "error" in data else data
 
     def similar_tracks(self, artist, title):
@@ -424,15 +436,18 @@ class Deezer:
                 data = http("GET", f"https://api.deezer.com/{path}", params=params)
             except (urllib.error.URLError, ValueError, OSError) as e:
                 log(f"   Deezer {path}: {e}")
+                health.api_record("deezer", False, f"{path}: {e}")
                 return {}
             finally:
                 time.sleep(0.15)
             error = data.get("error") if isinstance(data, dict) else None
             if not error:
+                health.api_record("deezer", True)
                 return data
             if error.get("code") == 4 and attempt == 0:  # limit zapytań
                 time.sleep(5)
                 continue
+            health.api_record("deezer", error.get("code") != 4, f"{path}: limit zapytań" if error.get("code") == 4 else None)
             return {}
         return {}
 
@@ -1798,6 +1813,122 @@ def refresh_games(state, force=False, dry_run=False):
             state["games_checked"] = time.time() - GAME_EVERY_HOURS * 3600 + 3600
 
 
+# ── radar nowości i „Rok temu o tej porze” ───────────────────────────────────
+
+def refresh_radar(state, force=False, dry_run=False):
+    """Co RADAR_EVERY_HOURS godzin: nowe wydania (ostatnie RADAR_DAYS dni) od RADAR_ARTISTS najważniejszych wykonawców z biblioteki,
+    z Deezera, do `radar.json` (czyta je strona i aplikacja). Wyłączone przez DISCOVER_RADAR=0."""
+    if not radar.enabled() or not force and time.time() - state.get("radar_checked", 0) < RADAR_EVERY_HOURS * 3600:
+        return
+    try:
+        songs = [s for s in all_native_songs(Navidrome()) if not podcasts.is_podcast(s)]
+        radar.refresh(Deezer().call, songs, state, DATA_DIR, log, limit=RADAR_ARTISTS, days=RADAR_DAYS,
+                      now=datetime.now(timezone.utc), dry_run=dry_run)
+        if not dry_run:
+            state["radar_checked"] = time.time()
+    except Exception as e:  # radar nie może zatrzymać odkrywania muzyki
+        log(f"Radar nowości się nie odświeżył: {e} — spróbuję za godzinę.")
+        if not dry_run:
+            state["radar_checked"] = time.time() - RADAR_EVERY_HOURS * 3600 + 3600
+
+
+def process_radar(state):
+    """Jedna prośba „Dociągnij” z kolejki (radar-requests.json) na przebieg pętli: brakujące utwory albumu z Deezera idą przez
+    ten sam potok slskd co listy przebojów (`fill_chart`), a wynik trafia z powrotem do pozycji radaru."""
+    if not radar.enabled() or not CHART_FILL:
+        return
+    job = radar.next_job(DATA_DIR)
+    if not job:
+        return
+    label = f"{job['artist']} — {job['title']}"
+    try:
+        radar.finish(DATA_DIR, job["id"], "queued", note="Szukam w Soulseek…")
+        nd = Navidrome()
+        entries = radar.album_entries(as_list(Deezer().call(f"album/{job['id']}/tracks", limit=100).get("data")), job["artist"])
+        if not entries:
+            radar.finish(DATA_DIR, job["id"], "failed", note="Deezer nie podał listy utworów tego wydania.")
+            return
+        songs = [s for s in all_native_songs(nd) if not podcasts.is_podcast(s)]
+        hits = charts.match(entries, songs)
+        total = len(entries)
+        if len(hits) >= total:
+            radar.finish(DATA_DIR, job["id"], "done", note="Masz już wszystkie utwory.", have=len(hits), total=total)
+            return
+        history = state.setdefault("history", {})
+        jobs = fill_chart(nd, types.SimpleNamespace(name="Radar nowości"), entries, hits, history, have=len(hits), target=total,
+                          per_run=RADAR_TRACKS_PER_REQUEST, top=total, per_artist_limit=RADAR_TRACKS_PER_REQUEST)
+        if any(j["status"] == "done" for j in jobs):
+            wait_for_import(jobs)
+            nd.rescan()
+            time.sleep(20)  # skan Navidrome trwa chwilę
+            songs = [s for s in all_native_songs(nd) if not podcasts.is_podcast(s)]
+            have = len(charts.match(entries, songs))
+            radar.finish(DATA_DIR, job["id"], "done", note=f"Są {have} z {total} utworów.", have=have, total=total)
+            log(f"Radar: „{label}” — w bibliotece {have}/{total}.")
+        else:
+            radar.finish(DATA_DIR, job["id"], "failed", have=len(hits), total=total,
+                         note="Nie znalazłem tego w Soulseek (albo dysk jest zapełniony). Spróbuj ponownie później.")
+            log(f"Radar: „{label}” — nic nie pobrano.")
+    except Exception as e:  # jedna zła prośba nie może zatrzymać pętli
+        log(f"Radar: „{label}”: {e}")
+        radar.finish(DATA_DIR, job["id"], "failed", note="Dociąganie się nie udało — szczegóły w logach serwera.")
+
+
+def refresh_yearago(state, force=False, dry_run=False):
+    """Playlista „Rok temu o tej porze”: utwory z biblioteki, których słuchałeś rok temu ±7 dni (scrobble Last.fm, bo Navidrome
+    nie trzyma historii z datami). Odświeżana raz dziennie, bo okno przesuwa się razem z kalendarzem; usunięta ręcznie nie wraca."""
+    if not (LASTFM_API_KEY and LASTFM_USER):
+        return
+    if not force and time.time() - state.get("yearago_checked", 0) < 20 * 3600:
+        return
+    try:
+        nd = Navidrome()
+        songs = [s for s in all_native_songs(nd) if not podcasts.is_podcast(s)]
+        playlists = as_list(nd.call("getPlaylists").get("playlists", {}).get("playlist"))
+        record = state.setdefault("yearago", {})
+        existing = next((p for p in playlists if p["id"] == record.get("id")), None)
+        if record.get("id") and existing is None:
+            record["removed"] = True
+            log(f"Miks „{yearago.NAME}” został usunięty w Navidrome — więcej go nie tworzę.")
+        same_name = next((p for p in playlists if p.get("name") == yearago.NAME), None)
+        if not record.get("removed") and existing is None and same_name is not None:
+            if not (same_name.get("comment") or "").startswith(mixes.COMMENT_PREFIX):
+                log(f"Miks „{yearago.NAME}”: playlista o tej nazwie jest Twoja — nie nadpisuję jej.")
+                record["removed"] = True
+            else:
+                existing = same_name
+        if record.get("removed"):
+            state["yearago_checked"] = time.time()
+            return
+        start, end = yearago.window(date.today())
+        scrobbles = yearago.fetch_scrobbles(LastFm().call, LASTFM_USER, start, end)
+        ids = yearago.select(yearago.top_entries(scrobbles), songs)
+        if not ids:
+            log(f"Miks „{yearago.NAME}”: za mało utworów z {start:%d.%m.%Y} – {end - timedelta(days=1):%d.%m.%Y} jest w bibliotece "
+                f"({yearago.MIN_TRACKS} potrzeba; scrobbli w oknie: {len(scrobbles)}).")
+        elif dry_run:
+            log(f"Miks „{yearago.NAME}” — utworów: {len(ids)} (scrobbli w oknie: {len(scrobbles)}).")
+        else:
+            if existing:
+                nd.call("createPlaylist", playlistId=existing["id"], songId=ids)
+                playlist_id = existing["id"]
+            else:
+                playlist_id = nd.call("createPlaylist", name=yearago.NAME, songId=ids).get("playlist", {}).get("id")
+            if playlist_id:
+                try:
+                    nd.call("updatePlaylist", playlistId=playlist_id, comment=yearago.comment(len(ids), start, end))
+                except RuntimeError:
+                    pass
+                record.update(id=playlist_id, ids=ids, updated=datetime.now(timezone.utc).isoformat(timespec="minutes"))
+                log(f"Miks „{yearago.NAME}” — utworów: {len(ids)}.")
+        if not dry_run:
+            state["yearago_checked"] = time.time()
+    except Exception as e:  # miks nie może zatrzymać odkrywania muzyki
+        log(f"Miks „{yearago.NAME}” się nie odświeżył: {e} — spróbuję za godzinę.")
+        if not dry_run:
+            state["yearago_checked"] = time.time() - 20 * 3600 + 3600
+
+
 # ── podcasty ─────────────────────────────────────────────────────────────────
 
 def load_podcast_shows():
@@ -1882,6 +2013,8 @@ def main():
     parser.add_argument("--mixes", action="store_true", help="odśwież tematyczne miksy (Happy Mix, Dark Mix...) od razu")
     parser.add_argument("--charts", action="store_true", help="odśwież listy przebojów (Top 100 Polska) od razu (z --dry-run: tylko pokaż, co by zrobił)")
     parser.add_argument("--games", action="store_true", help="odśwież soundtracki gier od razu (z --dry-run: tylko pokaż, co by zrobił)")
+    parser.add_argument("--radar", action="store_true", help="odśwież radar nowości od razu (z --dry-run: tylko pokaż nowe wydania)")
+    parser.add_argument("--yearago", action="store_true", help="odśwież miks „Rok temu o tej porze” od razu (z --dry-run: tylko pokaż)")
     parser.add_argument("--podcast-fetch", metavar="AUDYCJA", help="pobierz starsze odcinki audycji (podgląd, dopóki nie dodasz --yes)")
     parser.add_argument("--year", type=int, help="z --podcast-fetch: tylko odcinki z tego roku")
     parser.add_argument("--match", metavar="REGEX", help="z --podcast-fetch: tylko odcinki z pasującym tytułem (np. serię)")
@@ -1903,6 +2036,18 @@ def main():
     if args.games:
         state = load_state()
         refresh_games(state, force=True, dry_run=args.dry_run)
+        if not args.dry_run:
+            save_state(state)
+        return
+    if args.radar:
+        state = load_state()
+        refresh_radar(state, force=True, dry_run=args.dry_run)
+        if not args.dry_run:
+            save_state(state)
+        return
+    if args.yearago:
+        state = load_state()
+        refresh_yearago(state, force=True, dry_run=args.dry_run)
         if not args.dry_run:
             save_state(state)
         return
@@ -1941,16 +2086,23 @@ def main():
     log(f"Start: {every} od godziny {RUN_HOUR}:00, utworów na przebieg: {TRACKS_PER_RUN}.")
     import profile_api  # zdjęcia profilowe Piterfy — mały serwer w tle, do którego Caddy kieruje /piterfy-api/
     profile_api.start(NAVIDROME_URL, DATA_DIR / "avatars", log)
+    radar.register_routes(profile_api, DATA_DIR, log)  # GET /piterfy-api/radar, POST /piterfy-api/radar/fetch
     retry_at = 0
     while True:
         state = load_state()
+        health.api_restore(state.get("api_health"))  # po restarcie wracamy do liczników sprzed restartu
         check_slskd(state)
         refresh_taste(state)
         refresh_podcasts(state)
         refresh_mixes(state)
         refresh_charts(state)
         refresh_games(state)
+        refresh_radar(state)
+        refresh_yearago(state)
         refresh_stats(state)
+        state["api_health"] = health.api_snapshot()
+        save_state(state)
+        process_radar(state)  # prośby „Dociągnij” z radaru; wynik trafia do radar.json, a tu zapisujemy historię wyszukiwań
         save_state(state)
         if time.time() >= retry_at and is_due(state, datetime.now()):
             try:

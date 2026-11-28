@@ -80,6 +80,52 @@
     return d.getDate() + NBSP + MONTHS[d.getMonth()] + NBSP + d.getFullYear() + ", " + pad(d.getHours()) + ":" + pad(d.getMinutes());
   }
 
+  /** Poziom z serwera („ok” | „warn” | „crit”; cokolwiek innego → „ok”) → klasa CSS i tekst plakietki. */
+  const HEALTH_LEVELS = { ok: ["ok", "Wszystko w porządku"], warn: ["warn", "Wymaga uwagi"], crit: ["crit", "Awaria"] };
+  function healthLevel(level) {
+    const found = HEALTH_LEVELS[level] || HEALTH_LEVELS.ok;
+    return { cls: found[0], text: found[1] };
+  }
+
+  /**
+   * Karta „Stan serwera” z pola server.health: { status, level (klasa, tekst), alerts[], items[] } albo null, gdy serwer
+   * nie policzył jeszcze stanu (starsza wersja stosu). Alarmy: najpierw awarie, potem ostrzeżenia (kolejność serwera zostaje).
+   */
+  function healthModel(health) {
+    if (!health || typeof health !== "object") return null;
+    const rank = { crit: 0, warn: 1, ok: 2 };
+    const level = (v) => (rank[v] == null ? "ok" : v);
+    const alerts = (Array.isArray(health.alerts) ? health.alerts : [])
+      .filter((a) => a && a.title)
+      .map((a, i) => ({ level: level(a.level), code: String(a.code || ""), title: String(a.title), detail: String(a.detail || ""), i }))
+      .sort((a, b) => rank[a.level] - rank[b.level] || a.i - b.i)
+      .map(({ i, ...rest }) => rest);
+    const items = (Array.isArray(health.items) ? health.items : [])
+      .filter((x) => x && x.label)
+      .map((x) => ({ label: String(x.label), value: String(x.value == null ? "—" : x.value), level: level(x.level) }));
+    const status = level(health.status || (alerts[0] && alerts[0].level));
+    const crit = alerts.filter((a) => a.level === "crit").length;
+    const warn = alerts.filter((a) => a.level === "warn").length;
+    const summary = status === "ok" ? "Nic nie wymaga uwagi."
+      : [crit ? crit + NBSP + (crit === 1 ? "awaria" : crit < 5 ? "awarie" : "awarii") : "",
+        warn ? warn + NBSP + (warn === 1 ? "ostrzeżenie" : warn < 5 ? "ostrzeżenia" : "ostrzeżeń") : ""].filter(Boolean).join(", ");
+    return Object.assign({ status, summary, alerts, items }, { level: healthLevel(status) });
+  }
+
+  /** „5 minut temu” / „2 dni temu” z czasu ISO (now — milisekundy, do testów); „—” dla niepoprawnych dat, „przed chwilą” dla przyszłych. */
+  function fmtAgo(value, now) {
+    const t = Date.parse(value);
+    if (!Number.isFinite(t)) return "—";
+    const s = Math.max(0, Math.round(((now == null ? Date.now() : now) - t) / 1000));
+    if (s < 60) return "przed chwilą";
+    const unit = (n, one, few, many) => n + NBSP + (n === 1 ? one : n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 10 || n % 100 >= 20) ? few : many) + " temu";
+    const m = Math.round(s / 60);
+    if (m < 60) return unit(m, "minutę", "minuty", "minut");
+    const h = Math.round(m / 60);
+    if (h < 24) return unit(h, "godzinę", "godziny", "godzin");
+    return unit(Math.round(h / 24), "dzień", "dni", "dni");
+  }
+
   /** Szerokość słupka w procentach względem największej wartości (najmniejszy widoczny: 2%, zero zostaje zerem). */
   function barPercent(value, max) {
     if (!(num(value) > 0) || !(num(max) > 0)) return 0;
@@ -288,6 +334,7 @@
 
   return {
     fmtNum, fmtDec, fmtBytes, fmtDuration, fmtListening, fmtPercent, deltaText, fmtDay, fmtShortDay, fmtStamp,
+    healthLevel, healthModel, fmtAgo,
     barPercent, bars, qualityBreakdown, growthSeries, diskBreakdown, outcomeRows, cardModel, wrapText,
     storySlides, previewWindow, soundtrackPlan, previewGain, dominantColor, readableAccent, SLIDE_MS, TRACK_SLIDE_MS,
   };

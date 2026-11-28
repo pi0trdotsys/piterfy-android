@@ -23,6 +23,7 @@ from collections import Counter
 from datetime import date, datetime, timedelta
 from pathlib import Path
 
+import health as health_mod
 from profile_api import library_key
 
 VERSION = 1
@@ -212,7 +213,7 @@ def week_start(day):
     return day - timedelta(days=day.weekday())
 
 
-def server(songs, history, state, now, disk=None, scan=None, trash=None):
+def server(songs, history, state, now, disk=None, scan=None, trash=None, health=None):
     today = now.date()
     first_week = week_start(today) - timedelta(weeks=GROWTH_WEEKS - 1)
     weeks = {first_week + timedelta(weeks=i): [0, 0] for i in range(GROWTH_WEEKS)}
@@ -258,6 +259,7 @@ def server(songs, history, state, now, disk=None, scan=None, trash=None):
         "discover": {"downloaded": got, "liked": liked, "trashed": trashed,
                      "hit_rate": round(liked / reviewed, 3) if reviewed else None},
         "disk": disk, "trash": trash,
+        "health": health,  # stan serwera: status, alarmy i pozycje (health.py); None, gdy nie policzono
         "last_run": state.get("last_run"),
         "last_scan": (scan or {}).get("lastScan"),
         "scanning": bool((scan or {}).get("scanning")),
@@ -445,10 +447,10 @@ def wrapped(songs, taste, scrobbles, now):
 
 # ── całość ───────────────────────────────────────────────────────────────────
 
-def build(songs, spectrum, taste, history, state, scrobbles, now, disk=None, scan=None, trash=None):
+def build(songs, spectrum, taste, history, state, scrobbles, now, disk=None, scan=None, trash=None, health=None):
     return {"version": VERSION, "generated": now.isoformat(timespec="minutes"),
             "library": library(songs, spectrum),
-            "server": server(songs, history, state, now, disk, scan, trash),
+            "server": server(songs, history, state, now, disk, scan, trash, health),
             "wrapped": wrapped(songs, taste, scrobbles, now)}
 
 
@@ -457,6 +459,11 @@ def live(data):
     server_part = data.get("server")
     if isinstance(server_part, dict):
         server_part["disk"] = disk_usage() or server_part.get("disk")
+        try:  # stan serwera liczymy od nowa (dysk, zapis, kopie, liczniki API); liczbę plików bierzemy z ostatniego pełnego przebiegu
+            old = server_part.get("health") or {}
+            server_part["health"] = health_mod.report(MUSIC_DIR, DATA_DIR, stats_generated=data.get("generated"), files=old.get("files"))
+        except Exception:  # panel zdrowia nie może zepsuć reszty statystyk
+            pass
     return data
 
 
@@ -494,8 +501,14 @@ def generate(nd=None, state=None):
         scan = nd.call("getScanStatus").get("scanStatus")
     except Exception:
         scan = None
+    try:
+        report = health_mod.report(MUSIC_DIR, DATA_DIR, stats_generated=now.isoformat(timespec="minutes"),
+                                   files=folder_size(MUSIC_DIR)["files"])
+    except Exception as e:
+        d.log(f"Statystyki: bez stanu serwera ({e}).")
+        report = None
     data = build(songs, spectrum, state.get("taste") or {}, state.get("history") or {}, state, scrobbles, now,
-                 disk_usage(), scan, folder_size(TRASH_DIR))
+                 disk_usage(), scan, folder_size(TRASH_DIR), report)
     STATS_FILE.parent.mkdir(parents=True, exist_ok=True)
     tmp = STATS_FILE.with_suffix(".tmp")
     tmp.write_text(json.dumps(data, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")

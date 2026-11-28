@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="stats_health">Stan serwera</string>
+    <string name="stats_health_ok">Wszystko w porządku</string>
+    <string name="stats_health_warn">Wymaga uwagi</string>
+    <string name="stats_health_crit">Awaria</string>
+    <string name="stats_health_none">Nic nie wymaga uwagi.</string>
+    <string name="stats_health_all_good">Dysk, odkrywanie, Last.fm, Deezer i Soulseek działają bez zastrzeżeń.</string>
+    <plurals name="stats_health_crit_count">
+        <item quantity="one">%d awaria</item>
+        <item quantity="few">%d awarie</item>
+        <item quantity="many">%d awarii</item>
+        <item quantity="other">%d awarii</item>
+    </plurals>
+    <plurals name="stats_health_warn_count">
+        <item quantity="one">%d ostrzeżenie</item>
+        <item quantity="few">%d ostrzeżenia</item>
+        <item quantity="many">%d ostrzeżeń</item>
+        <item quantity="other">%d ostrzeżeń</item>
+    </plurals>
+</resources>

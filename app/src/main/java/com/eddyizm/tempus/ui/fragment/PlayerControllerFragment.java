@@ -305,6 +305,13 @@ public class PlayerControllerFragment extends Fragment {
                   popup.getMenu().findItem(R.id.action_more_like).setVisible(localSong && !currentPodcast);
                   popup.getMenu().findItem(R.id.action_less_like).setVisible(localSong && !currentPodcast);
                   popup.getMenu().findItem(R.id.action_podcast_subscribe).setVisible(localSong && currentPodcast);
+                  // Piterfy: radio z utworu - start dla biezacego utworu albo wylaczenie dzialajacego radia
+                  var radioItem = popup.getMenu().findItem(R.id.action_piterfy_radio);
+                  boolean radioOn = com.eddyizm.tempus.service.PiterfyRadioManager.isActive();
+                  radioItem.setVisible(radioOn || (localSong && !currentPodcast));
+                  radioItem.setTitle(radioOn
+                          ? getString(R.string.piterfy_radio_menu_stop, com.eddyizm.tempus.service.PiterfyRadioManager.label())
+                          : getString(R.string.piterfy_radio_menu_start));
 
                 int selectedEq = Preferences.getSelectedEqualizer();
                 if (selectedEq == 0 || selectedEq == 2) {
@@ -315,6 +322,11 @@ public class PlayerControllerFragment extends Fragment {
                       if (item.getItemId() == R.id.action_music_queue || item.getItemId() == R.id.action_podcast_queue) {
                           boolean found = com.eddyizm.tempus.util.PiterfyQueues.restore(item.getItemId() == R.id.action_podcast_queue, mediaBrowserListenableFuture);
                           if (!found) Toast.makeText(requireContext(), "Ta kolejka jest jeszcze pusta", Toast.LENGTH_SHORT).show();
+                          return true;
+                      }
+                      if (item.getItemId() == R.id.action_piterfy_radio) {
+                          if (com.eddyizm.tempus.service.PiterfyRadioManager.isActive()) com.eddyizm.tempus.service.PiterfyRadioManager.stop();
+                          else com.eddyizm.tempus.service.PiterfyRadioManager.startFromCurrent(mediaBrowserListenableFuture);
                           return true;
                       }
                       if (item.getItemId() == R.id.action_more_like || item.getItemId() == R.id.action_less_like || item.getItemId() == R.id.action_podcast_subscribe) {

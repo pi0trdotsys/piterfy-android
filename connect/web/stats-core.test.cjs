@@ -196,3 +196,46 @@ test("soundtrack plan gives every slide a track of its own subject and merges ne
   assert.equal(core.previewWindow(300, 45).length, 45);
   assert.equal(core.previewWindow(300).length, 25);
 });
+
+test("health model sorts alerts, tolerates bad input and counts in Polish", () => {
+  assert.equal(core.healthModel(null), null);
+  assert.equal(core.healthModel("x"), null);
+  const empty = core.healthModel({ status: "ok", alerts: [], items: [] });
+  assert.equal(empty.status, "ok");
+  assert.equal(empty.level.cls, "ok");
+  assert.equal(nb(empty.summary), "Nic nie wymaga uwagi.");
+  const m = core.healthModel({
+    status: "crit",
+    alerts: [
+      { level: "warn", code: "a", title: "Ostrzeżenie A", detail: "x" },
+      { level: "crit", code: "b", title: "Awaria B" },
+      { level: "weird", title: "Dziwny" },
+      { title: "" },
+      null,
+    ],
+    items: [{ label: "Dysk", value: "ok", level: "ok" }, { label: "Bez wartości" }, { value: "bez etykiety" }],
+  });
+  assert.deepEqual(m.alerts.map((a) => a.title), ["Awaria B", "Ostrzeżenie A", "Dziwny"]);
+  assert.equal(m.alerts[0].detail, "");
+  assert.equal(m.level.cls, "crit");
+  assert.equal(nb(m.summary), "1 awaria, 1 ostrzeżenie");
+  assert.deepEqual(m.items.map((x) => [x.label, x.value, x.level]), [["Dysk", "ok", "ok"], ["Bez wartości", "—", "ok"]]);
+  assert.equal(core.healthModel({ alerts: [{ level: "warn", title: "t" }] }).status, "warn");
+  assert.equal(nb(core.healthModel({ status: "crit", alerts: Array.from({ length: 5 }, () => ({ level: "crit", title: "t" })) }).summary), "5 awarii");
+  assert.equal(core.healthLevel("nonsense").cls, "ok");
+});
+
+test("relative time in Polish", () => {
+  const now = Date.parse("2026-11-16T12:00:00Z");
+  const ago = (iso) => nb(core.fmtAgo(iso, now));
+  assert.equal(ago("2026-11-16T11:59:30Z"), "przed chwilą");
+  assert.equal(ago("2026-11-16T13:00:00Z"), "przed chwilą");
+  assert.equal(ago("2026-11-16T11:59:00Z"), "1 minutę temu");
+  assert.equal(ago("2026-11-16T11:55:00Z"), "5 minut temu");
+  assert.equal(ago("2026-11-16T11:38:00Z"), "22 minuty temu");
+  assert.equal(ago("2026-11-16T11:00:00Z"), "1 godzinę temu");
+  assert.equal(ago("2026-11-16T08:00:00Z"), "4 godziny temu");
+  assert.equal(ago("2026-11-15T12:00:00Z"), "1 dzień temu");
+  assert.equal(ago("2026-11-09T12:00:00Z"), "7 dni temu");
+  assert.equal(core.fmtAgo("nope", now), "—");
+});

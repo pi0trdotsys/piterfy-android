@@ -11,6 +11,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "connect/stack/discover"))
+import health  # noqa: E402
 import stats  # noqa: E402
 
 
@@ -36,9 +37,17 @@ def main():
     history = {"a": {"status": "done", "pool": "new", "engine": "Last.fm", "verdict": "liked"},
                "b": {"status": "trashed", "pool": "new", "engine": "Last.fm"},
                "c": {"status": "notfound", "pool": "familiar", "engine": "Deezer"}, "d": {"status": "pending"}}
+    # stan serwera: dysk prawie pełny (awaria) i brak kopii zapasowych (ostrzeżenie) — fixture ćwiczy oba poziomy i kolejność alarmów
+    gb = health.GB
+    report = health.evaluate({
+        "library": {"exists": True, "separate_mount": True, "writable": True, "total_bytes": 400 * gb, "free_bytes": 12 * gb, "files": 5},
+        "discover": {"last_run": "2026-11-15T04:00", "mixes_checked": now.timestamp() - 3600, "charts_checked": now.timestamp() - 3600,
+                     "games_checked": now.timestamp() - 600, "stats_generated": "2026-11-16T14:00",
+                     "intervals": {"run": 72, "mixes": 24, "charts": 12, "games": 6, "stats": 6}},
+        "alerts": {}, "api": {}, "lastfm_configured": False, "backup": None, "expect_separate": False}, now.timestamp())
     data = stats.build(songs, spectrum, {"days": days, "since": "2026-01-01"}, history, {"last_run": "2026-11-15T04:00"}, [], now,
                        {"total": 1000, "used": 600, "free": 400}, {"lastScan": "2026-11-16T09:12:00Z", "scanning": False},
-                       {"files": 2, "bytes": 100})
+                       {"files": 2, "bytes": 100}, report)
     out = ROOT / "app/src/test/resources/piterfy_stats_sample.json"
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(data, ensure_ascii=False, indent=1), encoding="utf-8")

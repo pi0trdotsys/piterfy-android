@@ -58,6 +58,7 @@ object PiterfyGeneratedArt {
         "lata 90." to Spec(c(0x4776E6), c(0x8E54E9), "💿", ""),
         "lata 2000." to Spec(c(0x00C6FF), c(0x0072FF), "📀", ""),
         "phonk" to Spec(c(0x0F0C29), c(0xFF0844), "👻", ""),
+        "rok temu o tej porze" to Spec(c(0x3A1C71), c(0xFFAF7B), "⏳", ""),
     )
     private val CHART = Spec(c(0xB30024), c(0xFFD1D9), "🏆", "")
     private val GAME = Spec(c(0x1D976C), c(0x93F9B9), "🎮", "")

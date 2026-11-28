@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="piterfy_radar">New from your artists</string>
+    <string name="piterfy_radar_fetch">Fetch</string>
+    <string name="piterfy_radar_queued">Queued…</string>
+    <string name="piterfy_radar_progress">Fetching %1$d/%2$d</string>
+    <string name="piterfy_radar_done">Done</string>
+    <string name="piterfy_radar_done_counts">Done %1$d/%2$d</string>
+    <string name="piterfy_radar_retry">Try again</string>
+    <string name="piterfy_radar_off">Fetching is off</string>
+    <string name="piterfy_radar_off_hint">Fetching is turned off on the server (DISCOVER_CHART_FILL=0).</string>
+    <string name="piterfy_radar_request_failed">Could not send the request. Try again later.</string>
+    <string name="piterfy_radar_requested">Requested: %1$s</string>
+    <string name="piterfy_radar_type_album">Album</string>
+    <string name="piterfy_radar_type_ep">EP</string>
+    <string name="piterfy_radar_type_single">Single</string>
+    <string name="piterfy_radar_type_other">Release</string>
+    <string name="piterfy_radar_today">Today</string>
+    <string name="piterfy_radar_yesterday">Yesterday</string>
+    <string name="piterfy_radar_days_ago">%1$d days ago</string>
+    <string name="piterfy_radar_tracks">%1$d tracks</string>
+</resources>

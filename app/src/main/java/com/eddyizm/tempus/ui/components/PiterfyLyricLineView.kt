@@ -33,6 +33,15 @@ class PiterfyLyricLineView(context: Context) : View(context) {
     }
     private var layout: StaticLayout? = null
     private var shown = ""
+    // tłumaczenie pod linijką: mniejsze, przygaszone, bez wypełnienia „karaoke”
+    private val translationPaint = TextPaint(TextPaint.ANTI_ALIAS_FLAG).apply {
+        textSize = android.util.TypedValue.applyDimension(android.util.TypedValue.COMPLEX_UNIT_SP, 17f, resources.displayMetrics)
+        typeface = if (Build.VERSION.SDK_INT >= 28) Typeface.create(Typeface.DEFAULT, 600, false) else Typeface.DEFAULT_BOLD
+        color = ColorUtils.setAlphaComponent(Color.WHITE, 150)
+    }
+    private var translationLayout: StaticLayout? = null
+    private var shownTranslation = ""
+    private val translationGap = (4 * density).toInt()
     private val padH = (14 * density).toInt()
     private val padV = (7 * density).toInt()
     private var activeLine = false
@@ -53,8 +62,20 @@ class PiterfyLyricLineView(context: Context) : View(context) {
         get() = shown
         set(value) {
             shown = value.toString()
-            contentDescription = shown
+            contentDescription = if (shownTranslation.isEmpty()) shown else "$shown. $shownTranslation"
             layout = null
+            requestLayout(); invalidate()
+        }
+
+    /** Tłumaczenie pod linijką (null lub puste: bez tłumaczenia). */
+    var translation: CharSequence?
+        get() = shownTranslation.ifEmpty { null }
+        set(value) {
+            val next = value?.toString()?.trim().orEmpty()
+            if (next == shownTranslation) return
+            shownTranslation = next
+            contentDescription = if (next.isEmpty()) shown else "$shown. $next"
+            translationLayout = null
             requestLayout(); invalidate()
         }
 
@@ -102,13 +123,18 @@ class PiterfyLyricLineView(context: Context) : View(context) {
         val built = StaticLayout.Builder.obtain(shown, 0, shown.length, paint, inner)
             .setAlignment(Layout.Alignment.ALIGN_NORMAL).setLineSpacing(2f * density, 1f).setIncludePad(false).build()
         layout = built
+        translationLayout = if (shownTranslation.isEmpty()) null
+        else StaticLayout.Builder.obtain(shownTranslation, 0, shownTranslation.length, translationPaint, inner)
+            .setAlignment(Layout.Alignment.ALIGN_NORMAL).setLineSpacing(1f * density, 1f).setIncludePad(false).build()
         return built
     }
+
+    private fun translationHeight(): Int = translationLayout?.let { it.height + translationGap } ?: 0
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
         val width = MeasureSpec.getSize(widthMeasureSpec)
         val l = buildLayout(width)
-        setMeasuredDimension(width, l.height + paddingTop + paddingBottom)
+        setMeasuredDimension(width, l.height + translationHeight() + paddingTop + paddingBottom)
         pivotX = 0f
         pivotY = measuredHeight / 2f
     }
@@ -121,6 +147,14 @@ class PiterfyLyricLineView(context: Context) : View(context) {
 
     override fun onDraw(canvas: Canvas) {
         val l = layout ?: buildLayout(width)
+        drawLine(canvas, l)
+        translationLayout?.let { tr ->
+            translationPaint.color = ColorUtils.setAlphaComponent(Color.WHITE, if (activeLine) 210 else 150)
+            canvas.save(); canvas.translate(paddingLeft.toFloat(), (paddingTop + l.height + translationGap).toFloat()); tr.draw(canvas); canvas.restore()
+        }
+    }
+
+    private fun drawLine(canvas: Canvas, l: StaticLayout) {
         if (!activeLine || progress >= 1f) {
             paint.shader = null
             paint.color = Color.WHITE

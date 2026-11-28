@@ -78,6 +78,15 @@ def username_from_token(navidrome_url, auth):
     return claims.get("sub") or None
 
 
+EXTRA = []  # trasy dopisywane przez inne moduły: (metoda, wyrażenie regularne ścieżki, funkcja(handler, dopasowanie, użytkownik))
+
+
+def register(method, pattern, function, auth=True):
+    """Dopisuje trasę /piterfy-api/…: `function(handler, match, user)` odpowiada przez handler.send(…); z `auth` użytkownik
+    jest sprawdzony tokenem Navidrome (inaczej 401), a `user` to jego nazwa. Moduły (radar, tłumaczenia…) rejestrują się same."""
+    EXTRA.append((method.upper(), re.compile(pattern), function, auth))
+
+
 class Handler(BaseHTTPRequestHandler):
     server_version = "piterfy-profile"
     navidrome_url = ""
@@ -116,7 +125,34 @@ class Handler(BaseHTTPRequestHandler):
         self.send(200, json.dumps(stats.live(data), ensure_ascii=False, separators=(",", ":")), "application/json",
                   {"Cache-Control": "no-cache"})
 
+    def extra(self, method):
+        """Obsługuje trasę zarejestrowaną przez `register`; zwraca True, jeśli odpowiedź została wysłana."""
+        for verb, pattern, function, auth in EXTRA:
+            m = pattern.fullmatch(self.route())
+            if verb == method and m:
+                user = self.authorized_user() if auth else ""
+                if auth and not user:
+                    return True
+                try:
+                    function(self, m, user)
+                except Exception as e:  # błąd modułu nie może zabić serwera
+                    self.send(500, json.dumps({"error": str(e)[:200]}), "application/json")
+                return True
+        return False
+
+    def read_json(self, limit=65536):
+        length = int(self.headers.get("Content-Length") or 0)
+        if not 0 <= length <= limit:
+            raise ValueError("za duże żądanie")
+        return json.loads(self.rfile.read(length) or b"{}")
+
+    def do_POST(self):
+        if not self.extra("POST"):
+            self.send(404, "Nie ma takiej strony.")
+
     def do_GET(self):
+        if self.extra("GET"):
+            return
         if self.route() == "/piterfy-api/stats":
             return self.stats()
         quality = re.fullmatch(r"/piterfy-api/quality/([^/]+)", self.route())

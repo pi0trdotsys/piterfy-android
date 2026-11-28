@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="lyrics_translate">Translation</string>
+    <string name="lyrics_translate_busy">Translating…</string>
+    <string name="lyrics_translate_cd">Show a translation under each line</string>
+    <string name="lyrics_translate_skipped">The lyrics are already in your language</string>
+    <string name="lyrics_translate_unavailable">Translations are not set up on the server</string>
+    <string name="lyrics_translate_failed">Translation is temporarily unavailable</string>
+    <string name="lyrics_share_line">Share line</string>
+    <string name="lyrics_share_line_cd">Share the current line as a card</string>
+    <string name="lyrics_share_pick">Choose a line to share</string>
+    <string name="lyrics_share_none">Play the song to pick a line, or long-press a line</string>
+    <string name="lyrics_share_failed">Could not prepare the card</string>
+    <string name="lyrics_share_chooser">Share lyric card</string>
+</resources>
