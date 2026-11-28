@@ -33,6 +33,7 @@ import uuid
 from collections import Counter
 from datetime import date, datetime, timedelta, timezone
 from email.message import EmailMessage
+from email.utils import formataddr
 import report_formatter
 from pathlib import Path
 
@@ -1170,10 +1171,10 @@ def send_mail(subject, body, html_body=None):
         return
     message = EmailMessage()
     message["Subject"], message["To"] = subject, MAIL_TO
-    message["From"] = conf.get("from") or conf.get("user") or MAIL_TO
+    from_addr = conf.get("from") or conf.get("user") or MAIL_TO
+    message["From"] = formataddr(("Piterfy", from_addr))
     message.set_content(body)
-    if html_body:
-        message.add_alternative(html_body, subtype="html")
+    message.add_alternative(html_body or report_formatter.simple_html(subject, body), subtype="html")
     tls = conf.get("tls") == "on"
     starttls = (conf.get("tls_starttls") or "on") != "off"
     port = int(conf.get("port") or (465 if tls and not starttls else 587 if tls else 25))
